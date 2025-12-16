@@ -350,3 +350,105 @@ export async function getDocumentByContentHash(
 
   return result.length > 0 ? result[0] : undefined;
 }
+
+
+// ============ DUPLICATE DETECTION ============
+
+export interface DuplicateMatch {
+  document: Document;
+  matchScore: number; // 0-100 percentage match
+  matchedFields: string[];
+}
+
+export async function findPotentialDuplicates(
+  userId: number,
+  category: string,
+  details: Record<string, string | undefined>
+): Promise<DuplicateMatch[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Get all documents of the same category for this user
+  const existingDocs = await db
+    .select()
+    .from(documents)
+    .where(and(eq(documents.userId, userId), eq(documents.category, category as any)));
+
+  const matches: DuplicateMatch[] = [];
+
+  // Key fields to compare based on category
+  const keyFieldsByCategory: Record<string, string[]> = {
+    flight: ["confirmationNumber", "flightNumber", "departureAirport", "arrivalAirport", "departureTime"],
+    accommodation: ["confirmationNumber", "hotelName", "checkInDate", "checkOutDate"],
+    carRental: ["confirmationNumber", "carCompany", "pickupLocation", "pickupTime"],
+    medical: ["policyNumber", "insuranceProvider"],
+    event: ["confirmationNumber", "eventName", "eventDate", "venue"],
+    other: ["confirmationNumber"],
+  };
+
+  const keyFields = keyFieldsByCategory[category] || keyFieldsByCategory.other;
+
+  for (const existingDoc of existingDocs) {
+    const existingDetails = (existingDoc.details as Record<string, string | undefined>) || {};
+    const matchedFields: string[] = [];
+    let matchedCount = 0;
+    let totalComparableFields = 0;
+
+    for (const field of keyFields) {
+      const newValue = details[field]?.toLowerCase().trim();
+      const existingValue = existingDetails[field]?.toLowerCase().trim();
+
+      // Only count fields that have values in both documents
+      if (newValue && existingValue) {
+        totalComparableFields++;
+        if (newValue === existingValue) {
+          matchedCount++;
+          matchedFields.push(field);
+        }
+      } else if (newValue || existingValue) {
+        // If only one has the field, it's a partial comparison
+        totalComparableFields += 0.5;
+      }
+    }
+
+    // Calculate match score
+    if (totalComparableFields > 0 && matchedCount > 0) {
+      const matchScore = Math.round((matchedCount / totalComparableFields) * 100);
+      
+      // Only consider it a potential duplicate if match score is >= 60%
+      // or if confirmation number matches (strong indicator)
+      const confirmationMatches = matchedFields.includes("confirmationNumber");
+      
+      if (matchScore >= 60 || confirmationMatches) {
+        matches.push({
+          document: existingDoc,
+          matchScore,
+          matchedFields,
+        });
+      }
+    }
+  }
+
+  // Sort by match score descending
+  return matches.sort((a, b) => b.matchScore - a.matchScore);
+}
+
+export async function updateDocumentDetails(
+  documentId: number,
+  userId: number,
+  updates: {
+    title?: string;
+    subtitle?: string | null;
+    details?: Record<string, any>;
+    documentDate?: Date | null;
+    originalFileUrl?: string;
+  }
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(documents)
+    .set(updates)
+    .where(and(eq(documents.id, documentId), eq(documents.userId, userId)));
+}

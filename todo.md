@@ -70,3 +70,4 @@
 ## New Features
 - [x] Auto-assign documents to trips based on dates, with manual fallback prompt when no match found
 - [x] View original document button in document detail view
+- [x] Smart duplicate detection - compare parsed details against existing documents and prompt user with options (create new, update existing, cancel)
