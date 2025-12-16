@@ -96,7 +96,13 @@ function CollapsibleSection({
               onPress={() => onDocumentPress(doc)}
             >
               <View style={styles.documentInfo}>
-                <ThemedText type="defaultSemiBold" numberOfLines={1}>
+                <ThemedText type="defaultSemiBold" numberOfLines={1} style={styles.documentTypeTitle}>
+                  {doc.documentType}
+                </ThemedText>
+                <ThemedText
+                  style={[styles.documentTitle, { color: colors.textSecondary }]}
+                  numberOfLines={1}
+                >
                   {doc.title}
                 </ThemedText>
                 {doc.subtitle && (
@@ -107,9 +113,6 @@ function CollapsibleSection({
                     {doc.subtitle}
                   </ThemedText>
                 )}
-                <ThemedText style={[styles.documentType, { color: colors.textSecondary }]}>
-                  {doc.documentType}
-                </ThemedText>
               </View>
               <IconSymbol name="chevron.right" size={16} color={colors.textSecondary} />
             </Pressable>
@@ -373,9 +376,17 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
-  documentSubtitle: {
+  documentTypeTitle: {
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  documentTitle: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  documentSubtitle: {
+    fontSize: 13,
+    lineHeight: 18,
   },
   documentType: {
     fontSize: 12,

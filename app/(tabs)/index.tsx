@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useRef } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -8,7 +8,10 @@ import {
   View,
   RefreshControl,
   Platform,
-  Linking,
+  Dimensions,
+  FlatList,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Clipboard from "expo-clipboard";
@@ -24,13 +27,19 @@ import { useAuth } from "@/hooks/use-auth";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/constants/oauth";
 
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const CARD_WIDTH = SCREEN_WIDTH - Spacing.md * 2 - 40; // Leave space for peek
+const CARD_SPACING = Spacing.sm;
+
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
-  const { user, isAuthenticated, loading: authLoading, refresh: refreshAuth } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const flatListRef = useRef<FlatList>(null);
 
   const handleLogin = useCallback(async () => {
     try {
@@ -40,13 +49,11 @@ export default function HomeScreen() {
       console.log("[Auth] Generated login URL:", loginUrl);
 
       if (Platform.OS === "web") {
-        // On web, redirect in same tab
         console.log("[Auth] Web platform: redirecting to OAuth...");
         window.location.href = loginUrl;
         return;
       }
 
-      // Mobile: Open OAuth URL in browser
       console.log("[Auth] Opening OAuth URL in browser...");
       const result = await WebBrowser.openAuthSessionAsync(
         loginUrl,
@@ -59,7 +66,6 @@ export default function HomeScreen() {
 
       console.log("[Auth] WebBrowser result:", result);
       if (result.type === "success" && result.url) {
-        // Extract code and state from the URL
         try {
           const url = new URL(result.url);
           const code = url.searchParams.get("code");
@@ -97,20 +103,29 @@ export default function HomeScreen() {
     { enabled: isAuthenticated }
   );
 
-  const upcomingTrip = useMemo(() => {
-    if (!trips || trips.length === 0) return null;
+  // Sort trips: upcoming first, then by start date
+  const sortedTrips = useMemo(() => {
+    if (!trips || trips.length === 0) return [];
     const now = new Date();
-    return trips.find((trip) => new Date(trip.startDate) >= now) || trips[0];
+    return [...trips].sort((a, b) => {
+      const aStart = new Date(a.startDate);
+      const bStart = new Date(b.startDate);
+      const aIsUpcoming = aStart >= now;
+      const bIsUpcoming = bStart >= now;
+      
+      if (aIsUpcoming && !bIsUpcoming) return -1;
+      if (!aIsUpcoming && bIsUpcoming) return 1;
+      return aStart.getTime() - bStart.getTime();
+    });
   }, [trips]);
 
-  const daysUntilTrip = useMemo(() => {
-    if (!upcomingTrip) return null;
+  const getDaysUntilTrip = useCallback((startDate: string | Date) => {
     const now = new Date();
-    const tripDate = new Date(upcomingTrip.startDate);
+    const tripDate = new Date(startDate);
     const diffTime = tripDate.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
-  }, [upcomingTrip]);
+  }, []);
 
   const handleCopyEmail = useCallback(async () => {
     if (forwardingData?.email) {
@@ -122,6 +137,58 @@ export default function HomeScreen() {
   const handleRefresh = useCallback(async () => {
     await Promise.all([refetchTrips(), refetchInbox()]);
   }, [refetchTrips, refetchInbox]);
+
+  const handleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(offsetX / (CARD_WIDTH + CARD_SPACING));
+    setActiveIndex(index);
+  }, []);
+
+  const renderTripCard = useCallback(({ item: trip, index }: { item: typeof sortedTrips[0]; index: number }) => {
+    const daysUntil = getDaysUntilTrip(trip.startDate);
+    const isUpcoming = daysUntil > 0;
+    const tripDuration = Math.ceil((new Date(trip.endDate).getTime() - new Date(trip.startDate).getTime()) / (1000 * 60 * 60 * 24));
+    const isActive = daysUntil <= 0 && daysUntil > -tripDuration;
+    
+    return (
+      <Pressable
+        style={[
+          styles.carouselCard,
+          { 
+            backgroundColor: colors.tint,
+            width: CARD_WIDTH,
+            marginLeft: index === 0 ? Spacing.md : CARD_SPACING / 2,
+            marginRight: index === sortedTrips.length - 1 ? Spacing.md : CARD_SPACING / 2,
+          }
+        ]}
+        onPress={() => router.push(`/trip/${trip.id}`)}
+      >
+        <View style={styles.tripCardHeader}>
+          <ThemedText style={styles.tripCardLabel}>
+            {isActive ? "ACTIVE TRIP" : isUpcoming ? "UPCOMING TRIP" : "PAST TRIP"}
+          </ThemedText>
+          {isUpcoming && daysUntil > 0 && (
+            <View style={styles.countdownBadge}>
+              <ThemedText style={styles.countdownText}>
+                {daysUntil} day{daysUntil !== 1 ? "s" : ""} away
+              </ThemedText>
+            </View>
+          )}
+        </View>
+        <ThemedText style={styles.tripName}>{trip.name}</ThemedText>
+        <ThemedText style={styles.tripDates}>
+          {new Date(trip.startDate).toLocaleDateString()} -{" "}
+          {new Date(trip.endDate).toLocaleDateString()}
+        </ThemedText>
+        <View style={styles.tripCardFooter}>
+          <ThemedText style={styles.docCount}>
+            {trip.documentCount} document{trip.documentCount !== 1 ? "s" : ""}
+          </ThemedText>
+          <IconSymbol name="chevron.right" size={20} color="rgba(255,255,255,0.8)" />
+        </View>
+      </Pressable>
+    );
+  }, [colors.tint, getDaysUntilTrip, router, sortedTrips.length]);
 
   if (authLoading) {
     return (
@@ -201,34 +268,47 @@ export default function HomeScreen() {
           </Pressable>
         )}
 
-        {/* Upcoming Trip Card */}
-        {upcomingTrip ? (
-          <Pressable
-            style={[styles.tripCard, { backgroundColor: colors.tint }]}
-            onPress={() => router.push(`/trip/${upcomingTrip.id}`)}
-          >
-            <View style={styles.tripCardHeader}>
-              <ThemedText style={styles.tripCardLabel}>UPCOMING TRIP</ThemedText>
-              {daysUntilTrip !== null && daysUntilTrip > 0 && (
-                <View style={styles.countdownBadge}>
-                  <ThemedText style={styles.countdownText}>
-                    {daysUntilTrip} day{daysUntilTrip !== 1 ? "s" : ""} away
-                  </ThemedText>
-                </View>
-              )}
-            </View>
-            <ThemedText style={styles.tripName}>{upcomingTrip.name}</ThemedText>
-            <ThemedText style={styles.tripDates}>
-              {new Date(upcomingTrip.startDate).toLocaleDateString()} -{" "}
-              {new Date(upcomingTrip.endDate).toLocaleDateString()}
-            </ThemedText>
-            <View style={styles.tripCardFooter}>
-              <ThemedText style={styles.docCount}>
-                {upcomingTrip.documentCount} document{upcomingTrip.documentCount !== 1 ? "s" : ""}
+        {/* Trips Carousel */}
+        {sortedTrips.length > 0 ? (
+          <View style={styles.carouselContainer}>
+            <View style={styles.carouselHeader}>
+              <ThemedText type="subtitle">Your Trips</ThemedText>
+              <ThemedText style={[styles.tripCount, { color: colors.textSecondary }]}>
+                {activeIndex + 1} / {sortedTrips.length}
               </ThemedText>
-              <IconSymbol name="chevron.right" size={20} color="rgba(255,255,255,0.8)" />
             </View>
-          </Pressable>
+            <FlatList
+              ref={flatListRef}
+              data={sortedTrips}
+              renderItem={renderTripCard}
+              keyExtractor={(item) => item.id.toString()}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              snapToInterval={CARD_WIDTH + CARD_SPACING}
+              snapToAlignment="start"
+              decelerationRate="fast"
+              onScroll={handleScroll}
+              scrollEventThrottle={16}
+              contentContainerStyle={styles.carouselContent}
+            />
+            {/* Pagination Dots */}
+            {sortedTrips.length > 1 && (
+              <View style={styles.pagination}>
+                {sortedTrips.map((_, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.paginationDot,
+                      {
+                        backgroundColor: index === activeIndex ? colors.tint : colors.border,
+                        width: index === activeIndex ? 20 : 8,
+                      },
+                    ]}
+                  />
+                ))}
+              </View>
+            )}
+          </View>
         ) : (
           <View style={[styles.emptyTripCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <IconSymbol name="suitcase.fill" size={48} color={colors.textSecondary} />
@@ -306,10 +386,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: 0,
   },
   header: {
     marginBottom: Spacing.lg,
+    paddingHorizontal: Spacing.md,
   },
   subtitle: {
     marginTop: Spacing.xs,
@@ -352,6 +433,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: Spacing.md,
     marginBottom: Spacing.md,
+    marginHorizontal: Spacing.md,
   },
   emailCardContent: {
     flexDirection: "row",
@@ -369,10 +451,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
-  tripCard: {
+  carouselContainer: {
+    marginBottom: Spacing.lg,
+  },
+  carouselHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  tripCount: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  carouselContent: {
+    paddingVertical: Spacing.xs,
+  },
+  carouselCard: {
     borderRadius: BorderRadius.lg,
     padding: Spacing.md,
-    marginBottom: Spacing.lg,
+    minHeight: 140,
   },
   tripCardHeader: {
     flexDirection: "row",
@@ -429,6 +528,7 @@ const styles = StyleSheet.create({
     padding: Spacing.xl,
     alignItems: "center",
     marginBottom: Spacing.lg,
+    marginHorizontal: Spacing.md,
   },
   emptyText: {
     marginTop: Spacing.xs,
@@ -436,8 +536,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
+  pagination: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 6,
+    marginTop: Spacing.sm,
+  },
+  paginationDot: {
+    height: 8,
+    borderRadius: 4,
+  },
   actionsSection: {
     marginBottom: Spacing.lg,
+    paddingHorizontal: Spacing.md,
   },
   sectionTitle: {
     marginBottom: Spacing.md,
@@ -468,6 +580,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     borderWidth: 1,
     padding: Spacing.md,
+    marginHorizontal: Spacing.md,
   },
   inboxContent: {
     flexDirection: "row",

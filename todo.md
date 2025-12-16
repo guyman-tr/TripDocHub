@@ -70,3 +70,5 @@
 ## New Features
 - [x] Auto-assign documents to trips based on dates, with manual fallback prompt when no match found
 - [x] View original document button in document detail view
+- [x] Horizontal carousel for trips on home screen (swipeable cards)
+- [x] Show document type (eTicket) as main title in trip detail cards, with route/title as secondary
