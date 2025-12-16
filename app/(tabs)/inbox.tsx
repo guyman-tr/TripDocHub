@@ -2,7 +2,6 @@ import { useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Pressable,
   StyleSheet,
@@ -44,13 +43,11 @@ const categoryColorMap: Record<string, string> = {
 function DocumentCard({ 
   document, 
   onPress, 
-  onAssign,
-  onDelete,
+  onAssign 
 }: { 
   document: Document; 
   onPress: () => void;
   onAssign: () => void;
-  onDelete: () => void;
 }) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
@@ -91,26 +88,15 @@ function DocumentCard({
             )}
           </View>
         </View>
-        <View style={styles.cardActions}>
-          <Pressable
-            style={[styles.assignButton, { backgroundColor: colors.tint }]}
-            onPress={(e) => {
-              e.stopPropagation();
-              onAssign();
-            }}
-          >
-            <ThemedText style={styles.assignButtonText}>Assign</ThemedText>
-          </Pressable>
-          <Pressable
-            style={[styles.deleteButton, { backgroundColor: colors.destructive + "15" }]}
-            onPress={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-          >
-            <IconSymbol name="trash.fill" size={18} color={colors.destructive} />
-          </Pressable>
-        </View>
+        <Pressable
+          style={[styles.assignButton, { backgroundColor: colors.tint }]}
+          onPress={(e) => {
+            e.stopPropagation();
+            onAssign();
+          }}
+        >
+          <ThemedText style={styles.assignButtonText}>Assign</ThemedText>
+        </Pressable>
       </Pressable>
     </Animated.View>
   );
@@ -245,28 +231,6 @@ export default function InboxScreen() {
     },
   });
 
-  const deleteMutation = trpc.documents.delete.useMutation({
-    onSuccess: () => {
-      refetch();
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    },
-  });
-
-  const handleDeletePress = useCallback((document: Document) => {
-    Alert.alert(
-      "Delete Document",
-      `Are you sure you want to delete "${document.title}"? This action cannot be undone.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => deleteMutation.mutate({ id: document.id }),
-        },
-      ]
-    );
-  }, [deleteMutation]);
-
   const handleDocumentPress = useCallback((document: Document) => {
     router.push(`/document/${document.id}` as any);
   }, [router]);
@@ -321,7 +285,6 @@ export default function InboxScreen() {
               document={item}
               onPress={() => handleDocumentPress(item)}
               onAssign={() => handleAssignPress(item)}
-              onDelete={() => handleDeletePress(item)}
             />
           )}
           contentContainerStyle={[
@@ -498,17 +461,5 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     lineHeight: 20,
-  },
-  cardActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.xs,
-  },
-  deleteButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: "center",
-    alignItems: "center",
   },
 });

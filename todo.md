@@ -70,6 +70,3 @@
 ## New Features
 - [x] Auto-assign documents to trips based on dates, with manual fallback prompt when no match found
 - [x] View original document button in document detail view
-- [x] ~~Smart duplicate detection~~ - REMOVED in favor of manual delete
-- [x] Add delete button to document detail view (already existed in header)
-- [x] Add delete button to inbox document list

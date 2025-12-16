@@ -77,6 +77,7 @@ export default function UploadScreen() {
         setPendingDocumentIds(data.documentIds);
         setShowAssignModal(true);
       } else if (data.autoAssignedTripId && data.autoAssignedTripName) {
+        // Auto-assigned to a trip
         const message = data.count === 1 
           ? `Document automatically assigned to "${data.autoAssignedTripName}".`
           : `${data.count} documents automatically assigned to "${data.autoAssignedTripName}".`;
@@ -87,6 +88,7 @@ export default function UploadScreen() {
           [{ text: "OK", onPress: () => router.back() }]
         );
       } else {
+        // Assigned to specified trip or no auto-assign needed
         const message = data.count === 1 
           ? "Your document has been processed and saved."
           : `${data.count} documents were extracted and saved.`;
@@ -108,133 +110,165 @@ export default function UploadScreen() {
   const handleAssignToTrip = async (selectedTripId: number | null) => {
     setShowAssignModal(false);
     
-    if (pendingDocumentIds.length > 0) {
-      try {
-        for (const docId of pendingDocumentIds) {
-          await assignMutation.mutateAsync({ documentId: docId, tripId: selectedTripId });
-        }
-        
-        if (selectedTripId) {
-          const trip = trips?.find(t => t.id === selectedTripId);
-          Alert.alert(
-            "Document Assigned",
-            `Document assigned to "${trip?.name || 'trip'}".`,
-            [{ text: "OK", onPress: () => router.back() }]
-          );
-        } else {
-          Alert.alert(
-            "Document Saved",
-            "Document saved to your inbox.",
-            [{ text: "OK", onPress: () => router.back() }]
-          );
-        }
-      } catch (error) {
-        console.error("Assignment error:", error);
-        Alert.alert("Assignment Failed", "Please try again.");
-      }
-    } else {
-      router.back();
+    // Assign all pending documents to the selected trip
+    for (const docId of pendingDocumentIds) {
+      await assignMutation.mutateAsync({ documentId: docId, tripId: selectedTripId });
     }
+    
+    if (selectedTripId) {
+      utils.documents.byTrip.invalidate({ tripId: selectedTripId });
+    }
+    
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    
+    const tripName = selectedTripId 
+      ? trips?.find(t => t.id === selectedTripId)?.name 
+      : "Inbox";
+    
+    Alert.alert(
+      "Document Assigned",
+      `Document has been assigned to ${tripName}.`,
+      [{ text: "OK", onPress: () => router.back() }]
+    );
   };
 
   const handleTakePhoto = useCallback(async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission Required", "Camera access is needed to take photos.");
+    if (Platform.OS === "web") {
+      Alert.alert("Not Available", "Camera is not available in web browser. Please use 'Choose File' instead.");
       return;
     }
+    try {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert("Permission Required", "Camera access is needed to take photos.");
+        return;
+      }
 
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ["images"],
-      quality: 0.8,
-      allowsEditing: false,
-    });
-
-    if (!result.canceled && result.assets[0]) {
-      const asset = result.assets[0];
-      setSelectedFile({
-        uri: asset.uri,
-        name: `photo_${Date.now()}.jpg`,
-        type: asset.mimeType || "image/jpeg",
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ["images"],
+        quality: 0.8,
+        allowsEditing: false,
       });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        setSelectedFile({
+          uri: asset.uri,
+          name: asset.fileName || "photo.jpg",
+          type: asset.mimeType || "image/jpeg",
+        });
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+    } catch (error) {
+      console.error("Camera error:", error);
+      Alert.alert("Error", "Failed to take photo. Please try again.");
     }
   }, []);
 
   const handleChooseFromLibrary = useCallback(async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission Required", "Photo library access is needed.");
+    if (Platform.OS === "web") {
+      if (fileInputRef.current) {
+        fileInputRef.current.accept = "image/*";
+        fileInputRef.current.click();
+      }
       return;
     }
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert("Permission Required", "Photo library access is needed.");
+        return;
+      }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      quality: 0.8,
-      allowsEditing: false,
-    });
-
-    if (!result.canceled && result.assets[0]) {
-      const asset = result.assets[0];
-      setSelectedFile({
-        uri: asset.uri,
-        name: asset.fileName || `image_${Date.now()}.jpg`,
-        type: asset.mimeType || "image/jpeg",
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        quality: 0.8,
+        allowsEditing: false,
       });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        setSelectedFile({
+          uri: asset.uri,
+          name: asset.fileName || "image.jpg",
+          type: asset.mimeType || "image/jpeg",
+        });
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+    } catch (error) {
+      console.error("Library error:", error);
+      Alert.alert("Error", "Failed to select image. Please try again.");
     }
   }, []);
 
   const handleChooseDocument = useCallback(async () => {
-    // On web, use native file input
-    if (Platform.OS === "web" && fileInputRef.current) {
-      fileInputRef.current.click();
+    if (Platform.OS === "web") {
+      if (fileInputRef.current) {
+        fileInputRef.current.accept = "application/pdf,image/*";
+        fileInputRef.current.click();
+      }
       return;
     }
-
-    const result = await DocumentPicker.getDocumentAsync({
-      type: ["application/pdf", "image/*"],
-      copyToCacheDirectory: true,
-    });
-
-    if (!result.canceled && result.assets[0]) {
-      const asset = result.assets[0];
-      setSelectedFile({
-        uri: asset.uri,
-        name: asset.name,
-        type: asset.mimeType || "application/pdf",
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ["application/pdf", "image/*"],
+        copyToCacheDirectory: true,
       });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        setSelectedFile({
+          uri: asset.uri,
+          name: asset.name,
+          type: asset.mimeType || "application/pdf",
+        });
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+    } catch (error) {
+      console.error("Document picker error:", error);
+      Alert.alert("Error", "Failed to select document. Please try again.");
     }
   }, []);
 
   const handleWebFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      const uri = URL.createObjectURL(file);
       setSelectedFile({
-        uri: URL.createObjectURL(file),
+        uri,
         name: file.name,
         type: file.type,
-        file: file,
+        file,
       });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    // Reset the input so the same file can be selected again
-    event.target.value = "";
+    if (event.target) {
+      event.target.value = "";
+    }
   }, []);
 
   const handleUpload = useCallback(async () => {
     if (!selectedFile) return;
 
     setIsUploading(true);
-    setUploadStatus("Preparing upload...");
-
+    setUploadStatus("Uploading file...");
+    
     try {
       const formData = new FormData();
       
-      if (Platform.OS === "web" && selectedFile.file) {
-        formData.append("file", selectedFile.file);
+      if (Platform.OS === "web") {
+        if (selectedFile.file) {
+          formData.append("file", selectedFile.file, selectedFile.name);
+        } else {
+          const response = await fetch(selectedFile.uri);
+          const blob = await response.blob();
+          formData.append("file", blob, selectedFile.name);
+        }
       } else {
         formData.append("file", {
           uri: selectedFile.uri,
-          name: selectedFile.name,
           type: selectedFile.type,
+          name: selectedFile.name,
         } as any);
       }
 
@@ -260,7 +294,6 @@ export default function UploadScreen() {
         fileUrl,
         mimeType: selectedFile.type,
         tripId: tripId,
-        skipDuplicateCheck: true, // Always skip duplicate check now
       });
       
     } catch (error: any) {
