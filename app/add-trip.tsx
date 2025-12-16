@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useRef } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -9,10 +9,10 @@ import {
   View,
   Platform,
   KeyboardAvoidingView,
+  Modal,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-import DateTimePicker from "@react-native-community/datetimepicker";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -20,6 +20,137 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { trpc } from "@/lib/trpc";
+
+// Simple calendar component that works on all platforms
+function Calendar({
+  selectedDate,
+  onSelectDate,
+  minimumDate,
+  onClose,
+}: {
+  selectedDate: Date;
+  onSelectDate: (date: Date) => void;
+  minimumDate?: Date;
+  onClose: () => void;
+}) {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? "light"];
+  const [viewDate, setViewDate] = useState(new Date(selectedDate));
+
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDayOfMonth = new Date(year, month, 1).getDay();
+
+  const days: (number | null)[] = [];
+  for (let i = 0; i < firstDayOfMonth; i++) {
+    days.push(null);
+  }
+  for (let i = 1; i <= daysInMonth; i++) {
+    days.push(i);
+  }
+
+  const goToPrevMonth = () => {
+    setViewDate(new Date(year, month - 1, 1));
+  };
+
+  const goToNextMonth = () => {
+    setViewDate(new Date(year, month + 1, 1));
+  };
+
+  const isDateDisabled = (day: number) => {
+    if (!minimumDate) return false;
+    const date = new Date(year, month, day);
+    const minDateOnly = new Date(minimumDate.getFullYear(), minimumDate.getMonth(), minimumDate.getDate());
+    return date < minDateOnly;
+  };
+
+  const isSelectedDate = (day: number) => {
+    return (
+      selectedDate.getFullYear() === year &&
+      selectedDate.getMonth() === month &&
+      selectedDate.getDate() === day
+    );
+  };
+
+  const handleDayPress = (day: number) => {
+    if (isDateDisabled(day)) return;
+    const newDate = new Date(year, month, day);
+    onSelectDate(newDate);
+    onClose();
+  };
+
+  return (
+    <View style={[styles.calendar, { backgroundColor: colors.background }]}>
+      {/* Header */}
+      <View style={styles.calendarHeader}>
+        <Pressable onPress={goToPrevMonth} style={styles.calendarNavButton}>
+          <IconSymbol name="chevron.left" size={20} color={colors.tint} />
+        </Pressable>
+        <ThemedText type="defaultSemiBold" style={styles.calendarTitle}>
+          {monthNames[month]} {year}
+        </ThemedText>
+        <Pressable onPress={goToNextMonth} style={styles.calendarNavButton}>
+          <IconSymbol name="chevron.right" size={20} color={colors.tint} />
+        </Pressable>
+      </View>
+
+      {/* Day names */}
+      <View style={styles.calendarWeekRow}>
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+          <View key={day} style={styles.calendarDayCell}>
+            <ThemedText style={[styles.calendarDayName, { color: colors.textSecondary }]}>
+              {day}
+            </ThemedText>
+          </View>
+        ))}
+      </View>
+
+      {/* Days grid */}
+      <View style={styles.calendarGrid}>
+        {days.map((day, index) => (
+          <View key={index} style={styles.calendarDayCell}>
+            {day !== null && (
+              <Pressable
+                onPress={() => handleDayPress(day)}
+                disabled={isDateDisabled(day)}
+                style={[
+                  styles.calendarDay,
+                  isSelectedDate(day) && { backgroundColor: colors.tint },
+                  isDateDisabled(day) && styles.calendarDayDisabled,
+                ]}
+              >
+                <ThemedText
+                  style={[
+                    styles.calendarDayText,
+                    isSelectedDate(day) && styles.calendarDayTextSelected,
+                    isDateDisabled(day) && { color: colors.textDisabled },
+                  ]}
+                >
+                  {day}
+                </ThemedText>
+              </Pressable>
+            )}
+          </View>
+        ))}
+      </View>
+
+      {/* Close button */}
+      <Pressable
+        style={[styles.calendarCloseButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+        onPress={onClose}
+      >
+        <ThemedText>Cancel</ThemedText>
+      </Pressable>
+    </View>
+  );
+}
 
 export default function AddTripScreen() {
   const router = useRouter();
@@ -59,21 +190,17 @@ export default function AddTripScreen() {
     });
   }, [name, startDate, endDate, createMutation]);
 
-  const handleStartDateChange = (_: any, selectedDate?: Date) => {
-    setShowStartPicker(Platform.OS === "ios");
-    if (selectedDate) {
-      setStartDate(selectedDate);
-      // If end date is before start date, adjust it
-      if (selectedDate > endDate) {
-        setEndDate(new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000));
-      }
+  const handleStartDateSelect = (date: Date) => {
+    setStartDate(date);
+    // If end date is before start date, adjust it
+    if (date > endDate) {
+      setEndDate(new Date(date.getTime() + 24 * 60 * 60 * 1000));
     }
   };
 
-  const handleEndDateChange = (_: any, selectedDate?: Date) => {
-    setShowEndPicker(Platform.OS === "ios");
-    if (selectedDate && selectedDate >= startDate) {
-      setEndDate(selectedDate);
+  const handleEndDateSelect = (date: Date) => {
+    if (date >= startDate) {
+      setEndDate(date);
     }
   };
 
@@ -132,20 +259,16 @@ export default function AddTripScreen() {
                 styles.dateButton,
                 { backgroundColor: colors.surface, borderColor: colors.border },
               ]}
-              onPress={() => setShowStartPicker(true)}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setShowStartPicker(true);
+              }}
             >
               <IconSymbol name="calendar" size={20} color={colors.tint} />
               <ThemedText>{startDate.toLocaleDateString()}</ThemedText>
+              <View style={{ flex: 1 }} />
+              <IconSymbol name="chevron.right" size={16} color={colors.textSecondary} />
             </Pressable>
-            {showStartPicker && (
-              <DateTimePicker
-                value={startDate}
-                mode="date"
-                display={Platform.OS === "ios" ? "spinner" : "default"}
-                onChange={handleStartDateChange}
-                minimumDate={new Date()}
-              />
-            )}
           </View>
 
           {/* End Date */}
@@ -158,20 +281,16 @@ export default function AddTripScreen() {
                 styles.dateButton,
                 { backgroundColor: colors.surface, borderColor: colors.border },
               ]}
-              onPress={() => setShowEndPicker(true)}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setShowEndPicker(true);
+              }}
             >
               <IconSymbol name="calendar" size={20} color={colors.tint} />
               <ThemedText>{endDate.toLocaleDateString()}</ThemedText>
+              <View style={{ flex: 1 }} />
+              <IconSymbol name="chevron.right" size={16} color={colors.textSecondary} />
             </Pressable>
-            {showEndPicker && (
-              <DateTimePicker
-                value={endDate}
-                mode="date"
-                display={Platform.OS === "ios" ? "spinner" : "default"}
-                onChange={handleEndDateChange}
-                minimumDate={startDate}
-              />
-            )}
           </View>
         </ScrollView>
 
@@ -193,6 +312,50 @@ export default function AddTripScreen() {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Start Date Picker Modal */}
+      <Modal
+        visible={showStartPicker}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowStartPicker(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowStartPicker(false)}
+        >
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            <Calendar
+              selectedDate={startDate}
+              onSelectDate={handleStartDateSelect}
+              minimumDate={new Date()}
+              onClose={() => setShowStartPicker(false)}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* End Date Picker Modal */}
+      <Modal
+        visible={showEndPicker}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowEndPicker(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowEndPicker(false)}
+        >
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            <Calendar
+              selectedDate={endDate}
+              onSelectDate={handleEndDateSelect}
+              minimumDate={startDate}
+              onClose={() => setShowEndPicker(false)}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ThemedView>
   );
 }
@@ -265,5 +428,79 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "600",
     lineHeight: 22,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: Spacing.lg,
+  },
+  calendar: {
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    width: 320,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  calendarHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: Spacing.md,
+  },
+  calendarNavButton: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  calendarTitle: {
+    fontSize: 17,
+  },
+  calendarWeekRow: {
+    flexDirection: "row",
+    marginBottom: Spacing.xs,
+  },
+  calendarGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  calendarDayCell: {
+    width: "14.28%",
+    aspectRatio: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  calendarDayName: {
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  calendarDay: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  calendarDayDisabled: {
+    opacity: 0.4,
+  },
+  calendarDayText: {
+    fontSize: 15,
+  },
+  calendarDayTextSelected: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+  },
+  calendarCloseButton: {
+    marginTop: Spacing.md,
+    paddingVertical: 12,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    alignItems: "center",
   },
 });

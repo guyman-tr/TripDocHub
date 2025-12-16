@@ -64,3 +64,4 @@
 
 ## Bugs
 - [x] Authentication fails when clicking Sign In button
+- [x] Date fields in Add Trip screen are not clickable - need calendar picker
