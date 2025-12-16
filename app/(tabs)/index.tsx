@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -7,10 +7,13 @@ import {
   StyleSheet,
   View,
   RefreshControl,
+  Platform,
+  Linking,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
+import * as WebBrowser from "expo-web-browser";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -19,13 +22,65 @@ import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAuth } from "@/hooks/use-auth";
 import { trpc } from "@/lib/trpc";
+import { getLoginUrl } from "@/constants/oauth";
 
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
-  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, refresh: refreshAuth } = useAuth();
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  const handleLogin = useCallback(async () => {
+    try {
+      console.log("[Auth] Login button clicked");
+      setIsLoggingIn(true);
+      const loginUrl = getLoginUrl();
+      console.log("[Auth] Generated login URL:", loginUrl);
+
+      if (Platform.OS === "web") {
+        // On web, redirect in same tab
+        console.log("[Auth] Web platform: redirecting to OAuth...");
+        window.location.href = loginUrl;
+        return;
+      }
+
+      // Mobile: Open OAuth URL in browser
+      console.log("[Auth] Opening OAuth URL in browser...");
+      const result = await WebBrowser.openAuthSessionAsync(
+        loginUrl,
+        undefined,
+        {
+          preferEphemeralSession: false,
+          showInRecents: true,
+        }
+      );
+
+      console.log("[Auth] WebBrowser result:", result);
+      if (result.type === "success" && result.url) {
+        // Extract code and state from the URL
+        try {
+          const url = new URL(result.url);
+          const code = url.searchParams.get("code");
+          const state = url.searchParams.get("state");
+
+          if (code && state) {
+            router.push({
+              pathname: "/oauth/callback" as any,
+              params: { code, state },
+            });
+          }
+        } catch (err) {
+          console.error("[Auth] Failed to parse callback URL:", err);
+        }
+      }
+    } catch (error) {
+      console.error("[Auth] Login error:", error);
+    } finally {
+      setIsLoggingIn(false);
+    }
+  }, [router]);
 
   const { data: trips, isLoading: tripsLoading, refetch: refetchTrips } = trpc.trips.list.useQuery(
     undefined,
@@ -88,10 +143,15 @@ export default function HomeScreen() {
             Organize all your travel documents in one place
           </ThemedText>
           <Pressable
-            style={[styles.loginButton, { backgroundColor: colors.tint }]}
-            onPress={() => router.push("/oauth/callback")}
+            style={[styles.loginButton, { backgroundColor: colors.tint }, isLoggingIn && styles.loginButtonDisabled]}
+            onPress={handleLogin}
+            disabled={isLoggingIn}
           >
-            <ThemedText style={styles.loginButtonText}>Sign In to Get Started</ThemedText>
+            {isLoggingIn ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <ThemedText style={styles.loginButtonText}>Sign In to Get Started</ThemedText>
+            )}
           </Pressable>
         </View>
       </ThemedView>
@@ -283,6 +343,9 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "600",
     lineHeight: 22,
+  },
+  loginButtonDisabled: {
+    opacity: 0.6,
   },
   emailCard: {
     borderRadius: BorderRadius.md,

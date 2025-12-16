@@ -60,3 +60,7 @@
 ## State Persistence
 - [x] AsyncStorage for local data persistence
 - [x] Cloud sync via database
+
+
+## Bugs
+- [x] Authentication fails when clicking Sign In button
