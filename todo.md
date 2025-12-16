@@ -66,3 +66,7 @@
 - [x] Authentication fails when clicking Sign In button
 - [x] Date fields in Add Trip screen are not clickable - need calendar picker
 - [x] Document upload works on mobile (photo capture, AI parsing, appears in inbox)
+
+## New Features
+- [x] Auto-assign documents to trips based on dates, with manual fallback prompt when no match found
+- [x] View original document button in document detail view

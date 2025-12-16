@@ -8,6 +8,8 @@ import {
   View,
   Alert,
   Platform,
+  Modal,
+  FlatList,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
@@ -36,32 +38,67 @@ export default function UploadScreen() {
     uri: string;
     name: string;
     type: string;
-    file?: File; // Store the actual File object for web
+    file?: File;
   } | null>(null);
+  
+  // Manual assignment modal state
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [pendingDocumentIds, setPendingDocumentIds] = useState<number[]>([]);
 
   // Ref for web file input
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const utils = trpc.useUtils();
+  
+  // Get trips for manual assignment
+  const { data: trips } = trpc.trips.list.useQuery();
+  
+  // Assign document mutation
+  const assignMutation = trpc.documents.assign.useMutation({
+    onSuccess: () => {
+      utils.documents.inbox.invalidate();
+      utils.documents.inboxCount.invalidate();
+      utils.trips.list.invalidate();
+    },
+  });
+
   const parseAndCreateMutation = trpc.documents.parseAndCreate.useMutation({
     onSuccess: (data) => {
       utils.documents.inbox.invalidate();
       utils.documents.inboxCount.invalidate();
-      if (tripId) {
-        utils.documents.byTrip.invalidate({ tripId });
+      if (tripId || data.autoAssignedTripId) {
+        utils.documents.byTrip.invalidate({ tripId: tripId || data.autoAssignedTripId! });
         utils.trips.list.invalidate();
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       
-      const message = data.count === 1 
-        ? "Your document has been processed and saved."
-        : `${data.count} documents were extracted and saved.`;
-      
-      Alert.alert(
-        "Document Processed",
-        message,
-        [{ text: "OK", onPress: () => router.back() }]
-      );
+      // Check if we need manual assignment
+      if (data.needsManualAssignment && !tripId) {
+        setPendingDocumentIds(data.documentIds);
+        setShowAssignModal(true);
+      } else if (data.autoAssignedTripId && data.autoAssignedTripName) {
+        // Auto-assigned to a trip
+        const message = data.count === 1 
+          ? `Document automatically assigned to "${data.autoAssignedTripName}".`
+          : `${data.count} documents automatically assigned to "${data.autoAssignedTripName}".`;
+        
+        Alert.alert(
+          "Document Processed",
+          message,
+          [{ text: "OK", onPress: () => router.back() }]
+        );
+      } else {
+        // Assigned to specified trip or no auto-assign needed
+        const message = data.count === 1 
+          ? "Your document has been processed and saved."
+          : `${data.count} documents were extracted and saved.`;
+        
+        Alert.alert(
+          "Document Processed",
+          message,
+          [{ text: "OK", onPress: () => router.back() }]
+        );
+      }
     },
     onError: (error) => {
       console.error("Parse error:", error);
@@ -69,6 +106,31 @@ export default function UploadScreen() {
       Alert.alert("Processing Failed", error.message || "Please try again.");
     },
   });
+
+  const handleAssignToTrip = async (selectedTripId: number | null) => {
+    setShowAssignModal(false);
+    
+    // Assign all pending documents to the selected trip
+    for (const docId of pendingDocumentIds) {
+      await assignMutation.mutateAsync({ documentId: docId, tripId: selectedTripId });
+    }
+    
+    if (selectedTripId) {
+      utils.documents.byTrip.invalidate({ tripId: selectedTripId });
+    }
+    
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    
+    const tripName = selectedTripId 
+      ? trips?.find(t => t.id === selectedTripId)?.name 
+      : "Inbox";
+    
+    Alert.alert(
+      "Document Assigned",
+      `Document has been assigned to ${tripName}.`,
+      [{ text: "OK", onPress: () => router.back() }]
+    );
+  };
 
   const handleTakePhoto = useCallback(async () => {
     if (Platform.OS === "web") {
@@ -105,7 +167,6 @@ export default function UploadScreen() {
 
   const handleChooseFromLibrary = useCallback(async () => {
     if (Platform.OS === "web") {
-      // On web, trigger the file input for images
       if (fileInputRef.current) {
         fileInputRef.current.accept = "image/*";
         fileInputRef.current.click();
@@ -142,7 +203,6 @@ export default function UploadScreen() {
 
   const handleChooseDocument = useCallback(async () => {
     if (Platform.OS === "web") {
-      // On web, trigger the file input for PDFs and images
       if (fileInputRef.current) {
         fileInputRef.current.accept = "application/pdf,image/*";
         fileInputRef.current.click();
@@ -170,7 +230,6 @@ export default function UploadScreen() {
     }
   }, []);
 
-  // Handle web file input change
   const handleWebFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -179,11 +238,10 @@ export default function UploadScreen() {
         uri,
         name: file.name,
         type: file.type,
-        file, // Store the actual File object
+        file,
       });
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    // Reset the input so the same file can be selected again
     if (event.target) {
       event.target.value = "";
     }
@@ -196,22 +254,17 @@ export default function UploadScreen() {
     setUploadStatus("Uploading file...");
     
     try {
-      // Step 1: Upload file to S3 via our API
       const formData = new FormData();
       
-      // Handle file differently based on platform
       if (Platform.OS === "web") {
         if (selectedFile.file) {
-          // Use the actual File object if available
           formData.append("file", selectedFile.file, selectedFile.name);
         } else {
-          // Fallback: fetch the blob URL
           const response = await fetch(selectedFile.uri);
           const blob = await response.blob();
           formData.append("file", blob, selectedFile.name);
         }
       } else {
-        // On native, use the URI directly
         formData.append("file", {
           uri: selectedFile.uri,
           type: selectedFile.type,
@@ -219,7 +272,6 @@ export default function UploadScreen() {
         } as any);
       }
 
-      // Get the API base URL
       const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || "";
       
       setUploadStatus("Uploading to server...");
@@ -237,7 +289,6 @@ export default function UploadScreen() {
       const uploadResult = await uploadResponse.json();
       const fileUrl = uploadResult.url;
 
-      // Step 2: Parse the document with AI
       setUploadStatus("Analyzing document with AI...");
       await parseAndCreateMutation.mutateAsync({
         fileUrl,
@@ -255,6 +306,14 @@ export default function UploadScreen() {
     }
   }, [selectedFile, tripId, parseAndCreateMutation]);
 
+  const formatDate = (date: Date) => {
+    return new Date(date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
   return (
     <ThemedView style={styles.container}>
       {/* Hidden file input for web */}
@@ -267,6 +326,82 @@ export default function UploadScreen() {
           accept="application/pdf,image/*"
         />
       )}
+
+      {/* Manual Assignment Modal */}
+      <Modal
+        visible={showAssignModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowAssignModal(false)}
+      >
+        <ThemedView style={styles.modalContainer}>
+          <View style={[styles.modalHeader, { paddingTop: Math.max(insets.top, 20) }]}>
+            <ThemedText type="subtitle">Assign to Trip</ThemedText>
+            <Pressable onPress={() => {
+              setShowAssignModal(false);
+              router.back();
+            }} style={styles.modalCloseButton}>
+              <IconSymbol name="xmark" size={24} color={colors.text} />
+            </Pressable>
+          </View>
+          
+          <View style={styles.modalContent}>
+            <View style={[styles.noMatchBanner, { backgroundColor: colors.warning + "15" }]}>
+              <IconSymbol name="exclamationmark.triangle.fill" size={24} color={colors.warning} />
+              <ThemedText style={[styles.noMatchText, { color: colors.text }]}>
+                No matching trip found for this document's dates. Please select a trip manually or keep it in your inbox.
+              </ThemedText>
+            </View>
+            
+            <FlatList
+              data={trips || []}
+              keyExtractor={(item) => item.id.toString()}
+              contentContainerStyle={styles.tripList}
+              ListHeaderComponent={
+                <Pressable
+                  style={[styles.tripOption, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                  onPress={() => handleAssignToTrip(null)}
+                >
+                  <View style={[styles.tripIcon, { backgroundColor: colors.textSecondary + "15" }]}>
+                    <IconSymbol name="tray.fill" size={24} color={colors.textSecondary} />
+                  </View>
+                  <View style={styles.tripInfo}>
+                    <ThemedText type="defaultSemiBold">Keep in Inbox</ThemedText>
+                    <ThemedText style={[styles.tripDates, { color: colors.textSecondary }]}>
+                      Assign to a trip later
+                    </ThemedText>
+                  </View>
+                  <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+                </Pressable>
+              }
+              renderItem={({ item }) => (
+                <Pressable
+                  style={[styles.tripOption, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                  onPress={() => handleAssignToTrip(item.id)}
+                >
+                  <View style={[styles.tripIcon, { backgroundColor: colors.tint + "15" }]}>
+                    <IconSymbol name="suitcase.fill" size={24} color={colors.tint} />
+                  </View>
+                  <View style={styles.tripInfo}>
+                    <ThemedText type="defaultSemiBold">{item.name}</ThemedText>
+                    <ThemedText style={[styles.tripDates, { color: colors.textSecondary }]}>
+                      {formatDate(item.startDate)} - {formatDate(item.endDate)}
+                    </ThemedText>
+                  </View>
+                  <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+                </Pressable>
+              )}
+              ListEmptyComponent={
+                <View style={styles.emptyTrips}>
+                  <ThemedText style={{ color: colors.textSecondary }}>
+                    No trips created yet. The document will be kept in your inbox.
+                  </ThemedText>
+                </View>
+              }
+            />
+          </View>
+        </ThemedView>
+      </Modal>
 
       {/* Header */}
       <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
@@ -498,5 +633,74 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.sm,
+  },
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: Spacing.md,
+    paddingBottom: Spacing.md,
+    position: "relative",
+  },
+  modalCloseButton: {
+    position: "absolute",
+    right: Spacing.md,
+    top: 20,
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    flex: 1,
+    paddingHorizontal: Spacing.md,
+  },
+  noMatchBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.lg,
+  },
+  noMatchText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  tripList: {
+    gap: Spacing.sm,
+  },
+  tripOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    gap: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  tripIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  tripInfo: {
+    flex: 1,
+  },
+  tripDates: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 2,
+  },
+  emptyTrips: {
+    padding: Spacing.lg,
+    alignItems: "center",
   },
 });

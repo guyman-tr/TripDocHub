@@ -119,11 +119,32 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const parseResult = await parseDocument(input.fileUrl, input.mimeType);
         const createdDocs: number[] = [];
+        let autoAssignedTripId: number | null = null;
+        let autoAssignedTripName: string | null = null;
+        let needsManualAssignment = false;
 
         for (const doc of parseResult.documents) {
+          let assignedTripId = input.tripId ?? null;
+
+          // If no tripId provided, try to auto-assign based on document date
+          if (assignedTripId === null && doc.documentDate) {
+            const matchingTrip = await db.findMatchingTrip(ctx.user.id, doc.documentDate);
+            if (matchingTrip) {
+              assignedTripId = matchingTrip.id;
+              autoAssignedTripId = matchingTrip.id;
+              autoAssignedTripName = matchingTrip.name;
+            } else {
+              // Document has a date but no matching trip found
+              needsManualAssignment = true;
+            }
+          } else if (assignedTripId === null && !doc.documentDate) {
+            // No date extracted, needs manual assignment
+            needsManualAssignment = true;
+          }
+
           const docId = await db.createDocument({
             userId: ctx.user.id,
-            tripId: input.tripId ?? null,
+            tripId: assignedTripId,
             category: doc.category,
             documentType: doc.documentType,
             title: doc.title,
@@ -137,7 +158,13 @@ export const appRouter = router({
           createdDocs.push(docId);
         }
 
-        return { documentIds: createdDocs, count: createdDocs.length };
+        return {
+          documentIds: createdDocs,
+          count: createdDocs.length,
+          autoAssignedTripId,
+          autoAssignedTripName,
+          needsManualAssignment,
+        };
       }),
   }),
 
