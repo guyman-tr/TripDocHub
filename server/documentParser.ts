@@ -29,19 +29,19 @@ For each booking found, extract:
 6. details: An object with relevant fields based on the category
 
 For flights, include in details:
-- confirmationNumber, airline, flightNumber, departureAirport, arrivalAirport, departureTime, arrivalTime, seatNumber, terminal, gate
+- confirmationNumber, airline, flightNumber, departureAirport, arrivalAirport, departureTime, arrivalTime, seatNumber, terminal, gate, departureAddress (full airport address if available), arrivalAddress (full airport address if available)
 
 For accommodations, include in details:
-- confirmationNumber, hotelName, checkInDate, checkOutDate, roomType, address
+- confirmationNumber, hotelName, checkInDate, checkOutDate, roomType, address (full street address including city, country)
 
 For car rentals, include in details:
-- confirmationNumber, carCompany, pickupLocation, dropoffLocation, pickupTime, dropoffTime, vehicleType
+- confirmationNumber, carCompany, pickupLocation, dropoffLocation, pickupTime, dropoffTime, vehicleType, pickupAddress (full street address), dropoffAddress (full street address)
 
 For medical insurance, include in details:
 - insuranceProvider, policyNumber, coveragePeriod
 
 For events, include in details:
-- eventName, eventDate, eventTime, venue, confirmationNumber
+- eventName, eventDate, eventTime, venue, confirmationNumber, venueAddress (full street address including city, country)
 
 Return a JSON object with a "documents" array containing all found bookings. If no bookings are found, return an empty array.`;
 

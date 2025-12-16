@@ -112,6 +112,31 @@ export default function DocumentDetailScreen() {
     );
   }, [documentId, deleteMutation]);
 
+  // Get address from document details based on category
+  const getAddressFromDetails = useCallback((details: DocumentDetails, category: string): string | null => {
+    if (category === "accommodation" && details.address) {
+      return details.address;
+    }
+    if (category === "carRental") {
+      return details.pickupAddress || details.dropoffAddress || null;
+    }
+    if (category === "event" && details.venueAddress) {
+      return details.venueAddress;
+    }
+    if (category === "flight") {
+      return details.arrivalAddress || details.departureAddress || null;
+    }
+    return null;
+  }, []);
+
+  const handleOpenMaps = useCallback((address: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const encodedAddress = encodeURIComponent(address);
+    // This will open the default maps app on the device
+    const url = `https://maps.google.com/?q=${encodedAddress}`;
+    Linking.openURL(url);
+  }, []);
+
   if (isLoading) {
     return (
       <ThemedView style={[styles.container, styles.centered]}>
@@ -221,6 +246,17 @@ export default function DocumentDetailScreen() {
 
         {/* Actions */}
         <View style={styles.actionsContainer}>
+          {/* Navigate Button - shows when address is available */}
+          {getAddressFromDetails(details, document.category) && (
+            <Pressable
+              style={[styles.actionButton, { backgroundColor: CategoryColors.accommodation }]}
+              onPress={() => handleOpenMaps(getAddressFromDetails(details, document.category)!)}
+            >
+              <IconSymbol name="location.fill" size={20} color="#FFFFFF" />
+              <ThemedText style={styles.actionButtonText}>Navigate</ThemedText>
+            </Pressable>
+          )}
+
           {document.originalFileUrl && (
             <Pressable
               style={[styles.actionButton, { backgroundColor: colors.tint }]}

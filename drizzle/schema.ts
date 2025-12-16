@@ -109,6 +109,8 @@ export interface DocumentDetails {
   arrivalTime?: string;
   departureAirport?: string;
   arrivalAirport?: string;
+  departureAddress?: string; // Full airport address for navigation
+  arrivalAddress?: string; // Full airport address for navigation
   airline?: string;
   flightNumber?: string;
   seatNumber?: string;
@@ -118,10 +120,12 @@ export interface DocumentDetails {
   checkInDate?: string;
   checkOutDate?: string;
   roomType?: string;
-  address?: string;
+  address?: string; // Full street address for accommodation
   carCompany?: string;
   pickupLocation?: string;
   dropoffLocation?: string;
+  pickupAddress?: string; // Full address for car rental pickup
+  dropoffAddress?: string; // Full address for car rental dropoff
   pickupTime?: string;
   dropoffTime?: string;
   vehicleType?: string;
@@ -132,5 +136,6 @@ export interface DocumentDetails {
   eventDate?: string;
   eventTime?: string;
   venue?: string;
+  venueAddress?: string; // Full address for event venue
   [key: string]: string | undefined;
 }
