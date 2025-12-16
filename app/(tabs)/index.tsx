@@ -1,278 +1,421 @@
-import { Image } from "expo-image";
-import { useRouter, Link } from "expo-router";
-import * as WebBrowser from "expo-web-browser";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Platform, Pressable, StyleSheet } from "react-native";
+import { useRouter } from "expo-router";
+import { useCallback, useMemo } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  RefreshControl,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Clipboard from "expo-clipboard";
+import * as Haptics from "expo-haptics";
 
-import { HelloWave } from "@/components/hello-wave";
-import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { getLoginUrl } from "@/constants/oauth";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Colors, Spacing, BorderRadius } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAuth } from "@/hooks/use-auth";
+import { trpc } from "@/lib/trpc";
 
 export default function HomeScreen() {
-  const { user, loading, isAuthenticated, logout } = useAuth();
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? "light"];
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
 
-  useEffect(() => {
-    console.log("[HomeScreen] Auth state:", {
-      hasUser: !!user,
-      loading,
-      isAuthenticated,
-      user: user ? { id: user.id, openId: user.openId, name: user.name, email: user.email } : null,
-    });
-  }, [user, loading, isAuthenticated]);
+  const { data: trips, isLoading: tripsLoading, refetch: refetchTrips } = trpc.trips.list.useQuery(
+    undefined,
+    { enabled: isAuthenticated }
+  );
+  
+  const { data: inboxData, refetch: refetchInbox } = trpc.documents.inboxCount.useQuery(
+    undefined,
+    { enabled: isAuthenticated }
+  );
+  
+  const { data: forwardingData } = trpc.user.getForwardingEmail.useQuery(
+    undefined,
+    { enabled: isAuthenticated }
+  );
 
-  const handleLogin = async () => {
-    try {
-      console.log("[Auth] Login button clicked");
-      setIsLoggingIn(true);
-      const loginUrl = getLoginUrl();
-      console.log("[Auth] Generated login URL:", loginUrl);
+  const upcomingTrip = useMemo(() => {
+    if (!trips || trips.length === 0) return null;
+    const now = new Date();
+    return trips.find((trip) => new Date(trip.startDate) >= now) || trips[0];
+  }, [trips]);
 
-      // On web, use direct redirect in same tab
-      // On mobile, use WebBrowser to open OAuth in a separate context
-      if (Platform.OS === "web") {
-        console.log("[Auth] Web platform: redirecting to OAuth in same tab...");
-        window.location.href = loginUrl;
-        return;
-      }
+  const daysUntilTrip = useMemo(() => {
+    if (!upcomingTrip) return null;
+    const now = new Date();
+    const tripDate = new Date(upcomingTrip.startDate);
+    const diffTime = tripDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  }, [upcomingTrip]);
 
-      // Mobile: Open OAuth URL in browser
-      // The OAuth server will redirect to our deep link (manusapp://oauth/callback?code=...&state=...)
-      console.log("[Auth] Opening OAuth URL in browser...");
-      const result = await WebBrowser.openAuthSessionAsync(
-        loginUrl,
-        undefined, // Deep link is already configured in getLoginUrl, so no need to specify here
-        {
-          preferEphemeralSession: false,
-          showInRecents: true,
-        },
-      );
-
-      console.log("[Auth] WebBrowser result:", result);
-      if (result.type === "cancel") {
-        console.log("[Auth] OAuth cancelled by user");
-      } else if (result.type === "dismiss") {
-        console.log("[Auth] OAuth dismissed");
-      } else if (result.type === "success" && result.url) {
-        console.log("[Auth] OAuth session successful, navigating to callback:", result.url);
-        // Extract code and state from the URL
-        try {
-          // Parse the URL - it might be exp:// or a regular URL
-          let url: URL;
-          if (result.url.startsWith("exp://") || result.url.startsWith("exps://")) {
-            // For exp:// URLs, we need to parse them differently
-            // Format: exp://192.168.31.156:8081/--/oauth/callback?code=...&state=...
-            const urlStr = result.url.replace(/^exp(s)?:\/\//, "http://");
-            url = new URL(urlStr);
-          } else {
-            url = new URL(result.url);
-          }
-
-          const code = url.searchParams.get("code");
-          const state = url.searchParams.get("state");
-          const error = url.searchParams.get("error");
-
-          console.log("[Auth] Extracted params from callback URL:", {
-            code: code?.substring(0, 20) + "...",
-            state: state?.substring(0, 20) + "...",
-            error,
-          });
-
-          if (error) {
-            console.error("[Auth] OAuth error in callback:", error);
-            return;
-          }
-
-          if (code && state) {
-            // Navigate to callback route with params
-            console.log("[Auth] Navigating to callback route with params...");
-            router.push({
-              pathname: "/oauth/callback" as any,
-              params: { code, state },
-            });
-          } else {
-            console.error("[Auth] Missing code or state in callback URL");
-          }
-        } catch (err) {
-          console.error("[Auth] Failed to parse callback URL:", err, result.url);
-          // Fallback: try parsing with regex
-          const codeMatch = result.url.match(/[?&]code=([^&]+)/);
-          const stateMatch = result.url.match(/[?&]state=([^&]+)/);
-
-          if (codeMatch && stateMatch) {
-            const code = decodeURIComponent(codeMatch[1]);
-            const state = decodeURIComponent(stateMatch[1]);
-            console.log("[Auth] Fallback: extracted params via regex, navigating...");
-            router.push({
-              pathname: "/oauth/callback" as any,
-              params: { code, state },
-            });
-          } else {
-            console.error("[Auth] Could not extract code/state from URL");
-          }
-        }
-      }
-    } catch (error) {
-      console.error("[Auth] Login error:", error);
-    } finally {
-      setIsLoggingIn(false);
+  const handleCopyEmail = useCallback(async () => {
+    if (forwardingData?.email) {
+      await Clipboard.setStringAsync(forwardingData.email);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
-  };
+  }, [forwardingData?.email]);
+
+  const handleRefresh = useCallback(async () => {
+    await Promise.all([refetchTrips(), refetchInbox()]);
+  }, [refetchTrips, refetchInbox]);
+
+  if (authLoading) {
+    return (
+      <ThemedView style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color={colors.tint} />
+      </ThemedView>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.welcomeContainer}>
+          <IconSymbol name="suitcase.fill" size={80} color={colors.tint} />
+          <ThemedText type="title" style={styles.welcomeTitle}>
+            Welcome to TripHub
+          </ThemedText>
+          <ThemedText style={[styles.welcomeSubtitle, { color: colors.textSecondary }]}>
+            Organize all your travel documents in one place
+          </ThemedText>
+          <Pressable
+            style={[styles.loginButton, { backgroundColor: colors.tint }]}
+            onPress={() => router.push("/oauth/callback")}
+          >
+            <ThemedText style={styles.loginButtonText}>Sign In to Get Started</ThemedText>
+          </Pressable>
+        </View>
+      </ThemedView>
+    );
+  }
 
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: "#A1CEDC", dark: "#1D3D47" }}
-      headerImage={
-        <Image
-          source={require("@/assets/images/partial-react-logo.png")}
-          style={styles.reactLogo}
-        />
-      }
-    >
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.authContainer}>
-        {loading ? (
-          <ActivityIndicator />
-        ) : isAuthenticated && user ? (
-          <ThemedView style={styles.userInfo}>
-            <ThemedText type="subtitle">Logged in as</ThemedText>
-            <ThemedText type="defaultSemiBold">{user.name || user.email || user.openId}</ThemedText>
-            <Pressable onPress={logout} style={styles.logoutButton}>
-              <ThemedText style={styles.logoutText}>Logout</ThemedText>
-            </Pressable>
-          </ThemedView>
-        ) : (
+    <ThemedView style={styles.container}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: Math.max(insets.top, 20), paddingBottom: insets.bottom + 20 },
+        ]}
+        refreshControl={
+          <RefreshControl refreshing={tripsLoading} onRefresh={handleRefresh} />
+        }
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <ThemedText type="title">
+            Hello{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
+          </ThemedText>
+          <ThemedText style={[styles.subtitle, { color: colors.textSecondary }]}>
+            Your travel documents, organized
+          </ThemedText>
+        </View>
+
+        {/* Forwarding Email Card */}
+        {forwardingData?.email && (
           <Pressable
-            onPress={handleLogin}
-            disabled={isLoggingIn}
-            style={[styles.loginButton, isLoggingIn && styles.loginButtonDisabled]}
+            style={[styles.emailCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={handleCopyEmail}
           >
-            {isLoggingIn ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <ThemedText style={styles.loginText}>Login</ThemedText>
-            )}
+            <View style={styles.emailCardContent}>
+              <IconSymbol name="envelope.fill" size={24} color={colors.tint} />
+              <View style={styles.emailTextContainer}>
+                <ThemedText style={[styles.emailLabel, { color: colors.textSecondary }]}>
+                  Forward bookings to:
+                </ThemedText>
+                <ThemedText type="defaultSemiBold" numberOfLines={1} style={styles.emailAddress}>
+                  {forwardingData.email}
+                </ThemedText>
+              </View>
+              <IconSymbol name="doc.on.clipboard" size={20} color={colors.textSecondary} />
+            </View>
           </Pressable>
         )}
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{" "}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: "cmd + d",
-              android: "cmd + m",
-              web: "F12",
-            })}
-          </ThemedText>{" "}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert("Action pressed")} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert("Share pressed")}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert("Delete pressed")}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{" "}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{" "}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{" "}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+        {/* Upcoming Trip Card */}
+        {upcomingTrip ? (
+          <Pressable
+            style={[styles.tripCard, { backgroundColor: colors.tint }]}
+            onPress={() => router.push(`/trip/${upcomingTrip.id}`)}
+          >
+            <View style={styles.tripCardHeader}>
+              <ThemedText style={styles.tripCardLabel}>UPCOMING TRIP</ThemedText>
+              {daysUntilTrip !== null && daysUntilTrip > 0 && (
+                <View style={styles.countdownBadge}>
+                  <ThemedText style={styles.countdownText}>
+                    {daysUntilTrip} day{daysUntilTrip !== 1 ? "s" : ""} away
+                  </ThemedText>
+                </View>
+              )}
+            </View>
+            <ThemedText style={styles.tripName}>{upcomingTrip.name}</ThemedText>
+            <ThemedText style={styles.tripDates}>
+              {new Date(upcomingTrip.startDate).toLocaleDateString()} -{" "}
+              {new Date(upcomingTrip.endDate).toLocaleDateString()}
+            </ThemedText>
+            <View style={styles.tripCardFooter}>
+              <ThemedText style={styles.docCount}>
+                {upcomingTrip.documentCount} document{upcomingTrip.documentCount !== 1 ? "s" : ""}
+              </ThemedText>
+              <IconSymbol name="chevron.right" size={20} color="rgba(255,255,255,0.8)" />
+            </View>
+          </Pressable>
+        ) : (
+          <View style={[styles.emptyTripCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <IconSymbol name="suitcase.fill" size={48} color={colors.textSecondary} />
+            <ThemedText type="subtitle" style={{ marginTop: Spacing.md }}>
+              No trips yet
+            </ThemedText>
+            <ThemedText style={[styles.emptyText, { color: colors.textSecondary }]}>
+              Create your first trip to get started
+            </ThemedText>
+          </View>
+        )}
+
+        {/* Quick Actions */}
+        <View style={styles.actionsSection}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>
+            Quick Actions
+          </ThemedText>
+          <View style={styles.actionsGrid}>
+            <Pressable
+              style={[styles.actionButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              onPress={() => router.push("/add-trip")}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.tint + "15" }]}>
+                <IconSymbol name="plus.circle.fill" size={28} color={colors.tint} />
+              </View>
+              <ThemedText type="defaultSemiBold">New Trip</ThemedText>
+            </Pressable>
+            
+            <Pressable
+              style={[styles.actionButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              onPress={() => router.push("/upload")}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.success + "15" }]}>
+                <IconSymbol name="doc.viewfinder" size={28} color={colors.success} />
+              </View>
+              <ThemedText type="defaultSemiBold">Upload Doc</ThemedText>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Inbox Preview */}
+        {inboxData && inboxData.count > 0 && (
+          <Pressable
+            style={[styles.inboxPreview, { backgroundColor: colors.warning + "15", borderColor: colors.warning }]}
+            onPress={() => router.push("/(tabs)/inbox")}
+          >
+            <View style={styles.inboxContent}>
+              <IconSymbol name="tray.fill" size={24} color={colors.warning} />
+              <View style={styles.inboxTextContainer}>
+                <ThemedText type="defaultSemiBold">
+                  {inboxData.count} document{inboxData.count !== 1 ? "s" : ""} in inbox
+                </ThemedText>
+                <ThemedText style={[styles.inboxSubtext, { color: colors.textSecondary }]}>
+                  Tap to assign to trips
+                </ThemedText>
+              </View>
+            </View>
+            <IconSymbol name="chevron.right" size={20} color={colors.warning} />
+          </Pressable>
+        )}
+      </ScrollView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: "row",
+  container: {
+    flex: 1,
+  },
+  centered: {
+    justifyContent: "center",
     alignItems: "center",
-    gap: 8,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  scrollView: {
+    flex: 1,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: "absolute",
+  scrollContent: {
+    paddingHorizontal: Spacing.md,
   },
-  authContainer: {
-    marginBottom: 16,
-    padding: 16,
-    borderRadius: 8,
-    backgroundColor: "rgba(0, 0, 0, 0.05)",
+  header: {
+    marginBottom: Spacing.lg,
   },
-  userInfo: {
-    gap: 8,
+  subtitle: {
+    marginTop: Spacing.xs,
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  welcomeContainer: {
+    flex: 1,
+    justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: Spacing.xl,
+  },
+  welcomeTitle: {
+    marginTop: Spacing.lg,
+    textAlign: "center",
+  },
+  welcomeSubtitle: {
+    marginTop: Spacing.sm,
+    textAlign: "center",
+    fontSize: 16,
+    lineHeight: 22,
   },
   loginButton: {
-    backgroundColor: "#007AFF",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 44,
+    marginTop: Spacing.xl,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: BorderRadius.md,
   },
-  loginButtonDisabled: {
-    opacity: 0.6,
-  },
-  loginText: {
-    color: "#fff",
-    fontSize: 16,
+  loginButtonText: {
+    color: "#FFFFFF",
+    fontSize: 17,
     fontWeight: "600",
+    lineHeight: 22,
   },
-  logoutButton: {
-    marginTop: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    backgroundColor: "rgba(255, 59, 48, 0.1)",
+  emailCard: {
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
   },
-  logoutText: {
-    color: "#FF3B30",
+  emailCardContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  emailTextContainer: {
+    flex: 1,
+  },
+  emailLabel: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  emailAddress: {
     fontSize: 14,
+    lineHeight: 20,
+  },
+  tripCard: {
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+  tripCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: Spacing.sm,
+  },
+  tripCardLabel: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 12,
+    fontWeight: "600",
+    letterSpacing: 0.5,
+    lineHeight: 16,
+  },
+  countdownBadge: {
+    backgroundColor: "rgba(255,255,255,0.2)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  countdownText: {
+    color: "#FFFFFF",
+    fontSize: 12,
     fontWeight: "500",
+    lineHeight: 16,
+  },
+  tripName: {
+    color: "#FFFFFF",
+    fontSize: 24,
+    fontWeight: "bold",
+    lineHeight: 30,
+  },
+  tripDates: {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 15,
+    marginTop: 4,
+    lineHeight: 20,
+  },
+  tripCardFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: Spacing.md,
+  },
+  docCount: {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 14,
+    lineHeight: 18,
+  },
+  emptyTripCard: {
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    padding: Spacing.xl,
+    alignItems: "center",
+    marginBottom: Spacing.lg,
+  },
+  emptyText: {
+    marginTop: Spacing.xs,
+    textAlign: "center",
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  actionsSection: {
+    marginBottom: Spacing.lg,
+  },
+  sectionTitle: {
+    marginBottom: Spacing.md,
+  },
+  actionsGrid: {
+    flexDirection: "row",
+    gap: Spacing.md,
+  },
+  actionButton: {
+    flex: 1,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    padding: Spacing.md,
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  actionIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  inboxPreview: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    padding: Spacing.md,
+  },
+  inboxContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  inboxTextContainer: {
+    gap: 2,
+  },
+  inboxSubtext: {
+    fontSize: 13,
+    lineHeight: 18,
   },
 });

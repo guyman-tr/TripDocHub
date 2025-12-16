@@ -9,21 +9,63 @@ type IconMapping = Record<SymbolViewProps["name"], ComponentProps<typeof Materia
 type IconSymbolName = keyof typeof MAPPING;
 
 /**
- * Add your SF Symbols to Material Icons mappings here.
- * - see Material Icons in the [Icons Directory](https://icons.expo.fyi).
- * - see SF Symbols in the [SF Symbols](https://developer.apple.com/sf-symbols/) app.
+ * SF Symbols to Material Icons mappings for TripHub
  */
 const MAPPING = {
+  // Tab bar icons
   "house.fill": "home",
+  "suitcase.fill": "luggage",
+  "tray.fill": "inbox",
+  "person.fill": "person",
+  
+  // Navigation
+  "chevron.right": "chevron-right",
+  "chevron.left": "chevron-left",
+  "chevron.down": "expand-more",
+  "chevron.up": "expand-less",
+  "xmark": "close",
+  
+  // Actions
+  "plus": "add",
+  "plus.circle.fill": "add-circle",
+  "trash.fill": "delete",
+  "pencil": "edit",
+  "square.and.arrow.up": "share",
+  "doc.viewfinder": "document-scanner",
+  "camera.fill": "photo-camera",
+  "photo.fill": "photo-library",
+  "arrow.right.arrow.left": "swap-horiz",
+  "checkmark": "check",
+  "checkmark.circle.fill": "check-circle",
+  
+  // Document categories
+  "airplane": "flight",
+  "car.fill": "directions-car",
+  "bed.double.fill": "hotel",
+  "cross.case.fill": "local-hospital",
+  "ticket.fill": "confirmation-number",
+  "doc.fill": "description",
+  "folder.fill": "folder",
+  
+  // Status & info
+  "envelope.fill": "email",
+  "doc.on.clipboard": "content-paste",
+  "calendar": "event",
+  "clock.fill": "schedule",
+  "location.fill": "location-on",
+  "info.circle.fill": "info",
+  "exclamationmark.triangle.fill": "warning",
+  
+  // Misc
   "paperplane.fill": "send",
   "chevron.left.forwardslash.chevron.right": "code",
-  "chevron.right": "chevron-right",
+  "gearshape.fill": "settings",
+  "arrow.clockwise": "refresh",
+  "magnifyingglass": "search",
 } as IconMapping;
 
 /**
  * An icon component that uses native SF Symbols on iOS, and Material Icons on Android and web.
- * This ensures a consistent look across platforms, and optimal resource usage.
- * Icon `name`s are based on SF Symbols and require manual mapping to Material Icons.
  */
 export function IconSymbol({
   name,
@@ -39,3 +81,5 @@ export function IconSymbol({
 }) {
   return <MaterialIcons color={color} size={size} name={MAPPING[name]} style={style} />;
 }
+
+export type { IconSymbolName };

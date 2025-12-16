@@ -1,41 +1,72 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * TripHub Theme Configuration
+ * Colors follow iOS Human Interface Guidelines with travel-inspired accents
  */
 
 import { Platform } from "react-native";
 
-const tintColorLight = "#0a7ea4";
-const tintColorDark = "#fff";
+// Primary brand colors
+const tintColorLight = "#007AFF"; // iOS Blue
+const tintColorDark = "#0A84FF"; // iOS Blue (Dark)
 
 export const Colors = {
   light: {
-    text: "#11181C",
-    background: "#fff",
+    text: "#000000",
+    textSecondary: "#8E8E93",
+    textDisabled: "#C7C7CC",
+    background: "#F2F2F7",
+    surface: "#FFFFFF",
     tint: tintColorLight,
-    icon: "#687076",
-    tabIconDefault: "#687076",
+    icon: "#8E8E93",
+    tabIconDefault: "#8E8E93",
     tabIconSelected: tintColorLight,
+    success: "#34C759",
+    warning: "#FF9500",
+    destructive: "#FF3B30",
+    border: "#C6C6C8",
   },
   dark: {
-    text: "#ECEDEE",
-    background: "#151718",
+    text: "#FFFFFF",
+    textSecondary: "#8E8E93",
+    textDisabled: "#48484A",
+    background: "#000000",
+    surface: "#1C1C1E",
     tint: tintColorDark,
-    icon: "#9BA1A6",
-    tabIconDefault: "#9BA1A6",
+    icon: "#8E8E93",
+    tabIconDefault: "#8E8E93",
     tabIconSelected: tintColorDark,
+    success: "#30D158",
+    warning: "#FF9F0A",
+    destructive: "#FF453A",
+    border: "#38383A",
   },
+};
+
+// Document category colors
+export const CategoryColors = {
+  flight: "#5856D6", // Purple
+  carRental: "#FF9500", // Orange
+  accommodation: "#34C759", // Green
+  medical: "#FF3B30", // Red
+  event: "#AF52DE", // Magenta
+  other: "#8E8E93", // Gray
+};
+
+// Category icons (SF Symbols names)
+export const CategoryIcons = {
+  flight: "airplane",
+  carRental: "car.fill",
+  accommodation: "bed.double.fill",
+  medical: "cross.case.fill",
+  event: "ticket.fill",
+  other: "doc.fill",
 };
 
 export const Fonts = Platform.select({
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
     sans: "system-ui",
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
     serif: "ui-serif",
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
     rounded: "ui-rounded",
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
     mono: "ui-monospace",
   },
   default: {
@@ -51,3 +82,21 @@ export const Fonts = Platform.select({
     mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
   },
 });
+
+// Spacing constants (8pt grid)
+export const Spacing = {
+  xs: 4,
+  sm: 8,
+  md: 16,
+  lg: 24,
+  xl: 32,
+};
+
+// Border radius constants
+export const BorderRadius = {
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  full: 9999,
+};
