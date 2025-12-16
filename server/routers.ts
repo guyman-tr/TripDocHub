@@ -239,7 +239,9 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
+        console.log("[parseAndCreate] Starting parse for:", input.fileUrl);
         const parseResult = await parseDocument(input.fileUrl, input.mimeType);
+        console.log("[parseAndCreate] Parse result:", JSON.stringify(parseResult, null, 2));
         const createdDocs: number[] = [];
         let autoAssignedTripId: number | null = null;
         let autoAssignedTripName: string | null = null;
@@ -247,15 +249,58 @@ export const appRouter = router({
         let hasDuplicates = false;
         let duplicateInfo: any[] = [];
 
+        // First, check for exact content hash match (same file uploaded again)
+        if (!input.skipDuplicateCheck && parseResult.contentHash) {
+          const exactDuplicate = await db.getDocumentByContentHash(ctx.user.id, parseResult.contentHash);
+          if (exactDuplicate) {
+            console.log("[parseAndCreate] Exact duplicate found by content hash:", exactDuplicate.id);
+            hasDuplicates = true;
+            // Return the existing document as a duplicate for ALL parsed docs
+            for (const doc of parseResult.documents) {
+              duplicateInfo.push({
+                parsedDoc: doc,
+                duplicates: [{
+                  id: exactDuplicate.id,
+                  title: exactDuplicate.title,
+                  subtitle: exactDuplicate.subtitle,
+                  category: exactDuplicate.category,
+                  tripId: exactDuplicate.tripId,
+                  matchScore: 100,
+                  matchedFields: ["contentHash (exact file match)"],
+                }],
+              });
+            }
+            // Return early with duplicate info
+            const result = {
+              documentIds: [],
+              count: 0,
+              autoAssignedTripId: null,
+              autoAssignedTripName: null,
+              needsManualAssignment: false,
+              hasDuplicates: true,
+              duplicateInfo,
+              fileUrl: input.fileUrl,
+              contentHash: parseResult.contentHash,
+            };
+            console.log("[parseAndCreate] Returning exact duplicate result:", JSON.stringify(result, null, 2));
+            return result;
+          }
+        }
+
         for (const doc of parseResult.documents) {
-          // Check for duplicates if not skipping
+          console.log("[parseAndCreate] Processing doc:", doc.title, "category:", doc.category);
+          console.log("[parseAndCreate] Doc details:", JSON.stringify(doc.details));
+          
+          // Check for duplicates by details if not skipping
           if (!input.skipDuplicateCheck) {
             const duplicates = await db.findPotentialDuplicates(
               ctx.user.id,
               doc.category,
               doc.details || {}
             );
+            console.log("[parseAndCreate] Found detail-based duplicates:", duplicates.length);
             if (duplicates.length > 0) {
+              console.log("[parseAndCreate] Duplicate match:", JSON.stringify(duplicates[0]));
               hasDuplicates = true;
               duplicateInfo.push({
                 parsedDoc: doc,
@@ -305,7 +350,7 @@ export const appRouter = router({
           createdDocs.push(docId);
         }
 
-        return {
+        const result = {
           documentIds: createdDocs,
           count: createdDocs.length,
           autoAssignedTripId,
@@ -316,6 +361,8 @@ export const appRouter = router({
           fileUrl: input.fileUrl,
           contentHash: parseResult.contentHash,
         };
+        console.log("[parseAndCreate] Returning result:", JSON.stringify(result, null, 2));
+        return result;
       }),
   }),
 

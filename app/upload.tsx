@@ -23,26 +23,6 @@ import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { trpc } from "@/lib/trpc";
 
-interface DuplicateInfo {
-  id: number;
-  title: string;
-  subtitle: string | null;
-  category: string;
-  tripId: number | null;
-  matchScore: number;
-  matchedFields: string[];
-}
-
-interface ParsedDocWithDuplicates {
-  category: string;
-  documentType: string;
-  title: string;
-  subtitle: string | null;
-  details: Record<string, string> | null;
-  documentDate: Date | null;
-  potentialDuplicates: DuplicateInfo[];
-}
-
 export default function UploadScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ tripId?: string }>();
@@ -64,15 +44,6 @@ export default function UploadScreen() {
   // Manual assignment modal state
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [pendingDocumentIds, setPendingDocumentIds] = useState<number[]>([]);
-  
-  // Duplicate detection modal state
-  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
-  const [duplicateData, setDuplicateData] = useState<{
-    parsedDoc: ParsedDocWithDuplicates;
-    fileUrl: string;
-    contentHash: string;
-    bestMatch: DuplicateInfo;
-  } | null>(null);
 
   // Ref for web file input
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -91,74 +62,8 @@ export default function UploadScreen() {
     },
   });
 
-  // Create document after duplicate decision
-  const createAfterParseMutation = trpc.documents.createAfterParse.useMutation({
-    onSuccess: (data) => {
-      utils.documents.inbox.invalidate();
-      utils.documents.inboxCount.invalidate();
-      utils.trips.list.invalidate();
-      
-      if (data.action === "skipped") {
-        Alert.alert("Upload Cancelled", "The document was not saved.", [
-          { text: "OK", onPress: () => router.back() },
-        ]);
-        return;
-      }
-      
-      if (data.action === "updated") {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert("Document Updated", "The existing document has been updated with the new information.", [
-          { text: "OK", onPress: () => router.back() },
-        ]);
-        return;
-      }
-      
-      // Created new document
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      
-      if (data.needsManualAssignment && !tripId) {
-        if (data.documentId) {
-          setPendingDocumentIds([data.documentId]);
-          setShowAssignModal(true);
-        }
-      } else if (data.autoAssignedTripId && data.autoAssignedTripName) {
-        Alert.alert(
-          "Document Processed",
-          `Document automatically assigned to "${data.autoAssignedTripName}".`,
-          [{ text: "OK", onPress: () => router.back() }]
-        );
-      } else {
-        Alert.alert(
-          "Document Processed",
-          "Your document has been processed and saved.",
-          [{ text: "OK", onPress: () => router.back() }]
-        );
-      }
-    },
-    onError: (error) => {
-      console.error("Create error:", error);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert("Save Failed", error.message || "Please try again.");
-    },
-  });
-
   const parseAndCreateMutation = trpc.documents.parseAndCreate.useMutation({
     onSuccess: (data) => {
-      // Check if duplicates were found
-      if (data.hasDuplicates && data.duplicateInfo && data.duplicateInfo.length > 0) {
-        const firstDuplicate = data.duplicateInfo[0];
-        const bestMatch = firstDuplicate.duplicates[0];
-        
-        setDuplicateData({
-          parsedDoc: firstDuplicate.parsedDoc,
-          fileUrl: data.fileUrl,
-          contentHash: data.contentHash || "",
-          bestMatch,
-        });
-        setShowDuplicateModal(true);
-        return;
-      }
-      
       utils.documents.inbox.invalidate();
       utils.documents.inboxCount.invalidate();
       if (tripId || data.autoAssignedTripId) {
@@ -200,197 +105,136 @@ export default function UploadScreen() {
     },
   });
 
-  const handleDuplicateAction = async (action: "create" | "update" | "skip") => {
-    if (!duplicateData) return;
-    
-    setShowDuplicateModal(false);
-    setIsUploading(true);
-    setUploadStatus(action === "update" ? "Updating document..." : "Creating document...");
-    
-    try {
-      await createAfterParseMutation.mutateAsync({
-        fileUrl: duplicateData.fileUrl,
-        category: duplicateData.parsedDoc.category,
-        documentType: duplicateData.parsedDoc.documentType,
-        title: duplicateData.parsedDoc.title,
-        subtitle: duplicateData.parsedDoc.subtitle,
-        details: duplicateData.parsedDoc.details || undefined,
-        documentDate: duplicateData.parsedDoc.documentDate?.toISOString() || null,
-        contentHash: duplicateData.contentHash,
-        tripId: tripId,
-        duplicateAction: action,
-        existingDocumentId: action === "update" ? duplicateData.bestMatch.id : undefined,
-      });
-    } catch (error) {
-      console.error("Duplicate action error:", error);
-    } finally {
-      setIsUploading(false);
-      setUploadStatus("");
-      setDuplicateData(null);
-    }
-  };
-
   const handleAssignToTrip = async (selectedTripId: number | null) => {
     setShowAssignModal(false);
     
-    for (const docId of pendingDocumentIds) {
-      await assignMutation.mutateAsync({ documentId: docId, tripId: selectedTripId });
+    if (pendingDocumentIds.length > 0) {
+      try {
+        for (const docId of pendingDocumentIds) {
+          await assignMutation.mutateAsync({ documentId: docId, tripId: selectedTripId });
+        }
+        
+        if (selectedTripId) {
+          const trip = trips?.find(t => t.id === selectedTripId);
+          Alert.alert(
+            "Document Assigned",
+            `Document assigned to "${trip?.name || 'trip'}".`,
+            [{ text: "OK", onPress: () => router.back() }]
+          );
+        } else {
+          Alert.alert(
+            "Document Saved",
+            "Document saved to your inbox.",
+            [{ text: "OK", onPress: () => router.back() }]
+          );
+        }
+      } catch (error) {
+        console.error("Assignment error:", error);
+        Alert.alert("Assignment Failed", "Please try again.");
+      }
+    } else {
+      router.back();
     }
-    
-    if (selectedTripId) {
-      utils.documents.byTrip.invalidate({ tripId: selectedTripId });
-    }
-    
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    
-    const tripName = selectedTripId 
-      ? trips?.find(t => t.id === selectedTripId)?.name 
-      : "Inbox";
-    
-    Alert.alert(
-      "Document Assigned",
-      `Document has been assigned to ${tripName}.`,
-      [{ text: "OK", onPress: () => router.back() }]
-    );
   };
 
   const handleTakePhoto = useCallback(async () => {
-    if (Platform.OS === "web") {
-      Alert.alert("Not Available", "Camera is not available in web browser. Please use 'Choose File' instead.");
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission Required", "Camera access is needed to take photos.");
       return;
     }
-    try {
-      const permission = await ImagePicker.requestCameraPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert("Permission Required", "Camera access is needed to take photos.");
-        return;
-      }
 
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ["images"],
-        quality: 0.8,
-        allowsEditing: false,
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["images"],
+      quality: 0.8,
+      allowsEditing: false,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      setSelectedFile({
+        uri: asset.uri,
+        name: `photo_${Date.now()}.jpg`,
+        type: asset.mimeType || "image/jpeg",
       });
-
-      if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0];
-        setSelectedFile({
-          uri: asset.uri,
-          name: asset.fileName || "photo.jpg",
-          type: asset.mimeType || "image/jpeg",
-        });
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }
-    } catch (error) {
-      console.error("Camera error:", error);
-      Alert.alert("Error", "Failed to take photo. Please try again.");
     }
   }, []);
 
   const handleChooseFromLibrary = useCallback(async () => {
-    if (Platform.OS === "web") {
-      if (fileInputRef.current) {
-        fileInputRef.current.accept = "image/*";
-        fileInputRef.current.click();
-      }
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission Required", "Photo library access is needed.");
       return;
     }
-    try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert("Permission Required", "Photo library access is needed.");
-        return;
-      }
 
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        quality: 0.8,
-        allowsEditing: false,
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.8,
+      allowsEditing: false,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      setSelectedFile({
+        uri: asset.uri,
+        name: asset.fileName || `image_${Date.now()}.jpg`,
+        type: asset.mimeType || "image/jpeg",
       });
-
-      if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0];
-        setSelectedFile({
-          uri: asset.uri,
-          name: asset.fileName || "image.jpg",
-          type: asset.mimeType || "image/jpeg",
-        });
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }
-    } catch (error) {
-      console.error("Library error:", error);
-      Alert.alert("Error", "Failed to select image. Please try again.");
     }
   }, []);
 
   const handleChooseDocument = useCallback(async () => {
-    if (Platform.OS === "web") {
-      if (fileInputRef.current) {
-        fileInputRef.current.accept = "application/pdf,image/*";
-        fileInputRef.current.click();
-      }
+    // On web, use native file input
+    if (Platform.OS === "web" && fileInputRef.current) {
+      fileInputRef.current.click();
       return;
     }
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ["application/pdf", "image/*"],
-        copyToCacheDirectory: true,
-      });
 
-      if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0];
-        setSelectedFile({
-          uri: asset.uri,
-          name: asset.name,
-          type: asset.mimeType || "application/pdf",
-        });
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }
-    } catch (error) {
-      console.error("Document picker error:", error);
-      Alert.alert("Error", "Failed to select document. Please try again.");
+    const result = await DocumentPicker.getDocumentAsync({
+      type: ["application/pdf", "image/*"],
+      copyToCacheDirectory: true,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      setSelectedFile({
+        uri: asset.uri,
+        name: asset.name,
+        type: asset.mimeType || "application/pdf",
+      });
     }
   }, []);
 
   const handleWebFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const uri = URL.createObjectURL(file);
       setSelectedFile({
-        uri,
+        uri: URL.createObjectURL(file),
         name: file.name,
         type: file.type,
-        file,
+        file: file,
       });
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    if (event.target) {
-      event.target.value = "";
-    }
+    // Reset the input so the same file can be selected again
+    event.target.value = "";
   }, []);
 
   const handleUpload = useCallback(async () => {
     if (!selectedFile) return;
 
     setIsUploading(true);
-    setUploadStatus("Uploading file...");
-    
+    setUploadStatus("Preparing upload...");
+
     try {
       const formData = new FormData();
       
-      if (Platform.OS === "web") {
-        if (selectedFile.file) {
-          formData.append("file", selectedFile.file, selectedFile.name);
-        } else {
-          const response = await fetch(selectedFile.uri);
-          const blob = await response.blob();
-          formData.append("file", blob, selectedFile.name);
-        }
+      if (Platform.OS === "web" && selectedFile.file) {
+        formData.append("file", selectedFile.file);
       } else {
         formData.append("file", {
           uri: selectedFile.uri,
-          type: selectedFile.type,
           name: selectedFile.name,
+          type: selectedFile.type,
         } as any);
       }
 
@@ -416,6 +260,7 @@ export default function UploadScreen() {
         fileUrl,
         mimeType: selectedFile.type,
         tripId: tripId,
+        skipDuplicateCheck: true, // Always skip duplicate check now
       });
       
     } catch (error: any) {
@@ -436,28 +281,6 @@ export default function UploadScreen() {
     });
   };
 
-  const formatMatchedFields = (fields: string[]) => {
-    const fieldLabels: Record<string, string> = {
-      confirmationNumber: "Confirmation #",
-      flightNumber: "Flight #",
-      departureAirport: "Departure",
-      arrivalAirport: "Arrival",
-      departureTime: "Departure Time",
-      hotelName: "Hotel",
-      checkInDate: "Check-in",
-      checkOutDate: "Check-out",
-      carCompany: "Car Company",
-      pickupLocation: "Pickup",
-      pickupTime: "Pickup Time",
-      policyNumber: "Policy #",
-      insuranceProvider: "Provider",
-      eventName: "Event",
-      eventDate: "Event Date",
-      venue: "Venue",
-    };
-    return fields.map(f => fieldLabels[f] || f).join(", ");
-  };
-
   return (
     <ThemedView style={styles.container}>
       {/* Hidden file input for web */}
@@ -470,115 +293,6 @@ export default function UploadScreen() {
           accept="application/pdf,image/*"
         />
       )}
-
-      {/* Duplicate Detection Modal */}
-      <Modal
-        visible={showDuplicateModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowDuplicateModal(false)}
-      >
-        <ThemedView style={styles.modalContainer}>
-          <View style={[styles.modalHeader, { paddingTop: Math.max(insets.top, 20) }]}>
-            <ThemedText type="subtitle">Duplicate Detected</ThemedText>
-            <Pressable onPress={() => {
-              setShowDuplicateModal(false);
-              setDuplicateData(null);
-            }} style={styles.modalCloseButton}>
-              <IconSymbol name="xmark" size={24} color={colors.text} />
-            </Pressable>
-          </View>
-          
-          <ScrollView style={styles.modalContent} contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
-            <View style={[styles.duplicateBanner, { backgroundColor: colors.warning + "15" }]}>
-              <IconSymbol name="exclamationmark.triangle.fill" size={28} color={colors.warning} />
-              <View style={styles.duplicateBannerText}>
-                <ThemedText type="defaultSemiBold">This document already exists</ThemedText>
-                <ThemedText style={[styles.duplicateDescription, { color: colors.textSecondary }]}>
-                  We found a similar document in your library. What would you like to do?
-                </ThemedText>
-              </View>
-            </View>
-
-            {duplicateData && (
-              <>
-                {/* New document info */}
-                <View style={[styles.docCompareCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                  <View style={styles.docCompareHeader}>
-                    <View style={[styles.docCompareLabel, { backgroundColor: colors.tint + "15" }]}>
-                      <ThemedText style={[styles.docCompareLabelText, { color: colors.tint }]}>NEW</ThemedText>
-                    </View>
-                    <ThemedText type="defaultSemiBold" style={styles.docCompareTitle}>
-                      {duplicateData.parsedDoc.title}
-                    </ThemedText>
-                  </View>
-                  {duplicateData.parsedDoc.subtitle && (
-                    <ThemedText style={[styles.docCompareSubtitle, { color: colors.textSecondary }]}>
-                      {duplicateData.parsedDoc.subtitle}
-                    </ThemedText>
-                  )}
-                </View>
-
-                {/* Match info */}
-                <View style={styles.matchInfo}>
-                  <ThemedText style={[styles.matchScore, { color: colors.warning }]}>
-                    {duplicateData.bestMatch.matchScore}% match
-                  </ThemedText>
-                  <ThemedText style={[styles.matchFields, { color: colors.textSecondary }]}>
-                    Matching: {formatMatchedFields(duplicateData.bestMatch.matchedFields)}
-                  </ThemedText>
-                </View>
-
-                {/* Existing document info */}
-                <View style={[styles.docCompareCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                  <View style={styles.docCompareHeader}>
-                    <View style={[styles.docCompareLabel, { backgroundColor: colors.textSecondary + "15" }]}>
-                      <ThemedText style={[styles.docCompareLabelText, { color: colors.textSecondary }]}>EXISTING</ThemedText>
-                    </View>
-                    <ThemedText type="defaultSemiBold" style={styles.docCompareTitle}>
-                      {duplicateData.bestMatch.title}
-                    </ThemedText>
-                  </View>
-                  {duplicateData.bestMatch.subtitle && (
-                    <ThemedText style={[styles.docCompareSubtitle, { color: colors.textSecondary }]}>
-                      {duplicateData.bestMatch.subtitle}
-                    </ThemedText>
-                  )}
-                </View>
-
-                {/* Action buttons */}
-                <View style={styles.duplicateActions}>
-                  <Pressable
-                    style={[styles.duplicateActionButton, { backgroundColor: colors.tint }]}
-                    onPress={() => handleDuplicateAction("create")}
-                  >
-                    <IconSymbol name="plus" size={20} color="#FFFFFF" />
-                    <ThemedText style={styles.duplicateActionButtonText}>Create New Document</ThemedText>
-                  </Pressable>
-                  
-                  <Pressable
-                    style={[styles.duplicateActionButton, { backgroundColor: colors.success }]}
-                    onPress={() => handleDuplicateAction("update")}
-                  >
-                    <IconSymbol name="arrow.triangle.2.circlepath" size={20} color="#FFFFFF" />
-                    <ThemedText style={styles.duplicateActionButtonText}>Update Existing</ThemedText>
-                  </Pressable>
-                  
-                  <Pressable
-                    style={[styles.duplicateActionButtonOutline, { borderColor: colors.border }]}
-                    onPress={() => handleDuplicateAction("skip")}
-                  >
-                    <IconSymbol name="xmark" size={20} color={colors.textSecondary} />
-                    <ThemedText style={[styles.duplicateActionButtonTextOutline, { color: colors.textSecondary }]}>
-                      Cancel Upload
-                    </ThemedText>
-                  </Pressable>
-                </View>
-              </>
-            )}
-          </ScrollView>
-        </ThemedView>
-      </Modal>
 
       {/* Manual Assignment Modal */}
       <Modal
@@ -955,95 +669,5 @@ const styles = StyleSheet.create({
   emptyTrips: {
     padding: Spacing.lg,
     alignItems: "center",
-  },
-  // Duplicate modal styles
-  duplicateBanner: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: Spacing.md,
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.md,
-    marginBottom: Spacing.lg,
-  },
-  duplicateBannerText: {
-    flex: 1,
-  },
-  duplicateDescription: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 4,
-  },
-  docCompareCard: {
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    marginBottom: Spacing.sm,
-  },
-  docCompareHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-  },
-  docCompareLabel: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  docCompareLabelText: {
-    fontSize: 10,
-    fontWeight: "700",
-  },
-  docCompareTitle: {
-    flex: 1,
-  },
-  docCompareSubtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 4,
-    marginLeft: 50,
-  },
-  matchInfo: {
-    alignItems: "center",
-    paddingVertical: Spacing.md,
-  },
-  matchScore: {
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  matchFields: {
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 4,
-    textAlign: "center",
-  },
-  duplicateActions: {
-    gap: Spacing.sm,
-    marginTop: Spacing.lg,
-  },
-  duplicateActionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: Spacing.sm,
-    height: 52,
-    borderRadius: BorderRadius.md,
-  },
-  duplicateActionButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  duplicateActionButtonOutline: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: Spacing.sm,
-    height: 52,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-  },
-  duplicateActionButtonTextOutline: {
-    fontSize: 16,
-    fontWeight: "600",
   },
 });
