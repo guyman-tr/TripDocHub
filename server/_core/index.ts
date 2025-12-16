@@ -2,11 +2,20 @@ import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
+import multer from "multer";
+import cookieParser from "cookie-parser";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import mailgunWebhook from "../webhooks/mailgun";
+import { storagePut } from "../storage";
+import { nanoid } from "nanoid";
+import { COOKIE_NAME } from "../../shared/const";
+import { sdk } from "./sdk";
+import { getDb } from "../db";
+import { users } from "../../drizzle/schema";
+import { eq } from "drizzle-orm";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -26,6 +35,14 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
   }
   throw new Error(`No available port found starting from ${startPort}`);
 }
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 20 * 1024 * 1024, // 20MB limit
+  },
+});
 
 async function startServer() {
   const app = express();
@@ -52,6 +69,7 @@ async function startServer() {
     next();
   });
 
+  app.use(cookieParser());
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
@@ -59,6 +77,51 @@ async function startServer() {
 
   app.get("/api/health", (_req, res) => {
     res.json({ ok: true, timestamp: Date.now() });
+  });
+
+  // File upload endpoint
+  app.post("/api/upload", upload.single("file"), async (req, res) => {
+    try {
+      // Check authentication using the SDK
+      const sessionCookie = req.cookies[COOKIE_NAME];
+      const session = await sdk.verifySession(sessionCookie);
+      
+      if (!session) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+
+      // Get the user from the database
+      const db = await getDb();
+      if (!db) {
+        res.status(500).json({ error: "Database not available" });
+        return;
+      }
+
+      const [user] = await db.select().from(users).where(eq(users.openId, session.openId)).limit(1);
+      if (!user) {
+        res.status(401).json({ error: "User not found" });
+        return;
+      }
+
+      const file = req.file;
+      if (!file) {
+        res.status(400).json({ error: "No file provided" });
+        return;
+      }
+
+      // Generate a unique file key
+      const ext = file.originalname.split(".").pop() || "bin";
+      const fileKey = `documents/${user.id}/${nanoid()}.${ext}`;
+
+      // Upload to S3
+      const result = await storagePut(fileKey, file.buffer, file.mimetype);
+
+      res.json({ url: result.url, key: result.key });
+    } catch (error: any) {
+      console.error("Upload error:", error);
+      res.status(500).json({ error: error.message || "Upload failed" });
+    }
   });
 
   // Mailgun webhook for email forwarding

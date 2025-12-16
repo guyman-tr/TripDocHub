@@ -199,8 +199,8 @@ export default function TripDetailScreen() {
   );
 
   const handleUpload = useCallback(() => {
-    router.push("/upload" as any);
-  }, [router]);
+    router.push(`/upload?tripId=${tripId}` as any);
+  }, [router, tripId]);
 
   if (tripLoading || docsLoading) {
     return (

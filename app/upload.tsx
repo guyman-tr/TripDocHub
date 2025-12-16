@@ -1,5 +1,5 @@
-import { useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { useCallback, useState, useRef } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -7,6 +7,7 @@ import {
   StyleSheet,
   View,
   Alert,
+  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
@@ -18,21 +19,62 @@ import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { trpc } from "@/lib/trpc";
 
 export default function UploadScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ tripId?: string }>();
+  const tripId = params.tripId ? parseInt(params.tripId, 10) : null;
+  
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
 
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<{
     uri: string;
     name: string;
     type: string;
+    file?: File; // Store the actual File object for web
   } | null>(null);
 
+  // Ref for web file input
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const utils = trpc.useUtils();
+  const parseAndCreateMutation = trpc.documents.parseAndCreate.useMutation({
+    onSuccess: (data) => {
+      utils.documents.inbox.invalidate();
+      utils.documents.inboxCount.invalidate();
+      if (tripId) {
+        utils.documents.byTrip.invalidate({ tripId });
+        utils.trips.list.invalidate();
+      }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      
+      const message = data.count === 1 
+        ? "Your document has been processed and saved."
+        : `${data.count} documents were extracted and saved.`;
+      
+      Alert.alert(
+        "Document Processed",
+        message,
+        [{ text: "OK", onPress: () => router.back() }]
+      );
+    },
+    onError: (error) => {
+      console.error("Parse error:", error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert("Processing Failed", error.message || "Please try again.");
+    },
+  });
+
   const handleTakePhoto = useCallback(async () => {
+    if (Platform.OS === "web") {
+      Alert.alert("Not Available", "Camera is not available in web browser. Please use 'Choose File' instead.");
+      return;
+    }
     try {
       const permission = await ImagePicker.requestCameraPermissionsAsync();
       if (!permission.granted) {
@@ -62,6 +104,14 @@ export default function UploadScreen() {
   }, []);
 
   const handleChooseFromLibrary = useCallback(async () => {
+    if (Platform.OS === "web") {
+      // On web, trigger the file input for images
+      if (fileInputRef.current) {
+        fileInputRef.current.accept = "image/*";
+        fileInputRef.current.click();
+      }
+      return;
+    }
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
@@ -91,6 +141,14 @@ export default function UploadScreen() {
   }, []);
 
   const handleChooseDocument = useCallback(async () => {
+    if (Platform.OS === "web") {
+      // On web, trigger the file input for PDFs and images
+      if (fileInputRef.current) {
+        fileInputRef.current.accept = "application/pdf,image/*";
+        fileInputRef.current.click();
+      }
+      return;
+    }
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: ["application/pdf", "image/*"],
@@ -112,32 +170,104 @@ export default function UploadScreen() {
     }
   }, []);
 
+  // Handle web file input change
+  const handleWebFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const uri = URL.createObjectURL(file);
+      setSelectedFile({
+        uri,
+        name: file.name,
+        type: file.type,
+        file, // Store the actual File object
+      });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    // Reset the input so the same file can be selected again
+    if (event.target) {
+      event.target.value = "";
+    }
+  }, []);
+
   const handleUpload = useCallback(async () => {
     if (!selectedFile) return;
 
     setIsUploading(true);
+    setUploadStatus("Uploading file...");
+    
     try {
-      // TODO: Implement actual upload and AI parsing
-      // For now, simulate upload
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Step 1: Upload file to S3 via our API
+      const formData = new FormData();
       
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert(
-        "Document Uploaded",
-        "Your document has been uploaded and is being processed. It will appear in your inbox shortly.",
-        [{ text: "OK", onPress: () => router.back() }]
-      );
-    } catch (error) {
+      // Handle file differently based on platform
+      if (Platform.OS === "web") {
+        if (selectedFile.file) {
+          // Use the actual File object if available
+          formData.append("file", selectedFile.file, selectedFile.name);
+        } else {
+          // Fallback: fetch the blob URL
+          const response = await fetch(selectedFile.uri);
+          const blob = await response.blob();
+          formData.append("file", blob, selectedFile.name);
+        }
+      } else {
+        // On native, use the URI directly
+        formData.append("file", {
+          uri: selectedFile.uri,
+          type: selectedFile.type,
+          name: selectedFile.name,
+        } as any);
+      }
+
+      // Get the API base URL
+      const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || "";
+      
+      setUploadStatus("Uploading to server...");
+      const uploadResponse = await fetch(`${apiBaseUrl}/api/upload`, {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        throw new Error(`Upload failed: ${errorText}`);
+      }
+
+      const uploadResult = await uploadResponse.json();
+      const fileUrl = uploadResult.url;
+
+      // Step 2: Parse the document with AI
+      setUploadStatus("Analyzing document with AI...");
+      await parseAndCreateMutation.mutateAsync({
+        fileUrl,
+        mimeType: selectedFile.type,
+        tripId: tripId,
+      });
+      
+    } catch (error: any) {
       console.error("Upload error:", error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert("Upload Failed", "Please try again.");
+      Alert.alert("Upload Failed", error.message || "Please try again.");
     } finally {
       setIsUploading(false);
+      setUploadStatus("");
     }
-  }, [selectedFile, router]);
+  }, [selectedFile, tripId, parseAndCreateMutation]);
 
   return (
     <ThemedView style={styles.container}>
+      {/* Hidden file input for web */}
+      {Platform.OS === "web" && (
+        <input
+          ref={fileInputRef as any}
+          type="file"
+          style={{ display: "none" }}
+          onChange={handleWebFileChange as any}
+          accept="application/pdf,image/*"
+        />
+      )}
+
       {/* Header */}
       <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
         <Pressable onPress={() => router.back()} style={styles.closeButton}>
@@ -166,6 +296,7 @@ export default function UploadScreen() {
           <Pressable
             style={[styles.optionButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={handleTakePhoto}
+            disabled={isUploading}
           >
             <View style={[styles.optionIcon, { backgroundColor: colors.tint + "15" }]}>
               <IconSymbol name="camera.fill" size={32} color={colors.tint} />
@@ -179,6 +310,7 @@ export default function UploadScreen() {
           <Pressable
             style={[styles.optionButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={handleChooseFromLibrary}
+            disabled={isUploading}
           >
             <View style={[styles.optionIcon, { backgroundColor: colors.success + "15" }]}>
               <IconSymbol name="photo.fill" size={32} color={colors.success} />
@@ -192,6 +324,7 @@ export default function UploadScreen() {
           <Pressable
             style={[styles.optionButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={handleChooseDocument}
+            disabled={isUploading}
           >
             <View style={[styles.optionIcon, { backgroundColor: colors.warning + "15" }]}>
               <IconSymbol name="doc.fill" size={32} color={colors.warning} />
@@ -221,12 +354,14 @@ export default function UploadScreen() {
                 </ThemedText>
               </View>
             </View>
-            <Pressable
-              onPress={() => setSelectedFile(null)}
-              style={styles.removeButton}
-            >
-              <IconSymbol name="xmark" size={18} color={colors.textSecondary} />
-            </Pressable>
+            {!isUploading && (
+              <Pressable
+                onPress={() => setSelectedFile(null)}
+                style={styles.removeButton}
+              >
+                <IconSymbol name="xmark" size={18} color={colors.textSecondary} />
+              </Pressable>
+            )}
           </View>
         )}
       </ScrollView>
@@ -242,7 +377,7 @@ export default function UploadScreen() {
             {isUploading ? (
               <View style={styles.uploadingContent}>
                 <ActivityIndicator color="#FFFFFF" />
-                <ThemedText style={styles.uploadButtonText}>Processing...</ThemedText>
+                <ThemedText style={styles.uploadButtonText}>{uploadStatus || "Processing..."}</ThemedText>
               </View>
             ) : (
               <ThemedText style={styles.uploadButtonText}>Upload & Parse Document</ThemedText>
@@ -328,14 +463,16 @@ const styles = StyleSheet.create({
   },
   selectedFileText: {
     flex: 1,
-    gap: 2,
   },
   fileType: {
     fontSize: 12,
     lineHeight: 16,
   },
   removeButton: {
-    padding: Spacing.xs,
+    width: 32,
+    height: 32,
+    justifyContent: "center",
+    alignItems: "center",
   },
   footer: {
     position: "absolute",
@@ -344,23 +481,22 @@ const styles = StyleSheet.create({
     right: 0,
     paddingHorizontal: Spacing.md,
     paddingTop: Spacing.md,
+    backgroundColor: "transparent",
   },
   uploadButton: {
+    height: 52,
     borderRadius: BorderRadius.md,
-    paddingVertical: 16,
-    alignItems: "center",
     justifyContent: "center",
-    minHeight: 52,
-  },
-  uploadingContent: {
-    flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.sm,
   },
   uploadButtonText: {
     color: "#FFFFFF",
     fontSize: 17,
     fontWeight: "600",
-    lineHeight: 22,
+  },
+  uploadingContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
   },
 });
