@@ -74,7 +74,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 
     // Generate forwarding email for new users
     if (!values.forwardingEmail) {
-      values.forwardingEmail = `trip-inbox-${nanoid(8).toLowerCase()}@triphub.dev`;
+      values.forwardingEmail = `trip-${nanoid(8).toLowerCase()}@in.mytripdochub.com`;
     }
 
     if (!values.lastSignedIn) {

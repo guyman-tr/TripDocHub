@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
-import { createHash, createHmac, timingSafeEqual } from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
+import multer from "multer";
 import { parseDocument } from "../documentParser";
 import * as db from "../db";
 import { storagePut } from "../storage";
@@ -7,40 +8,18 @@ import { nanoid } from "nanoid";
 
 const router = Router();
 
+// Configure multer for handling multipart form data from Mailgun
+// Mailgun sends attachments as multipart/form-data with fields like attachment-1, attachment-2, etc.
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 25 * 1024 * 1024, // 25MB limit per file
+    files: 10, // Max 10 attachments
+  },
+});
+
 // Mailgun webhook secret for signature verification
 const MAILGUN_WEBHOOK_SIGNING_KEY = process.env.MAILGUN_WEBHOOK_SIGNING_KEY || "";
-
-interface MailgunAttachment {
-  url: string;
-  "content-type": string;
-  name: string;
-  size: number;
-}
-
-interface MailgunWebhookPayload {
-  signature: {
-    timestamp: string;
-    token: string;
-    signature: string;
-  };
-  "event-data": {
-    event: string;
-    timestamp: number;
-    message: {
-      headers: {
-        from: string;
-        to: string;
-        subject: string;
-        "message-id": string;
-      };
-      attachments?: MailgunAttachment[];
-    };
-    storage?: {
-      url: string;
-      key: string;
-    };
-  };
-}
 
 /**
  * Verify Mailgun webhook signature
@@ -67,123 +46,122 @@ function verifyMailgunSignature(
 }
 
 /**
- * Extract forwarding email address from the recipient
- * Format: {unique_id}@triphub.yourdomain.com
- */
-function extractForwardingId(recipient: string): string | null {
-  // Extract the local part before @ symbol
-  const match = recipient.match(/^([a-zA-Z0-9]+)@/);
-  return match ? match[1] : null;
-}
-
-/**
- * Download attachment from Mailgun storage
- */
-async function downloadAttachment(
-  attachmentUrl: string,
-  apiKey: string
-): Promise<Buffer> {
-  const response = await fetch(attachmentUrl, {
-    headers: {
-      Authorization: `Basic ${Buffer.from(`api:${apiKey}`).toString("base64")}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to download attachment: ${response.status}`);
-  }
-
-  return Buffer.from(await response.arrayBuffer());
-}
-
-/**
  * Handle incoming email webhook from Mailgun
+ * Mailgun sends parsed messages as multipart/form-data with these fields:
+ * - recipient: the email address the message was sent to
+ * - sender: the sender's email address
+ * - from: the From header (e.g., "Bob <bob@example.com>")
+ * - subject: the email subject
+ * - body-plain: plain text body
+ * - body-html: HTML body
+ * - attachment-count: number of attachments
+ * - attachment-1, attachment-2, etc.: the actual file attachments
+ * - timestamp, token, signature: for webhook verification
  */
-router.post("/inbound", async (req: Request, res: Response) => {
+router.post("/", upload.any(), async (req: Request, res: Response) => {
   try {
     console.log("[Mailgun] Received webhook");
+    console.log("[Mailgun] Content-Type:", req.headers["content-type"]);
+    console.log("[Mailgun] Body keys:", Object.keys(req.body));
+    console.log("[Mailgun] Files:", req.files ? (req.files as Express.Multer.File[]).map(f => ({ fieldname: f.fieldname, originalname: f.originalname, mimetype: f.mimetype, size: f.size })) : "none");
+    
+    // Extract fields from the parsed message
+    const {
+      recipient,
+      sender,
+      from,
+      subject,
+      timestamp,
+      token,
+      signature,
+      "attachment-count": attachmentCountStr,
+      "body-plain": bodyPlain,
+    } = req.body;
 
-    // Parse the webhook payload
-    const payload = req.body as MailgunWebhookPayload;
+    console.log("[Mailgun] Recipient:", recipient);
+    console.log("[Mailgun] Sender:", sender);
+    console.log("[Mailgun] From:", from);
+    console.log("[Mailgun] Subject:", subject);
+    console.log("[Mailgun] Attachment count:", attachmentCountStr);
 
-    // Verify signature
-    if (payload.signature) {
-      const { timestamp, token, signature } = payload.signature;
+    // Verify signature if provided
+    if (timestamp && token && signature) {
       if (!verifyMailgunSignature(timestamp, token, signature)) {
         console.error("[Mailgun] Invalid webhook signature");
         return res.status(401).json({ error: "Invalid signature" });
       }
+      console.log("[Mailgun] Signature verified");
+    } else {
+      console.log("[Mailgun] No signature provided, skipping verification");
     }
 
-    const eventData = payload["event-data"];
-    if (!eventData || !eventData.message) {
-      console.error("[Mailgun] Invalid webhook payload - missing event data");
-      return res.status(400).json({ error: "Invalid payload" });
+    if (!recipient) {
+      console.error("[Mailgun] No recipient in webhook");
+      return res.status(400).json({ error: "No recipient" });
     }
-
-    const { headers, attachments } = eventData.message;
-    const recipient = headers.to;
-    const subject = headers.subject || "Forwarded Document";
 
     // Find user by forwarding email
-    const forwardingId = extractForwardingId(recipient);
-    if (!forwardingId) {
-      console.error("[Mailgun] Could not extract forwarding ID from:", recipient);
-      return res.status(400).json({ error: "Invalid recipient" });
-    }
-
     const user = await db.getUserByForwardingEmail(recipient);
     if (!user) {
       console.error("[Mailgun] No user found for forwarding email:", recipient);
       return res.status(404).json({ error: "User not found" });
     }
 
-    console.log(`[Mailgun] Processing email for user ${user.id}: ${subject}`);
+    console.log(`[Mailgun] Found user ${user.id} for email ${recipient}`);
 
-    // Process attachments
-    if (!attachments || attachments.length === 0) {
-      console.log("[Mailgun] No attachments found in email");
+    // Get attachments from multer
+    const files = req.files as Express.Multer.File[] | undefined;
+    const attachmentCount = parseInt(attachmentCountStr || "0", 10);
+
+    if (!files || files.length === 0) {
+      console.log("[Mailgun] No file attachments in email");
+      
+      // Even without attachments, we could process the email body
+      // For now, just return success
       return res.status(200).json({ message: "No attachments to process" });
     }
 
-    const mailgunApiKey = process.env.MAILGUN_API_KEY || "";
+    console.log(`[Mailgun] Processing ${files.length} file attachments`);
+
     let processedCount = 0;
 
-    for (const attachment of attachments) {
-      const mimeType = attachment["content-type"];
+    for (const file of files) {
+      const mimeType = file.mimetype;
+      const fileName = file.originalname || file.fieldname;
+
+      console.log(`[Mailgun] Processing file: ${fileName} (${mimeType}, ${file.size} bytes)`);
 
       // Only process PDFs and images
       if (!mimeType.startsWith("image/") && mimeType !== "application/pdf") {
-        console.log(`[Mailgun] Skipping unsupported attachment type: ${mimeType}`);
+        console.log(`[Mailgun] Skipping unsupported type: ${mimeType}`);
         continue;
       }
 
       try {
-        // Download the attachment
-        const fileBuffer = await downloadAttachment(attachment.url, mailgunApiKey);
-
         // Upload to our storage
-        const fileKey = `documents/${user.id}/${nanoid(12)}-${attachment.name}`;
-        const { url: fileUrl } = await storagePut(fileKey, fileBuffer, mimeType);
+        const fileKey = `documents/${user.id}/${nanoid(12)}-${fileName}`;
+        const { url: fileUrl } = await storagePut(fileKey, file.buffer, mimeType);
+        console.log(`[Mailgun] Uploaded to S3: ${fileUrl}`);
 
         // Parse the document using AI
         const parseResult = await parseDocument(fileUrl, mimeType);
-
-        // Check for duplicates
-        const existingDoc = await db.getDocumentByContentHash(
-          user.id,
-          parseResult.contentHash
-        );
-        if (existingDoc) {
-          console.log(`[Mailgun] Duplicate document detected, skipping: ${attachment.name}`);
-          continue;
-        }
+        console.log(`[Mailgun] Parsed ${parseResult.documents.length} documents from ${fileName}`);
 
         // Create documents in database
         for (const doc of parseResult.documents) {
+          // Try to auto-assign based on date
+          let tripId: number | null = null;
+          if (doc.documentDate) {
+            const matchingTrip = await db.findMatchingTrip(user.id, doc.documentDate);
+            if (matchingTrip) {
+              tripId = matchingTrip.id;
+              console.log(`[Mailgun] Auto-assigned to trip: ${matchingTrip.name}`);
+            }
+          }
+
           await db.createDocument({
             userId: user.id,
-            tripId: null, // Goes to inbox
+            tripId,
             category: doc.category,
             documentType: doc.documentType,
             title: doc.title,
@@ -197,13 +175,13 @@ router.post("/inbound", async (req: Request, res: Response) => {
           processedCount++;
         }
 
-        console.log(`[Mailgun] Processed attachment: ${attachment.name}`);
+        console.log(`[Mailgun] Created ${parseResult.documents.length} documents from ${fileName}`);
       } catch (error) {
-        console.error(`[Mailgun] Failed to process attachment ${attachment.name}:`, error);
+        console.error(`[Mailgun] Failed to process attachment ${fileName}:`, error);
       }
     }
 
-    console.log(`[Mailgun] Processed ${processedCount} documents from email`);
+    console.log(`[Mailgun] Total documents created: ${processedCount}`);
     return res.status(200).json({ 
       message: "Email processed", 
       documentsCreated: processedCount 

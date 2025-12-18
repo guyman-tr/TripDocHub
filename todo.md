@@ -73,3 +73,4 @@
 - [x] Horizontal carousel for trips on home screen (swipeable cards)
 - [x] Show document type (eTicket) as main title in trip detail cards, with route/title as secondary
 - [x] Location pin button on documents with addresses - opens native maps app for navigation
+- [x] Configure Mailgun email forwarding with in.mytripdochub.com domain

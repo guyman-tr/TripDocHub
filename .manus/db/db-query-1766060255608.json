@@ -1,0 +1,18 @@
+{
+  "query": "SELECT id, forwardingEmail FROM users;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3cm1rAYqFTLZz8b.ead05c4c62f7 --database jxNutJmZj7bf8VEqqERusH --execute SELECT id, forwardingEmail FROM users;",
+  "rows": [
+    {
+      "id": "1",
+      "forwardingEmail": "trip-inbox-rh1k8dga@in.mytripdochub.com"
+    },
+    {
+      "id": "8",
+      "forwardingEmail": "trip-inbox-mesjywq4@in.mytripdochub.com"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tforwardingEmail\n1\ttrip-inbox-rh1k8dga@in.mytripdochub.com\n8\ttrip-inbox-mesjywq4@in.mytripdochub.com\n",
+  "stderr": "",
+  "execution_time_ms": 1569
+}
