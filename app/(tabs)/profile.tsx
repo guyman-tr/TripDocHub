@@ -268,6 +268,31 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* Legal Section */}
+        <View style={styles.section}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>
+            Legal
+          </ThemedText>
+          
+          <Pressable
+            style={[styles.legalButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={() => router.push("/privacy")}
+          >
+            <IconSymbol name="doc.text.fill" size={20} color={colors.textSecondary} />
+            <ThemedText style={styles.legalButtonText}>Privacy Policy</ThemedText>
+            <IconSymbol name="chevron.right" size={16} color={colors.textSecondary} />
+          </Pressable>
+          
+          <Pressable
+            style={[styles.legalButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={() => router.push("/terms")}
+          >
+            <IconSymbol name="doc.text.fill" size={20} color={colors.textSecondary} />
+            <ThemedText style={styles.legalButtonText}>Terms of Service</ThemedText>
+            <IconSymbol name="chevron.right" size={16} color={colors.textSecondary} />
+          </Pressable>
+        </View>
+
         {/* Sign Out */}
         <Pressable
           style={[styles.signOutButton, { borderColor: colors.destructive }]}
@@ -434,6 +459,20 @@ const styles = StyleSheet.create({
   signOutText: {
     fontSize: 16,
     fontWeight: "600",
+    lineHeight: 22,
+  },
+  legalButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  legalButtonText: {
+    flex: 1,
+    fontSize: 16,
     lineHeight: 22,
   },
 });

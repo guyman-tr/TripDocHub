@@ -74,3 +74,8 @@
 - [x] Show document type (eTicket) as main title in trip detail cards, with route/title as secondary
 - [x] Location pin button on documents with addresses - opens native maps app for navigation
 - [x] Configure Mailgun email forwarding with in.mytripdochub.com domain
+
+## Pre-Launch Requirements
+- [x] Privacy Policy page
+- [x] Terms of Service page
+- [ ] Onboarding flow for new users

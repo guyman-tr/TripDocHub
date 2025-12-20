@@ -56,6 +56,9 @@ const MAPPING = {
   "info.circle.fill": "info",
   "exclamationmark.triangle.fill": "warning",
   
+  // Legal
+  "doc.text.fill": "article",
+  
   // Misc
   "paperplane.fill": "send",
   "chevron.left.forwardslash.chevron.right": "code",
