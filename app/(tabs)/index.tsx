@@ -1,5 +1,5 @@
-import { useRouter } from "expo-router";
-import { useCallback, useMemo, useState, useRef } from "react";
+import { useRouter, Redirect } from "expo-router";
+import { useCallback, useMemo, useState, useRef, useEffect } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -24,6 +24,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAuth } from "@/hooks/use-auth";
+import { useOnboarding } from "@/hooks/use-onboarding";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/constants/oauth";
 
@@ -37,6 +38,7 @@ export default function HomeScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
   const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { hasSeenOnboarding, loading: onboardingLoading } = useOnboarding();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
@@ -190,12 +192,18 @@ export default function HomeScreen() {
     );
   }, [colors.tint, getDaysUntilTrip, router, sortedTrips.length]);
 
-  if (authLoading) {
+  // Show loading while checking auth and onboarding status
+  if (authLoading || onboardingLoading) {
     return (
       <ThemedView style={[styles.container, styles.centered]}>
         <ActivityIndicator size="large" color={colors.tint} />
       </ThemedView>
     );
+  }
+
+  // Redirect to onboarding for first-time users (before login)
+  if (!isAuthenticated && hasSeenOnboarding === false) {
+    return <Redirect href="/onboarding" />;
   }
 
   if (!isAuthenticated) {

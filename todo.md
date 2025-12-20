@@ -78,4 +78,4 @@
 ## Pre-Launch Requirements
 - [x] Privacy Policy page
 - [x] Terms of Service page
-- [ ] Onboarding flow for new users
+- [x] Onboarding flow for new users (animated SVG illustrations)
