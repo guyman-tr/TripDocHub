@@ -117,6 +117,12 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
+        // Check if user can process documents (has credits or subscription)
+        const canProcess = await db.canProcessDocument(ctx.user.id);
+        if (!canProcess) {
+          throw new Error("INSUFFICIENT_CREDITS");
+        }
+
         const parseResult = await parseDocument(input.fileUrl, input.mimeType);
         const createdDocs: number[] = [];
         let autoAssignedTripId: number | null = null;
@@ -156,6 +162,9 @@ export const appRouter = router({
             contentHash: parseResult.contentHash,
           });
           createdDocs.push(docId);
+
+          // Deduct one credit for each document processed
+          await db.deductCredit(ctx.user.id);
         }
 
         return {
@@ -172,6 +181,22 @@ export const appRouter = router({
   user: router({
     getForwardingEmail: protectedProcedure.query(async ({ ctx }) => {
       return { email: ctx.user.forwardingEmail };
+    }),
+
+    // Get user's credits and subscription status
+    getCredits: protectedProcedure.query(async ({ ctx }) => {
+      const { credits, hasSubscription } = await db.getUserCredits(ctx.user.id);
+      return {
+        credits,
+        hasSubscription,
+        subscriptionExpiresAt: ctx.user.subscriptionExpiresAt,
+      };
+    }),
+
+    // Check if user can process a document (has credits or subscription)
+    canProcess: protectedProcedure.query(async ({ ctx }) => {
+      const canProcess = await db.canProcessDocument(ctx.user.id);
+      return { canProcess };
     }),
   }),
 });

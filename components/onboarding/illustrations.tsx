@@ -5,9 +5,7 @@ import Svg, {
   Circle, 
   Path, 
   G,
-  Defs,
-  LinearGradient,
-  Stop,
+  Line,
 } from "react-native-svg";
 import Animated, { 
   useAnimatedProps, 
@@ -22,9 +20,7 @@ import Animated, {
 import { useEffect } from "react";
 
 const AnimatedRect = Animated.createAnimatedComponent(Rect);
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const AnimatedG = Animated.createAnimatedComponent(G);
-const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 // Color palette
 const COLORS = {
@@ -46,14 +42,11 @@ interface IllustrationProps {
 }
 
 // Step 1: Create Your First Trip
-export function CreateTripIllustration({ width = 280, height = 320, animate = true }: IllustrationProps) {
+export function CreateTripIllustration({ width = 320, height = 380, animate = true }: IllustrationProps) {
   const buttonScale = useSharedValue(1);
-  const plusRotation = useSharedValue(0);
-  const cardOpacity = useSharedValue(0);
 
   useEffect(() => {
     if (animate) {
-      // Pulsing button
       buttonScale.value = withRepeat(
         withSequence(
           withTiming(1.05, { duration: 800, easing: Easing.inOut(Easing.ease) }),
@@ -62,19 +55,6 @@ export function CreateTripIllustration({ width = 280, height = 320, animate = tr
         -1,
         true
       );
-      
-      // Plus icon subtle rotation
-      plusRotation.value = withRepeat(
-        withSequence(
-          withTiming(5, { duration: 600 }),
-          withTiming(-5, { duration: 600 }),
-          withTiming(0, { duration: 600 })
-        ),
-        -1
-      );
-
-      // Card fade in
-      cardOpacity.value = withDelay(300, withTiming(1, { duration: 500 }));
     }
   }, [animate]);
 
@@ -83,150 +63,59 @@ export function CreateTripIllustration({ width = 280, height = 320, animate = tr
   }));
 
   return (
-    <Svg width={width} height={height} viewBox="0 0 280 320">
-      {/* Phone frame */}
-      <Rect x="40" y="20" width="200" height="280" rx="24" fill={COLORS.background} stroke={COLORS.border} strokeWidth="2" />
+    <Svg width={width} height={height} viewBox="0 0 320 380">
+      {/* Phone frame - bigger */}
+      <Rect x="35" y="15" width="250" height="350" rx="28" fill={COLORS.background} stroke={COLORS.border} strokeWidth="2" />
       
       {/* Status bar */}
-      <Rect x="50" y="30" width="180" height="20" fill={COLORS.background} />
-      <SvgText x="140" y="44" fontSize="11" fill={COLORS.text} textAnchor="middle" fontWeight="600">9:41</SvgText>
+      <SvgText x="160" y="45" fontSize="14" fill={COLORS.text} textAnchor="middle" fontWeight="600">9:41</SvgText>
       
       {/* Header */}
-      <SvgText x="140" y="80" fontSize="18" fill={COLORS.text} textAnchor="middle" fontWeight="bold">Your Trips</SvgText>
+      <SvgText x="160" y="90" fontSize="22" fill={COLORS.text} textAnchor="middle" fontWeight="bold">Your Trips</SvgText>
       
       {/* Empty state message */}
-      <SvgText x="140" y="140" fontSize="13" fill={COLORS.textSecondary} textAnchor="middle">No trips yet</SvgText>
-      <SvgText x="140" y="158" fontSize="12" fill={COLORS.textSecondary} textAnchor="middle">Create your first trip to get started</SvgText>
+      <SvgText x="160" y="160" fontSize="16" fill={COLORS.textSecondary} textAnchor="middle">No trips yet</SvgText>
+      <SvgText x="160" y="185" fontSize="14" fill={COLORS.textSecondary} textAnchor="middle">Create your first trip to get started</SvgText>
       
       {/* Animated "New Trip" button */}
       <AnimatedG animatedProps={buttonAnimatedProps}>
-        <Rect x="70" y="180" width="140" height="48" rx="12" fill={COLORS.primary} />
-        <Circle cx="105" cy="204" r="12" fill="rgba(255,255,255,0.2)" />
-        <Path d="M105 198 L105 210 M99 204 L111 204" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
-        <SvgText x="155" y="209" fontSize="15" fill="#FFFFFF" textAnchor="middle" fontWeight="600">New Trip</SvgText>
+        <Rect x="75" y="210" width="170" height="56" rx="14" fill={COLORS.primary} />
+        <Circle cx="115" cy="238" r="14" fill="rgba(255,255,255,0.2)" />
+        <Path d="M115 230 L115 246 M107 238 L123 238" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" />
+        <SvgText x="175" y="244" fontSize="18" fill="#FFFFFF" textAnchor="middle" fontWeight="600">New Trip</SvgText>
       </AnimatedG>
       
       {/* Floating hint arrow */}
-      <G opacity={0.8}>
+      <G opacity={0.9}>
         <Path 
-          d="M200 170 Q220 180 210 200" 
+          d="M240 195 Q270 210 255 240" 
           stroke={COLORS.accent} 
-          strokeWidth="2" 
+          strokeWidth="2.5" 
           fill="none"
-          strokeDasharray="4,4"
+          strokeDasharray="5,5"
         />
-        <Path d="M205 195 L210 200 L215 193" stroke={COLORS.accent} strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M250 232 L255 242 L262 234" stroke={COLORS.accent} strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
       </G>
-      <SvgText x="225" y="165" fontSize="11" fill={COLORS.accent} fontWeight="600">Tap here!</SvgText>
+      <SvgText x="275" y="188" fontSize="14" fill={COLORS.accent} fontWeight="bold">Tap here!</SvgText>
       
       {/* Tab bar */}
-      <Rect x="50" y="260" width="180" height="30" fill={COLORS.card} />
-      <Circle cx="85" cy="275" r="8" fill={COLORS.border} />
-      <Circle cx="140" cy="275" r="8" fill={COLORS.primary} />
-      <Circle cx="195" cy="275" r="8" fill={COLORS.border} />
+      <Rect x="45" y="315" width="230" height="40" fill={COLORS.card} />
+      <Circle cx="90" cy="335" r="10" fill={COLORS.border} />
+      <Circle cx="160" cy="335" r="10" fill={COLORS.primary} />
+      <Circle cx="230" cy="335" r="10" fill={COLORS.border} />
     </Svg>
   );
 }
 
-// Step 2: Email Inbox showing booking confirmation
-export function EmailInboxIllustration({ width = 280, height = 320, animate = true }: IllustrationProps) {
-  const emailSlide = useSharedValue(50);
-  const emailOpacity = useSharedValue(0);
-  const highlightOpacity = useSharedValue(0);
-
-  useEffect(() => {
-    if (animate) {
-      emailOpacity.value = withDelay(200, withTiming(1, { duration: 400 }));
-      emailSlide.value = withDelay(200, withTiming(0, { duration: 500, easing: Easing.out(Easing.back(1.2)) }));
-      highlightOpacity.value = withDelay(800, withRepeat(
-        withSequence(
-          withTiming(0.3, { duration: 600 }),
-          withTiming(0, { duration: 600 })
-        ),
-        -1
-      ));
-    }
-  }, [animate]);
-
-  const emailAnimatedProps = useAnimatedProps(() => ({
-    transform: [{ translateY: emailSlide.value }],
-    opacity: emailOpacity.value,
-  }));
-
-  const highlightAnimatedProps = useAnimatedProps(() => ({
-    opacity: highlightOpacity.value,
-  }));
-
-  return (
-    <Svg width={width} height={height} viewBox="0 0 280 320">
-      {/* Email app frame */}
-      <Rect x="40" y="20" width="200" height="280" rx="24" fill={COLORS.background} stroke={COLORS.border} strokeWidth="2" />
-      
-      {/* Header */}
-      <Rect x="50" y="30" width="180" height="50" fill={COLORS.card} />
-      <SvgText x="140" y="60" fontSize="16" fill={COLORS.text} textAnchor="middle" fontWeight="bold">Inbox</SvgText>
-      
-      {/* Email item - highlighted */}
-      <AnimatedG animatedProps={emailAnimatedProps}>
-        {/* Highlight glow */}
-        <AnimatedRect 
-          x="52" y="88" width="176" height="72" rx="10" 
-          fill={COLORS.primary}
-          animatedProps={highlightAnimatedProps}
-        />
-        
-        {/* Email card */}
-        <Rect x="55" y="90" width="170" height="68" rx="8" fill={COLORS.card} stroke={COLORS.primary} strokeWidth="2" />
-        
-        {/* Sender avatar */}
-        <Circle cx="75" cy="115" r="14" fill={COLORS.primaryLight} />
-        <SvgText x="75" y="119" fontSize="12" fill={COLORS.primary} textAnchor="middle" fontWeight="bold">H</SvgText>
-        
-        {/* Email content */}
-        <SvgText x="95" y="108" fontSize="11" fill={COLORS.text} fontWeight="600">Hilton Hotels</SvgText>
-        <SvgText x="95" y="122" fontSize="10" fill={COLORS.text} fontWeight="500">Your Reservation Confirmation</SvgText>
-        <SvgText x="95" y="136" fontSize="9" fill={COLORS.textSecondary}>Booking #HTL-892341 for Jan 15...</SvgText>
-        
-        {/* Attachment icon */}
-        <Circle cx="205" cy="124" r="10" fill={COLORS.primaryLight} />
-        <Path d="M202 121 L205 127 L208 121" stroke={COLORS.primary} strokeWidth="1.5" fill="none" />
-        <Rect x="203" y="119" width="4" height="6" rx="1" fill="none" stroke={COLORS.primary} strokeWidth="1.5" />
-      </AnimatedG>
-      
-      {/* Other emails (faded) */}
-      <G opacity={0.4}>
-        <Rect x="55" y="168" width="170" height="50" rx="8" fill={COLORS.card} stroke={COLORS.border} strokeWidth="1" />
-        <Circle cx="75" cy="193" r="10" fill={COLORS.border} />
-        <Rect x="95" y="185" width="80" height="8" rx="2" fill={COLORS.border} />
-        <Rect x="95" y="197" width="100" height="6" rx="2" fill={COLORS.border} />
-      </G>
-      
-      <G opacity={0.3}>
-        <Rect x="55" y="225" width="170" height="50" rx="8" fill={COLORS.card} stroke={COLORS.border} strokeWidth="1" />
-        <Circle cx="75" cy="250" r="10" fill={COLORS.border} />
-        <Rect x="95" y="242" width="70" height="8" rx="2" fill={COLORS.border} />
-        <Rect x="95" y="254" width="90" height="6" rx="2" fill={COLORS.border} />
-      </G>
-    </Svg>
-  );
-}
-
-// Step 3: Forward email animation
-export function ForwardEmailIllustration({ width = 280, height = 320, animate = true }: IllustrationProps) {
+// Step 2: Forward email to TripHub
+export function ForwardEmailIllustration({ width = 320, height = 380, animate = true }: IllustrationProps) {
   const arrowProgress = useSharedValue(0);
   const toFieldOpacity = useSharedValue(0);
-  const typingProgress = useSharedValue(0);
 
   useEffect(() => {
     if (animate) {
-      // Arrow animation
       arrowProgress.value = withDelay(300, withTiming(1, { duration: 600, easing: Easing.out(Easing.ease) }));
-      
-      // To field appears
       toFieldOpacity.value = withDelay(600, withTiming(1, { duration: 300 }));
-      
-      // Typing animation
-      typingProgress.value = withDelay(900, withTiming(1, { duration: 1200, easing: Easing.linear }));
     }
   }, [animate]);
 
@@ -240,58 +129,146 @@ export function ForwardEmailIllustration({ width = 280, height = 320, animate = 
   }));
 
   return (
-    <Svg width={width} height={height} viewBox="0 0 280 320">
+    <Svg width={width} height={height} viewBox="0 0 320 380">
       {/* Phone frame */}
-      <Rect x="40" y="20" width="200" height="280" rx="24" fill={COLORS.background} stroke={COLORS.border} strokeWidth="2" />
+      <Rect x="35" y="15" width="250" height="350" rx="28" fill={COLORS.background} stroke={COLORS.border} strokeWidth="2" />
       
       {/* Forward email header */}
-      <Rect x="50" y="30" width="180" height="45" fill={COLORS.card} />
-      <SvgText x="70" y="55" fontSize="14" fill={COLORS.primary} fontWeight="600">← Forward</SvgText>
-      <SvgText x="210" y="55" fontSize="13" fill={COLORS.primary} fontWeight="600">Send</SvgText>
+      <Rect x="45" y="25" width="230" height="55" fill={COLORS.card} />
+      <SvgText x="70" y="58" fontSize="16" fill={COLORS.primary} fontWeight="600">← Forward</SvgText>
+      <SvgText x="250" y="58" fontSize="16" fill={COLORS.primary} fontWeight="bold">Send</SvgText>
       
       {/* To field */}
       <AnimatedG animatedProps={toFieldAnimatedProps}>
-        <Rect x="55" y="85" width="170" height="40" rx="8" fill={COLORS.card} stroke={COLORS.border} strokeWidth="1" />
-        <SvgText x="65" y="108" fontSize="12" fill={COLORS.textSecondary}>To:</SvgText>
+        <Rect x="50" y="95" width="220" height="50" rx="10" fill={COLORS.card} stroke={COLORS.border} strokeWidth="1" />
+        <SvgText x="65" y="125" fontSize="14" fill={COLORS.textSecondary}>To:</SvgText>
         
         {/* Email address with highlight */}
-        <Rect x="85" y="93" width="130" height="24" rx="4" fill={COLORS.primaryLight} />
-        <SvgText x="92" y="109" fontSize="10" fill={COLORS.primary} fontWeight="500">trip-inbox-abc123</SvgText>
-        <SvgText x="92" y="109" fontSize="10" fill={COLORS.primary} fontWeight="500">
-          trip-inbox-abc123@in.mytripdochub.com
-        </SvgText>
+        <Rect x="95" y="105" width="165" height="30" rx="6" fill={COLORS.primaryLight} />
+        <SvgText x="105" y="125" fontSize="11" fill={COLORS.primary} fontWeight="600">trip-inbox-abc123@in.mytripdochub.com</SvgText>
       </AnimatedG>
       
       {/* Forward arrow animation */}
       <AnimatedG animatedProps={arrowAnimatedProps}>
-        <Circle cx="140" cy="150" r="20" fill={COLORS.primary} />
-        <Path d="M132 150 L148 150 M142 144 L148 150 L142 156" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Circle cx="160" cy="175" r="26" fill={COLORS.primary} />
+        <Path d="M148 175 L172 175 M164 165 L172 175 L164 185" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
       </AnimatedG>
       
       {/* Original email preview */}
-      <G opacity={0.7}>
-        <Rect x="55" y="180" width="170" height="90" rx="8" fill={COLORS.card} stroke={COLORS.border} strokeWidth="1" />
-        <SvgText x="65" y="200" fontSize="10" fill={COLORS.textSecondary}>---------- Forwarded message ----------</SvgText>
-        <SvgText x="65" y="215" fontSize="10" fill={COLORS.textSecondary}>From: Hilton Hotels</SvgText>
-        <SvgText x="65" y="230" fontSize="10" fill={COLORS.textSecondary}>Subject: Your Reservation</SvgText>
-        <SvgText x="65" y="245" fontSize="10" fill={COLORS.textSecondary}>Confirmation #HTL-892341</SvgText>
+      <G opacity={0.8}>
+        <Rect x="50" y="215" width="220" height="120" rx="10" fill={COLORS.card} stroke={COLORS.border} strokeWidth="1" />
+        <SvgText x="65" y="240" fontSize="11" fill={COLORS.textSecondary}>---------- Forwarded message ----------</SvgText>
+        <SvgText x="65" y="260" fontSize="12" fill={COLORS.textSecondary}>From: Hilton Hotels</SvgText>
+        <SvgText x="65" y="280" fontSize="12" fill={COLORS.textSecondary}>Subject: Your Reservation</SvgText>
+        <SvgText x="65" y="300" fontSize="12" fill={COLORS.textSecondary}>Confirmation #HTL-892341</SvgText>
         
         {/* Attachment indicator */}
-        <Rect x="65" y="252" width="60" height="16" rx="4" fill={COLORS.primaryLight} />
-        <SvgText x="72" y="263" fontSize="8" fill={COLORS.primary}>📎 confirmation.pdf</SvgText>
+        <Rect x="65" y="310" width="80" height="20" rx="5" fill={COLORS.primaryLight} />
+        <SvgText x="75" y="324" fontSize="10" fill={COLORS.primary}>📎 confirmation.pdf</SvgText>
       </G>
     </Svg>
   );
 }
 
-// Step 4: Document parsed and shown in trip
-export function DocumentParsedIllustration({ width = 280, height = 320, animate = true }: IllustrationProps) {
+// Step 3: Upload or Photograph Document
+export function UploadDocumentIllustration({ width = 320, height = 380, animate = true }: IllustrationProps) {
+  const cameraScale = useSharedValue(1);
+  const uploadScale = useSharedValue(1);
+  const orOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    if (animate) {
+      // Pulsing camera button
+      cameraScale.value = withDelay(300, withRepeat(
+        withSequence(
+          withTiming(1.08, { duration: 700 }),
+          withTiming(1, { duration: 700 })
+        ),
+        -1
+      ));
+      
+      // Pulsing upload button
+      uploadScale.value = withDelay(600, withRepeat(
+        withSequence(
+          withTiming(1.08, { duration: 700 }),
+          withTiming(1, { duration: 700 })
+        ),
+        -1
+      ));
+      
+      orOpacity.value = withDelay(200, withTiming(1, { duration: 400 }));
+    }
+  }, [animate]);
+
+  const cameraAnimatedProps = useAnimatedProps(() => ({
+    transform: [{ scale: cameraScale.value }],
+  }));
+
+  const uploadAnimatedProps = useAnimatedProps(() => ({
+    transform: [{ scale: uploadScale.value }],
+  }));
+
+  const orAnimatedProps = useAnimatedProps(() => ({
+    opacity: orOpacity.value,
+  }));
+
+  return (
+    <Svg width={width} height={height} viewBox="0 0 320 380">
+      {/* Phone frame */}
+      <Rect x="35" y="15" width="250" height="350" rx="28" fill={COLORS.background} stroke={COLORS.border} strokeWidth="2" />
+      
+      {/* Header */}
+      <Rect x="45" y="25" width="230" height="55" fill={COLORS.card} />
+      <SvgText x="160" y="58" fontSize="18" fill={COLORS.text} textAnchor="middle" fontWeight="bold">Add Document</SvgText>
+      
+      {/* Camera option */}
+      <AnimatedG animatedProps={cameraAnimatedProps}>
+        <Rect x="55" y="100" width="210" height="80" rx="12" fill={COLORS.card} stroke={COLORS.primary} strokeWidth="2" />
+        <Circle cx="100" cy="140" r="24" fill={COLORS.primaryLight} />
+        {/* Camera icon */}
+        <Rect x="88" y="132" width="24" height="18" rx="3" stroke={COLORS.primary} strokeWidth="2" fill="none" />
+        <Circle cx="100" cy="141" r="5" stroke={COLORS.primary} strokeWidth="2" fill="none" />
+        <Rect x="94" y="130" width="12" height="4" rx="1" fill={COLORS.primary} />
+        
+        <SvgText x="140" y="135" fontSize="15" fill={COLORS.text} fontWeight="600">Take Photo</SvgText>
+        <SvgText x="140" y="153" fontSize="12" fill={COLORS.textSecondary}>Photograph your document</SvgText>
+      </AnimatedG>
+      
+      {/* OR divider */}
+      <AnimatedG animatedProps={orAnimatedProps}>
+        <Line x1="70" y1="210" x2="130" y2="210" stroke={COLORS.border} strokeWidth="2" />
+        <Circle cx="160" cy="210" r="18" fill={COLORS.background} stroke={COLORS.border} strokeWidth="2" />
+        <SvgText x="160" y="215" fontSize="12" fill={COLORS.textSecondary} textAnchor="middle" fontWeight="600">OR</SvgText>
+        <Line x1="190" y1="210" x2="250" y2="210" stroke={COLORS.border} strokeWidth="2" />
+      </AnimatedG>
+      
+      {/* Upload option */}
+      <AnimatedG animatedProps={uploadAnimatedProps}>
+        <Rect x="55" y="240" width="210" height="80" rx="12" fill={COLORS.card} stroke={COLORS.primary} strokeWidth="2" />
+        <Circle cx="100" cy="280" r="24" fill={COLORS.primaryLight} />
+        {/* Upload icon */}
+        <Path d="M100 268 L100 290" stroke={COLORS.primary} strokeWidth="2.5" strokeLinecap="round" />
+        <Path d="M92 276 L100 268 L108 276" stroke={COLORS.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M88 292 L112 292" stroke={COLORS.primary} strokeWidth="2.5" strokeLinecap="round" />
+        
+        <SvgText x="140" y="275" fontSize="15" fill={COLORS.text} fontWeight="600">Upload File</SvgText>
+        <SvgText x="140" y="293" fontSize="12" fill={COLORS.textSecondary}>Select PDF or image</SvgText>
+      </AnimatedG>
+      
+      {/* Tab bar */}
+      <Rect x="45" y="315" width="230" height="40" fill={COLORS.card} />
+    </Svg>
+  );
+}
+
+// Step 4: Document parsed with annotated features
+export function DocumentParsedIllustration({ width = 320, height = 380, animate = true }: IllustrationProps) {
   const cardScale = useSharedValue(0.8);
   const cardOpacity = useSharedValue(0);
   const checkmarkScale = useSharedValue(0);
-  const feature1Opacity = useSharedValue(0);
-  const feature2Opacity = useSharedValue(0);
-  const feature3Opacity = useSharedValue(0);
+  const annotation1Opacity = useSharedValue(0);
+  const annotation2Opacity = useSharedValue(0);
+  const annotation3Opacity = useSharedValue(0);
 
   useEffect(() => {
     if (animate) {
@@ -299,19 +276,10 @@ export function DocumentParsedIllustration({ width = 280, height = 320, animate 
       cardScale.value = withDelay(200, withTiming(1, { duration: 500, easing: Easing.out(Easing.back(1.5)) }));
       checkmarkScale.value = withDelay(600, withTiming(1, { duration: 400, easing: Easing.out(Easing.back(2)) }));
       
-      // Staggered feature highlights
-      feature1Opacity.value = withDelay(1000, withRepeat(withSequence(
-        withTiming(1, { duration: 400 }),
-        withTiming(0.3, { duration: 400 })
-      ), 3));
-      feature2Opacity.value = withDelay(1800, withRepeat(withSequence(
-        withTiming(1, { duration: 400 }),
-        withTiming(0.3, { duration: 400 })
-      ), 3));
-      feature3Opacity.value = withDelay(2600, withRepeat(withSequence(
-        withTiming(1, { duration: 400 }),
-        withTiming(0.3, { duration: 400 })
-      ), 3));
+      // Staggered annotation reveals
+      annotation1Opacity.value = withDelay(1000, withTiming(1, { duration: 400 }));
+      annotation2Opacity.value = withDelay(1600, withTiming(1, { duration: 400 }));
+      annotation3Opacity.value = withDelay(2200, withTiming(1, { duration: 400 }));
     }
   }, [animate]);
 
@@ -324,82 +292,105 @@ export function DocumentParsedIllustration({ width = 280, height = 320, animate 
     transform: [{ scale: checkmarkScale.value }],
   }));
 
-  const feature1Props = useAnimatedProps(() => ({ opacity: feature1Opacity.value }));
-  const feature2Props = useAnimatedProps(() => ({ opacity: feature2Opacity.value }));
-  const feature3Props = useAnimatedProps(() => ({ opacity: feature3Opacity.value }));
+  const annotation1Props = useAnimatedProps(() => ({ opacity: annotation1Opacity.value }));
+  const annotation2Props = useAnimatedProps(() => ({ opacity: annotation2Opacity.value }));
+  const annotation3Props = useAnimatedProps(() => ({ opacity: annotation3Opacity.value }));
 
   return (
-    <Svg width={width} height={height} viewBox="0 0 280 320">
+    <Svg width={width} height={height} viewBox="0 0 320 380">
       {/* Phone frame */}
-      <Rect x="40" y="20" width="200" height="280" rx="24" fill={COLORS.background} stroke={COLORS.border} strokeWidth="2" />
+      <Rect x="35" y="15" width="250" height="350" rx="28" fill={COLORS.background} stroke={COLORS.border} strokeWidth="2" />
       
       {/* Header */}
-      <Rect x="50" y="30" width="180" height="45" fill={COLORS.card} />
-      <SvgText x="70" y="55" fontSize="14" fill={COLORS.primary}>←</SvgText>
-      <SvgText x="140" y="55" fontSize="15" fill={COLORS.text} textAnchor="middle" fontWeight="bold">Paris 2025</SvgText>
+      <Rect x="45" y="25" width="230" height="55" fill={COLORS.card} />
+      <SvgText x="70" y="58" fontSize="16" fill={COLORS.primary}>←</SvgText>
+      <SvgText x="160" y="58" fontSize="18" fill={COLORS.text} textAnchor="middle" fontWeight="bold">Paris 2025</SvgText>
       
-      {/* Success checkmark */}
-      <AnimatedG animatedProps={checkmarkAnimatedProps}>
-        <Circle cx="140" cy="95" r="18" fill={COLORS.success} />
-        <Path d="M132 95 L138 101 L150 89" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      </AnimatedG>
-      <SvgText x="140" y="125" fontSize="11" fill={COLORS.success} textAnchor="middle" fontWeight="600">Document Added!</SvgText>
+      {/* Section title */}
+      <SvgText x="55" y="100" fontSize="13" fill={COLORS.textSecondary} fontWeight="600">ESSENTIAL DETAILS AT A GLANCE</SvgText>
       
       {/* Document card */}
       <AnimatedG animatedProps={cardAnimatedProps}>
-        <Rect x="55" y="140" width="170" height="120" rx="12" fill={COLORS.card} stroke={COLORS.border} strokeWidth="1" />
+        <Rect x="45" y="115" width="230" height="100" rx="14" fill={COLORS.card} stroke={COLORS.border} strokeWidth="1" />
         
         {/* Hotel icon */}
-        <Circle cx="75" cy="165" r="14" fill={COLORS.primaryLight} />
-        <Path d="M69 162 L69 171 L81 171 L81 162 L75 158 L69 162" stroke={COLORS.primary} strokeWidth="1.5" fill="none" />
+        <Circle cx="75" cy="150" r="18" fill={COLORS.primaryLight} />
+        <Path d="M67 147 L67 160 L83 160 L83 147 L75 141 L67 147" stroke={COLORS.primary} strokeWidth="2" fill="none" />
         
         {/* Hotel details */}
-        <SvgText x="95" y="160" fontSize="12" fill={COLORS.text} fontWeight="600">Hilton Paris Opera</SvgText>
-        <SvgText x="95" y="174" fontSize="10" fill={COLORS.textSecondary}>Jan 15 - Jan 18, 2025</SvgText>
-        <SvgText x="95" y="188" fontSize="10" fill={COLORS.textSecondary}>Conf: #HTL-892341</SvgText>
+        <SvgText x="100" y="143" fontSize="14" fill={COLORS.text} fontWeight="bold">Hilton Paris Opera</SvgText>
+        <SvgText x="100" y="160" fontSize="12" fill={COLORS.textSecondary}>Jan 15 - Jan 18, 2025</SvgText>
+        <SvgText x="100" y="177" fontSize="11" fill={COLORS.textSecondary}>Conf: #HTL-892341</SvgText>
+        
+        {/* Success checkmark */}
+        <AnimatedG animatedProps={checkmarkAnimatedProps}>
+          <Circle cx="255" cy="130" r="14" fill={COLORS.success} />
+          <Path d="M249 130 L253 134 L262 125" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        </AnimatedG>
         
         {/* Action buttons row */}
         <G>
-          {/* Location - implemented */}
-          <AnimatedG animatedProps={feature1Props}>
-            <Circle cx="85" cy="230" r="16" fill={COLORS.primaryLight} stroke={COLORS.primary} strokeWidth="2" />
-            <Path d="M85 222 C80 222 77 226 77 230 C77 236 85 242 85 242 C85 242 93 236 93 230 C93 226 90 222 85 222" fill={COLORS.primary} />
-            <Circle cx="85" cy="229" r="3" fill="#FFFFFF" />
-          </AnimatedG>
+          {/* Location button */}
+          <Circle cx="85" cy="195" r="16" fill={COLORS.primaryLight} stroke={COLORS.primary} strokeWidth="2" />
+          <Path d="M85 186 C79 186 75 191 75 196 C75 203 85 211 85 211 C85 211 95 203 95 196 C95 191 91 186 85 186" fill={COLORS.primary} />
+          <Circle cx="85" cy="195" r="4" fill="#FFFFFF" />
           
-          {/* Phone - future */}
-          <AnimatedG animatedProps={feature2Props}>
-            <Circle cx="140" cy="230" r="16" fill={COLORS.primaryLight} stroke={COLORS.primary} strokeWidth="2" />
-            <Path d="M134 224 L134 236 C134 237 135 238 136 238 L144 238 C145 238 146 237 146 236 L146 224 C146 223 145 222 144 222 L136 222 C135 222 134 223 134 224" stroke={COLORS.primary} strokeWidth="1.5" fill="none" />
-            <Circle cx="140" cy="235" r="2" fill={COLORS.primary} />
-          </AnimatedG>
+          {/* Phone button */}
+          <Circle cx="160" cy="195" r="16" fill={COLORS.primaryLight} stroke={COLORS.primary} strokeWidth="2" />
+          <Path d="M152 187 L152 203 C152 204 153 205 154 205 L166 205 C167 205 168 204 168 203 L168 187 C168 186 167 185 166 185 L154 185 C153 185 152 186 152 187" stroke={COLORS.primary} strokeWidth="2" fill="none" />
+          <Circle cx="160" cy="201" r="2.5" fill={COLORS.primary} />
           
-          {/* Email - future */}
-          <AnimatedG animatedProps={feature3Props}>
-            <Circle cx="195" cy="230" r="16" fill={COLORS.primaryLight} stroke={COLORS.primary} strokeWidth="2" />
-            <Rect x="187" y="225" width="16" height="11" rx="2" stroke={COLORS.primary} strokeWidth="1.5" fill="none" />
-            <Path d="M187 226 L195 232 L203 226" stroke={COLORS.primary} strokeWidth="1.5" fill="none" />
-          </AnimatedG>
+          {/* Email button */}
+          <Circle cx="235" cy="195" r="16" fill={COLORS.primaryLight} stroke={COLORS.primary} strokeWidth="2" />
+          <Rect x="225" y="189" width="20" height="14" rx="2" stroke={COLORS.primary} strokeWidth="2" fill="none" />
+          <Path d="M225 190 L235 198 L245 190" stroke={COLORS.primary} strokeWidth="2" fill="none" />
         </G>
       </AnimatedG>
       
-      {/* Feature labels */}
-      <SvgText x="85" y="258" fontSize="8" fill={COLORS.textSecondary} textAnchor="middle">Navigate</SvgText>
-      <SvgText x="140" y="258" fontSize="8" fill={COLORS.textSecondary} textAnchor="middle">Call</SvgText>
-      <SvgText x="195" y="258" fontSize="8" fill={COLORS.textSecondary} textAnchor="middle">Email</SvgText>
+      {/* Annotations with arrows */}
+      <AnimatedG animatedProps={annotation1Props}>
+        <Path d="M85 225 L85 245 Q85 255 75 255 L55 255" stroke={COLORS.accent} strokeWidth="2" fill="none" strokeDasharray="4,3" />
+        <Circle cx="50" cy="255" r="4" fill={COLORS.accent} />
+        <Rect x="20" y="265" width="100" height="24" rx="6" fill={COLORS.accent} />
+        <SvgText x="70" y="281" fontSize="10" fill="#FFFFFF" textAnchor="middle" fontWeight="600">Navigate to location</SvgText>
+      </AnimatedG>
+      
+      <AnimatedG animatedProps={annotation2Props}>
+        <Path d="M160 225 L160 270" stroke={COLORS.accent} strokeWidth="2" fill="none" strokeDasharray="4,3" />
+        <Circle cx="160" cy="275" r="4" fill={COLORS.accent} />
+        <Rect x="115" y="285" width="90" height="24" rx="6" fill={COLORS.accent} />
+        <SvgText x="160" y="301" fontSize="10" fill="#FFFFFF" textAnchor="middle" fontWeight="600">Click to call</SvgText>
+      </AnimatedG>
+      
+      <AnimatedG animatedProps={annotation3Props}>
+        <Path d="M235 225 L235 245 Q235 255 245 255 L265 255" stroke={COLORS.accent} strokeWidth="2" fill="none" strokeDasharray="4,3" />
+        <Circle cx="270" cy="255" r="4" fill={COLORS.accent} />
+        <Rect x="200" y="265" width="100" height="24" rx="6" fill={COLORS.accent} />
+        <SvgText x="250" y="281" fontSize="10" fill="#FFFFFF" textAnchor="middle" fontWeight="600">Click to email</SvgText>
+      </AnimatedG>
     </Svg>
   );
 }
 
-// Step 5: View original document
-export function ViewOriginalIllustration({ width = 280, height = 320, animate = true }: IllustrationProps) {
+// Step 5: Click to view original document
+export function ViewOriginalIllustration({ width = 320, height = 380, animate = true }: IllustrationProps) {
   const docScale = useSharedValue(0.3);
   const docOpacity = useSharedValue(0);
+  const tapIndicator = useSharedValue(0);
 
   useEffect(() => {
     if (animate) {
       docOpacity.value = withDelay(200, withTiming(1, { duration: 400 }));
       docScale.value = withDelay(200, withTiming(1, { duration: 600, easing: Easing.out(Easing.back(1.3)) }));
+      
+      // Pulsing tap indicator
+      tapIndicator.value = withDelay(800, withRepeat(
+        withSequence(
+          withTiming(1.2, { duration: 600 }),
+          withTiming(1, { duration: 600 })
+        ),
+        -1
+      ));
     }
   }, [animate]);
 
@@ -408,45 +399,60 @@ export function ViewOriginalIllustration({ width = 280, height = 320, animate = 
     transform: [{ scale: docScale.value }],
   }));
 
+  const tapAnimatedProps = useAnimatedProps(() => ({
+    transform: [{ scale: tapIndicator.value }],
+    opacity: interpolate(tapIndicator.value, [1, 1.2], [0.8, 0.4]),
+  }));
+
   return (
-    <Svg width={width} height={height} viewBox="0 0 280 320">
+    <Svg width={width} height={height} viewBox="0 0 320 380">
       {/* Phone frame */}
-      <Rect x="40" y="20" width="200" height="280" rx="24" fill={COLORS.background} stroke={COLORS.border} strokeWidth="2" />
+      <Rect x="35" y="15" width="250" height="350" rx="28" fill={COLORS.background} stroke={COLORS.border} strokeWidth="2" />
       
       {/* Header */}
-      <Rect x="50" y="30" width="180" height="45" fill={COLORS.card} />
-      <SvgText x="70" y="55" fontSize="14" fill={COLORS.primary}>← Close</SvgText>
-      <SvgText x="140" y="55" fontSize="14" fill={COLORS.text} textAnchor="middle" fontWeight="600">Original Document</SvgText>
+      <Rect x="45" y="25" width="230" height="55" fill={COLORS.card} />
+      <SvgText x="70" y="58" fontSize="16" fill={COLORS.primary}>← Close</SvgText>
+      <SvgText x="160" y="58" fontSize="16" fill={COLORS.text} textAnchor="middle" fontWeight="bold">Original Document</SvgText>
       
       {/* PDF Document preview */}
       <AnimatedG animatedProps={docAnimatedProps}>
-        <Rect x="55" y="85" width="170" height="200" rx="8" fill={COLORS.card} stroke={COLORS.border} strokeWidth="1" />
+        <Rect x="45" y="95" width="230" height="250" rx="10" fill={COLORS.card} stroke={COLORS.border} strokeWidth="1" />
         
         {/* PDF header */}
-        <Rect x="55" y="85" width="170" height="35" rx="8" fill="#DC2626" />
-        <Rect x="55" y="110" width="170" height="10" fill="#DC2626" />
-        <SvgText x="140" y="107" fontSize="12" fill="#FFFFFF" textAnchor="middle" fontWeight="bold">HILTON</SvgText>
+        <Rect x="45" y="95" width="230" height="45" rx="10" fill="#DC2626" />
+        <Rect x="45" y="125" width="230" height="15" fill="#DC2626" />
+        <SvgText x="160" y="123" fontSize="16" fill="#FFFFFF" textAnchor="middle" fontWeight="bold">HILTON</SvgText>
         
         {/* Document content mockup */}
-        <SvgText x="70" y="140" fontSize="11" fill={COLORS.text} fontWeight="bold">Reservation Confirmation</SvgText>
+        <SvgText x="65" y="165" fontSize="14" fill={COLORS.text} fontWeight="bold">Reservation Confirmation</SvgText>
         
-        <Rect x="70" y="150" width="100" height="8" rx="2" fill={COLORS.border} />
-        <Rect x="70" y="162" width="140" height="6" rx="2" fill={COLORS.border} />
-        <Rect x="70" y="172" width="120" height="6" rx="2" fill={COLORS.border} />
+        <Rect x="65" y="180" width="130" height="10" rx="3" fill={COLORS.border} />
+        <Rect x="65" y="196" width="180" height="8" rx="3" fill={COLORS.border} />
+        <Rect x="65" y="210" width="150" height="8" rx="3" fill={COLORS.border} />
         
-        <SvgText x="70" y="195" fontSize="10" fill={COLORS.text} fontWeight="600">Guest: John Doe</SvgText>
-        <SvgText x="70" y="210" fontSize="10" fill={COLORS.textSecondary}>Check-in: Jan 15, 2025</SvgText>
-        <SvgText x="70" y="225" fontSize="10" fill={COLORS.textSecondary}>Check-out: Jan 18, 2025</SvgText>
-        <SvgText x="70" y="240" fontSize="10" fill={COLORS.textSecondary}>Room: Deluxe King</SvgText>
+        <SvgText x="65" y="240" fontSize="13" fill={COLORS.text} fontWeight="600">Guest: John Doe</SvgText>
+        <SvgText x="65" y="260" fontSize="12" fill={COLORS.textSecondary}>Check-in: Jan 15, 2025</SvgText>
+        <SvgText x="65" y="280" fontSize="12" fill={COLORS.textSecondary}>Check-out: Jan 18, 2025</SvgText>
+        <SvgText x="65" y="300" fontSize="12" fill={COLORS.textSecondary}>Room: Deluxe King</SvgText>
         
         {/* Barcode mockup */}
-        <Rect x="70" y="255" width="80" height="20" rx="2" fill={COLORS.text} />
+        <Rect x="65" y="315" width="100" height="25" rx="3" fill={COLORS.text} />
         <G>
-          {[0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64, 68, 72].map((x, i) => (
-            <Rect key={i} x={72 + x} y="257" width={i % 3 === 0 ? 2 : 1} height="16" fill="#FFFFFF" />
+          {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90].map((x, i) => (
+            <Rect key={i} x={68 + x} y="318" width={i % 3 === 0 ? 2.5 : 1.5} height="19" fill="#FFFFFF" />
           ))}
         </G>
       </AnimatedG>
+      
+      {/* Tap indicator */}
+      <AnimatedG animatedProps={tapAnimatedProps}>
+        <Circle cx="160" cy="220" r="35" fill="none" stroke={COLORS.primary} strokeWidth="3" strokeDasharray="8,6" />
+      </AnimatedG>
+      
+      {/* Tap hint */}
+      <G opacity={0.9}>
+        <SvgText x="160" y="370" fontSize="12" fill={COLORS.textSecondary} textAnchor="middle">Tap document to view full size</SvgText>
+      </G>
     </Svg>
   );
 }

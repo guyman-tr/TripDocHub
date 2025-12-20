@@ -21,6 +21,12 @@ export const users = mysqlTable("users", {
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
   // Unique email forwarding address for this user (e.g., trip-inbox-abc123@triphub.dev)
   forwardingEmail: varchar("forwardingEmail", { length: 320 }),
+  // Credits system: 20 free credits for new users, 1 credit = 1 document processed
+  credits: int("credits").default(20).notNull(),
+  // Subscription status: null = no subscription, date = subscription expires at
+  subscriptionExpiresAt: timestamp("subscriptionExpiresAt"),
+  // Stripe/Google Play customer ID for payment tracking
+  paymentCustomerId: varchar("paymentCustomerId", { length: 255 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),

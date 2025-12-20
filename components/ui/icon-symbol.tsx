@@ -59,6 +59,9 @@ const MAPPING = {
   // Legal
   "doc.text.fill": "article",
   
+  // Support
+  "play.fill": "play-arrow",
+  
   // Misc
   "paperplane.fill": "send",
   "chevron.left.forwardslash.chevron.right": "code",

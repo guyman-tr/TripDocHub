@@ -24,8 +24,8 @@ import { Colors, BorderRadius, Spacing } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
   CreateTripIllustration,
-  EmailInboxIllustration,
   ForwardEmailIllustration,
+  UploadDocumentIllustration,
   DocumentParsedIllustration,
   ViewOriginalIllustration,
 } from "./illustrations";
@@ -48,25 +48,25 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
   },
   {
     id: "2",
-    title: "Receive Booking Confirmations",
-    description: "When you book flights, hotels, or rentals, you'll receive confirmation emails with attachments.",
-    Illustration: EmailInboxIllustration,
-  },
-  {
-    id: "3",
     title: "Forward to Your TripHub Email",
-    description: "Simply forward those emails to your unique TripHub address. We'll handle the rest!",
+    description: "Simply forward booking confirmation emails to your unique TripHub address. We'll handle the rest!",
     Illustration: ForwardEmailIllustration,
   },
   {
+    id: "3",
+    title: "Or Upload Your Documents",
+    description: "No email? No problem! Take a photo or upload PDFs directly from your device.",
+    Illustration: UploadDocumentIllustration,
+  },
+  {
     id: "4",
-    title: "Documents Auto-Organized",
+    title: "Essential Details at a Glance",
     description: "AI extracts key details and organizes documents into your trips. Tap icons to navigate, call, or email vendors.",
     Illustration: DocumentParsedIllustration,
   },
   {
     id: "5",
-    title: "Access Original Documents",
+    title: "Click to View Original",
     description: "Need the original? Tap any document to view the full PDF or image, just as you received it.",
     Illustration: ViewOriginalIllustration,
   },
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    maxHeight: 360,
+    maxHeight: 420,
   },
   textContainer: {
     alignItems: "center",

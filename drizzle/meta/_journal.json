@@ -15,6 +15,13 @@
       "when": 1765881070951,
       "tag": "0001_broad_purple_man",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1766225415984,
+      "tag": "0002_lazy_colleen_wing",
+      "breakpoints": true
     }
   ]
 }

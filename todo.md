@@ -79,3 +79,15 @@
 - [x] Privacy Policy page
 - [x] Terms of Service page
 - [x] Onboarding flow for new users (animated SVG illustrations)
+- [x] Replay Tutorial button in Profile settings
+- [ ] Onboarding adjustments: bigger illustrations, remove booking screen, add upload screen, annotate icons, rename last screen
+
+## Payment System (Google Play Billing - pending verification)
+- [x] Stripe setup guide for user (shelved - Israel not supported)
+- [x] Add credits field to database (default 20 free credits)
+- [x] Credits API endpoints
+- [x] Credits UI in Profile screen
+- [x] Credit check before document processing
+- [x] Credit deduction on document processing
+- [x] Placeholder purchase buttons (connect to Google Play later)
+- [x] Onboarding adjustments: bigger illustrations, remove booking screen, add upload screen, annotate icons, rename last screen

@@ -109,6 +109,13 @@ router.post("/", upload.any(), async (req: Request, res: Response) => {
 
     console.log(`[Mailgun] Found user ${user.id} for email ${recipient}`);
 
+    // Check if user can process documents (has credits or subscription)
+    const canProcess = await db.canProcessDocument(user.id);
+    if (!canProcess) {
+      console.log(`[Mailgun] User ${user.id} has no credits remaining`);
+      return res.status(402).json({ error: "Insufficient credits" });
+    }
+
     // Get attachments from multer
     const files = req.files as Express.Multer.File[] | undefined;
     const attachmentCount = parseInt(attachmentCountStr || "0", 10);
@@ -159,6 +166,13 @@ router.post("/", upload.any(), async (req: Request, res: Response) => {
             }
           }
 
+          // Check credits before each document
+          const hasCredits = await db.canProcessDocument(user.id);
+          if (!hasCredits) {
+            console.log(`[Mailgun] User ${user.id} ran out of credits during processing`);
+            break;
+          }
+
           await db.createDocument({
             userId: user.id,
             tripId,
@@ -172,6 +186,9 @@ router.post("/", upload.any(), async (req: Request, res: Response) => {
             documentDate: doc.documentDate,
             contentHash: parseResult.contentHash,
           });
+
+          // Deduct credit for each document processed
+          await db.deductCredit(user.id);
           processedCount++;
         }
 

@@ -20,6 +20,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAuth } from "@/hooks/use-auth";
+import { useOnboarding } from "@/hooks/use-onboarding";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/constants/oauth";
 
@@ -29,10 +30,16 @@ export default function ProfileScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
   const { user, isAuthenticated, loading: authLoading, logout } = useAuth();
+  const { resetOnboarding } = useOnboarding();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const { data: forwardingData } = trpc.user.getForwardingEmail.useQuery(
+    undefined,
+    { enabled: isAuthenticated }
+  );
+
+  const { data: creditsData } = trpc.user.getCredits.useQuery(
     undefined,
     { enabled: isAuthenticated }
   );
@@ -109,6 +116,12 @@ export default function ProfileScreen() {
     );
   }, [logout]);
 
+  const handleReplayTutorial = useCallback(async () => {
+    await resetOnboarding();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.replace("/onboarding");
+  }, [resetOnboarding, router]);
+
   if (authLoading) {
     return (
       <ThemedView style={[styles.container, styles.centered]}>
@@ -184,6 +197,62 @@ export default function ProfileScreen() {
               <ThemedText style={[styles.userEmail, { color: colors.textSecondary }]}>
                 {user.email}
               </ThemedText>
+            )}
+          </View>
+        </View>
+
+        {/* Credits Section */}
+        <View style={styles.section}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>
+            Document Credits
+          </ThemedText>
+          
+          <View style={[styles.creditsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={styles.creditsInfo}>
+              {creditsData?.hasSubscription ? (
+                <>
+                  <View style={[styles.subscriptionBadge, { backgroundColor: colors.success }]}>
+                    <IconSymbol name="checkmark" size={14} color="#FFFFFF" />
+                    <ThemedText style={styles.subscriptionText}>Unlimited</ThemedText>
+                  </View>
+                  <ThemedText style={[styles.creditsSubtext, { color: colors.textSecondary }]}>
+                    Active subscription
+                  </ThemedText>
+                </>
+              ) : (
+                <>
+                  <View style={styles.creditsDisplay}>
+                    <ThemedText style={[styles.creditsNumber, { color: colors.tint }]}>
+                      {creditsData?.credits ?? 0}
+                    </ThemedText>
+                    <ThemedText style={[styles.creditsLabel, { color: colors.textSecondary }]}>
+                      credits remaining
+                    </ThemedText>
+                  </View>
+                  <ThemedText style={[styles.creditsSubtext, { color: colors.textSecondary }]}>
+                    1 credit = 1 document processed
+                  </ThemedText>
+                </>
+              )}
+            </View>
+            
+            {!creditsData?.hasSubscription && (
+              <View style={styles.purchaseButtons}>
+                <Pressable
+                  style={[styles.purchaseButton, { backgroundColor: colors.tint }]}
+                  onPress={() => Alert.alert("Coming Soon", "Credit purchases will be available when the app is published to Google Play.")}
+                >
+                  <ThemedText style={styles.purchaseButtonText}>Buy 10 Credits - $0.99</ThemedText>
+                </Pressable>
+                <Pressable
+                  style={[styles.subscribeButton, { borderColor: colors.tint }]}
+                  onPress={() => Alert.alert("Coming Soon", "Subscriptions will be available when the app is published to Google Play.")}
+                >
+                  <ThemedText style={[styles.subscribeButtonText, { color: colors.tint }]}>
+                    Unlimited - $1.99/month
+                  </ThemedText>
+                </Pressable>
+              </View>
             )}
           </View>
         </View>
@@ -266,6 +335,22 @@ export default function ProfileScreen() {
               </View>
             </View>
           </View>
+        </View>
+
+        {/* Support Section */}
+        <View style={styles.section}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>
+            Support
+          </ThemedText>
+          
+          <Pressable
+            style={[styles.legalButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={handleReplayTutorial}
+          >
+            <IconSymbol name="play.fill" size={20} color={colors.tint} />
+            <ThemedText style={styles.legalButtonText}>Replay Tutorial</ThemedText>
+            <IconSymbol name="chevron.right" size={16} color={colors.textSecondary} />
+          </Pressable>
         </View>
 
         {/* Legal Section */}
@@ -473,6 +558,73 @@ const styles = StyleSheet.create({
   legalButtonText: {
     flex: 1,
     fontSize: 16,
+    lineHeight: 22,
+  },
+  creditsCard: {
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    padding: Spacing.md,
+  },
+  creditsInfo: {
+    alignItems: "center",
+    marginBottom: Spacing.md,
+  },
+  creditsDisplay: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: Spacing.xs,
+  },
+  creditsNumber: {
+    fontSize: 48,
+    fontWeight: "bold",
+    lineHeight: 56,
+  },
+  creditsLabel: {
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  creditsSubtext: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: Spacing.xs,
+  },
+  subscriptionBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.full,
+    gap: Spacing.xs,
+  },
+  subscriptionText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+    lineHeight: 22,
+  },
+  purchaseButtons: {
+    gap: Spacing.sm,
+  },
+  purchaseButton: {
+    paddingVertical: 14,
+    borderRadius: BorderRadius.md,
+    alignItems: "center",
+  },
+  purchaseButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+    lineHeight: 22,
+  },
+  subscribeButton: {
+    paddingVertical: 14,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    alignItems: "center",
+  },
+  subscribeButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
     lineHeight: 22,
   },
 });

@@ -350,3 +350,72 @@ export async function getDocumentByContentHash(
 
   return result.length > 0 ? result[0] : undefined;
 }
+
+// ============ CREDITS FUNCTIONS ============
+
+export async function getUserCredits(userId: number): Promise<{ credits: number; hasSubscription: boolean }> {
+  const db = await getDb();
+  if (!db) return { credits: 0, hasSubscription: false };
+
+  const result = await db
+    .select({ credits: users.credits, subscriptionExpiresAt: users.subscriptionExpiresAt })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (result.length === 0) return { credits: 0, hasSubscription: false };
+
+  const user = result[0];
+  const hasSubscription = user.subscriptionExpiresAt !== null && user.subscriptionExpiresAt > new Date();
+
+  return { credits: user.credits, hasSubscription };
+}
+
+export async function deductCredit(userId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+
+  // First check if user has subscription or credits
+  const { credits, hasSubscription } = await getUserCredits(userId);
+
+  // If user has active subscription, don't deduct credits
+  if (hasSubscription) return true;
+
+  // If no credits left, return false
+  if (credits <= 0) return false;
+
+  // Deduct one credit
+  await db
+    .update(users)
+    .set({ credits: credits - 1 })
+    .where(eq(users.id, userId));
+
+  return true;
+}
+
+export async function addCredits(userId: number, amount: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { credits } = await getUserCredits(userId);
+
+  await db
+    .update(users)
+    .set({ credits: credits + amount })
+    .where(eq(users.id, userId));
+}
+
+export async function setSubscription(userId: number, expiresAt: Date | null): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(users)
+    .set({ subscriptionExpiresAt: expiresAt })
+    .where(eq(users.id, userId));
+}
+
+export async function canProcessDocument(userId: number): Promise<boolean> {
+  const { credits, hasSubscription } = await getUserCredits(userId);
+  return hasSubscription || credits > 0;
+}
