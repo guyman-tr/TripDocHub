@@ -91,3 +91,7 @@
 - [x] Credit deduction on document processing
 - [x] Placeholder purchase buttons (connect to Google Play later)
 - [x] Onboarding adjustments: bigger illustrations, remove booking screen, add upload screen, annotate icons, rename last screen
+
+## Store Listing
+- [x] Add public privacy policy web endpoint
+- [x] Add public terms of service web endpoint
