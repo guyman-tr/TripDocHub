@@ -22,6 +22,8 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { trpc } from "@/lib/trpc";
+import * as Auth from "@/lib/auth";
+import { getApiBaseUrl } from "@/constants/oauth";
 
 export default function UploadScreen() {
   const router = useRouter();
@@ -272,13 +274,21 @@ export default function UploadScreen() {
         } as any);
       }
 
-      const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || "";
+      const apiBaseUrl = getApiBaseUrl();
+      
+      // Get auth token for native platforms (cookies don't work reliably on mobile)
+      const token = await Auth.getSessionToken();
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
       
       setUploadStatus("Uploading to server...");
       const uploadResponse = await fetch(`${apiBaseUrl}/api/upload`, {
         method: "POST",
         body: formData,
         credentials: "include",
+        headers,
       });
 
       if (!uploadResponse.ok) {

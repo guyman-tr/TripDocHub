@@ -225,8 +225,23 @@ async function startServer() {
   app.post("/api/upload", upload.single("file"), async (req, res) => {
     try {
       // Check authentication using the SDK
-      const sessionCookie = req.cookies[COOKIE_NAME];
-      const session = await sdk.verifySession(sessionCookie);
+      // Support both cookie-based auth (web) and Bearer token auth (mobile)
+      let session = null;
+      
+      // First try Bearer token from Authorization header (mobile)
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        const token = authHeader.substring(7);
+        session = await sdk.verifySession(token);
+      }
+      
+      // Fall back to cookie-based auth (web)
+      if (!session) {
+        const sessionCookie = req.cookies[COOKIE_NAME];
+        if (sessionCookie) {
+          session = await sdk.verifySession(sessionCookie);
+        }
+      }
       
       if (!session) {
         res.status(401).json({ error: "Unauthorized" });
