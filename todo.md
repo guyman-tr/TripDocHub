@@ -95,3 +95,4 @@
 ## Store Listing
 - [x] Add public privacy policy web endpoint
 - [x] Add public terms of service web endpoint
+- [x] Update app logo with new design
