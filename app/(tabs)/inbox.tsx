@@ -43,11 +43,13 @@ const categoryColorMap: Record<string, string> = {
 function DocumentCard({ 
   document, 
   onPress, 
-  onAssign 
+  onAssign,
+  onDelete,
 }: { 
   document: Document; 
   onPress: () => void;
   onAssign: () => void;
+  onDelete: () => void;
 }) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
@@ -96,6 +98,16 @@ function DocumentCard({
           }}
         >
           <ThemedText style={styles.assignButtonText}>Assign</ThemedText>
+        </Pressable>
+        <Pressable
+          style={styles.deleteButton}
+          onPress={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          hitSlop={8}
+        >
+          <IconSymbol name="trash.fill" size={20} color={colors.destructive} />
         </Pressable>
       </Pressable>
     </Animated.View>
@@ -231,6 +243,17 @@ export default function InboxScreen() {
     },
   });
 
+  const deleteMutation = trpc.documents.delete.useMutation({
+    onSuccess: () => {
+      refetch();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+  });
+
+  const handleDeletePress = useCallback((document: Document) => {
+    deleteMutation.mutate({ id: document.id });
+  }, [deleteMutation]);
+
   const handleDocumentPress = useCallback((document: Document) => {
     router.push(`/document/${document.id}` as any);
   }, [router]);
@@ -285,6 +308,7 @@ export default function InboxScreen() {
               document={item}
               onPress={() => handleDocumentPress(item)}
               onAssign={() => handleAssignPress(item)}
+              onDelete={() => handleDeletePress(item)}
             />
           )}
           contentContainerStyle={[
@@ -381,6 +405,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
     lineHeight: 18,
+  },
+  deleteButton: {
+    padding: 8,
+    marginLeft: 4,
   },
   emptyContainer: {
     flex: 1,

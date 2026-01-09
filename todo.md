@@ -121,3 +121,6 @@
 
 ## Bugs (Active)
 - [x] Fix credit consumption - credits UI not refreshing after document processing (added invalidation)
+
+## UI Improvements
+- [x] Add trash icon to inbox document items for easy deletion of duplicates
