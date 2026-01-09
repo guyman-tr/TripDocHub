@@ -114,6 +114,12 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    clearInbox: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        const deleted = await db.clearUserInbox(ctx.user.id);
+        return { success: true, deletedCount: deleted };
+      }),
+
     // Parse and create document from uploaded file URL
     parseAndCreate: protectedProcedure
       .input(

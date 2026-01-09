@@ -1,0 +1,55 @@
+{
+  "query": "SELECT * FROM users;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3cm1rAYqFTLZz8b.ead05c4c62f7 --database jxNutJmZj7bf8VEqqERusH --execute SELECT * FROM users;",
+  "rows": [
+    {
+      "id": "1",
+      "openId": "G9K99HWcotYWQXykj8PnCw",
+      "name": "Guy Manova",
+      "email": "gmanovacanada@gmail.com",
+      "loginMethod": "google",
+      "role": "user",
+      "createdAt": "2025-12-16 11:02:19",
+      "updatedAt": "2025-12-18 12:27:45",
+      "lastSignedIn": "2025-12-18 12:27:45",
+      "forwardingEmail": "trip-inbox-rh1k8dga@in.mytripdochub.com",
+      "credits": "20",
+      "subscriptionExpiresAt": "NULL",
+      "paymentCustomerId": "NULL"
+    },
+    {
+      "id": "8",
+      "openId": "FaZauEfSNmDmQQB78oDnw9",
+      "name": "Guy Manova",
+      "email": "gmanova@gmail.com",
+      "loginMethod": "google",
+      "role": "admin",
+      "createdAt": "2025-12-16 11:04:31",
+      "updatedAt": "2026-01-09 13:00:14",
+      "lastSignedIn": "2026-01-09 13:00:15",
+      "forwardingEmail": "trip-inbox-mesjywq4@in.mytripdochub.com",
+      "credits": "17",
+      "subscriptionExpiresAt": "NULL",
+      "paymentCustomerId": "NULL"
+    },
+    {
+      "id": "630001",
+      "openId": "bPCxT9jLwu4GSuLpiBn82L",
+      "name": "Inna Manova",
+      "email": "inna.druker@gmail.com",
+      "loginMethod": "google",
+      "role": "user",
+      "createdAt": "2026-01-07 20:10:26",
+      "updatedAt": "2026-01-07 20:11:33",
+      "lastSignedIn": "2026-01-07 20:11:34",
+      "forwardingEmail": "trip-arxri3c2@in.mytripdochub.com",
+      "credits": "20",
+      "subscriptionExpiresAt": "NULL",
+      "paymentCustomerId": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\topenId\tname\temail\tloginMethod\trole\tcreatedAt\tupdatedAt\tlastSignedIn\tforwardingEmail\tcredits\tsubscriptionExpiresAt\tpaymentCustomerId\n1\tG9K99HWcotYWQXykj8PnCw\tGuy Manova\tgmanovacanada@gmail.com\tgoogle\tuser\t2025-12-16 11:02:19\t2025-12-18 12:27:45\t2025-12-18 12:27:45\ttrip-inbox-rh1k8dga@in.mytripdochub.com\t20\tNULL\tNULL\n8\tFaZauEfSNmDmQQB78oDnw9\tGuy Manova\tgmanova@gmail.com\tgoogle\tadmin\t2025-12-16 11:04:31\t2026-01-09 13:00:14\t2026-01-09 13:00:15\ttrip-inbox-mesjywq4@in.mytripdochub.com\t17\tNULL\tNULL\n630001\tbPCxT9jLwu4GSuLpiBn82L\tInna Manova\tinna.druker@gmail.com\tgoogle\tuser\t2026-01-07 20:10:26\t2026-01-07 20:11:33\t2026-01-07 20:11:34\ttrip-arxri3c2@in.mytripdochub.com\t20\tNULL\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 1533
+}

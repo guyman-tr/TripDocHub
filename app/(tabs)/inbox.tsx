@@ -254,6 +254,17 @@ export default function InboxScreen() {
     deleteMutation.mutate({ id: document.id });
   }, [deleteMutation]);
 
+  const clearInboxMutation = trpc.documents.clearInbox.useMutation({
+    onSuccess: () => {
+      refetch();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+  });
+
+  const handleClearAll = useCallback(() => {
+    clearInboxMutation.mutate();
+  }, [clearInboxMutation]);
+
   const handleDocumentPress = useCallback((document: Document) => {
     router.push(`/document/${document.id}` as any);
   }, [router]);
@@ -291,7 +302,21 @@ export default function InboxScreen() {
     <ThemedView style={styles.container}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
-        <ThemedText type="title">Inbox</ThemedText>
+        <View style={styles.headerRow}>
+          <ThemedText type="title">Inbox</ThemedText>
+          {documents && documents.length > 0 && (
+            <Pressable
+              style={styles.clearAllButton}
+              onPress={handleClearAll}
+              disabled={clearInboxMutation.isPending}
+            >
+              <IconSymbol name="trash.fill" size={18} color={colors.destructive} />
+              <ThemedText style={[styles.clearAllText, { color: colors.destructive }]}>
+                Clear All
+              </ThemedText>
+            </Pressable>
+          )}
+        </View>
         {documents && documents.length > 0 && (
           <ThemedText style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
             {documents.length} document{documents.length !== 1 ? "s" : ""} to assign
@@ -348,6 +373,22 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: Spacing.md,
     paddingBottom: Spacing.md,
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  clearAllButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  clearAllText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
   headerSubtitle: {
     marginTop: Spacing.xs,

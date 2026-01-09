@@ -246,6 +246,18 @@ export async function deleteDocument(documentId: number, userId: number): Promis
     .where(and(eq(documents.id, documentId), eq(documents.userId, userId)));
 }
 
+export async function clearUserInbox(userId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Delete all documents that are not assigned to any trip (inbox documents)
+  const result = await db
+    .delete(documents)
+    .where(and(eq(documents.userId, userId), isNull(documents.tripId)));
+
+  return result[0]?.affectedRows ?? 0;
+}
+
 export async function findDuplicateDocument(
   userId: number,
   contentHash: string

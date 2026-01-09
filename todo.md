@@ -124,3 +124,4 @@
 
 ## UI Improvements
 - [x] Add trash icon to inbox document items for easy deletion of duplicates
+- [x] Add Clear All button to inbox header to delete all documents at once
