@@ -9,6 +9,7 @@ import {
   View,
   RefreshControl,
   Modal,
+  TouchableOpacity,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
@@ -63,54 +64,54 @@ function DocumentCard({
       exiting={FadeOut}
       layout={Layout.springify()}
     >
-      <Pressable
+      <View
         style={[styles.docCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-        onPress={onPress}
       >
-        <View style={[styles.categoryIcon, { backgroundColor: categoryColor + "20" }]}>
-          <IconSymbol name={categoryIcon} size={24} color={categoryColor} />
-        </View>
-        <View style={styles.docInfo}>
-          <ThemedText type="defaultSemiBold" numberOfLines={1}>
-            {document.title}
-          </ThemedText>
-          {document.subtitle && (
-            <ThemedText 
-              style={[styles.docSubtitle, { color: colors.textSecondary }]} 
-              numberOfLines={1}
-            >
-              {document.subtitle}
-            </ThemedText>
-          )}
-          <View style={styles.docMeta}>
-            <ThemedText style={[styles.docType, { color: colors.textSecondary }]}>
-              {document.documentType}
-            </ThemedText>
-            {!document.isRead && (
-              <View style={[styles.unreadDot, { backgroundColor: colors.tint }]} />
-            )}
+        <TouchableOpacity 
+          style={styles.docContent}
+          onPress={onPress}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.categoryIcon, { backgroundColor: categoryColor + "20" }]}>
+            <IconSymbol name={categoryIcon} size={24} color={categoryColor} />
           </View>
-        </View>
-        <Pressable
+          <View style={styles.docInfo}>
+            <ThemedText type="defaultSemiBold" numberOfLines={1}>
+              {document.title}
+            </ThemedText>
+            {document.subtitle && (
+              <ThemedText 
+                style={[styles.docSubtitle, { color: colors.textSecondary }]} 
+                numberOfLines={1}
+              >
+                {document.subtitle}
+              </ThemedText>
+            )}
+            <View style={styles.docMeta}>
+              <ThemedText style={[styles.docType, { color: colors.textSecondary }]}>
+                {document.documentType}
+              </ThemedText>
+              {!document.isRead && (
+                <View style={[styles.unreadDot, { backgroundColor: colors.tint }]} />
+              )}
+            </View>
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity
           style={[styles.assignButton, { backgroundColor: colors.tint }]}
-          onPress={(e) => {
-            e.stopPropagation();
-            onAssign();
-          }}
+          onPress={() => onAssign()}
+          activeOpacity={0.7}
         >
           <ThemedText style={styles.assignButtonText}>Assign</ThemedText>
-        </Pressable>
-        <Pressable
+        </TouchableOpacity>
+        <TouchableOpacity
           style={styles.deleteButton}
-          onPress={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-          hitSlop={8}
+          onPress={() => onDelete()}
+          activeOpacity={0.7}
         >
           <IconSymbol name="trash.fill" size={20} color={colors.destructive} />
-        </Pressable>
-      </Pressable>
+        </TouchableOpacity>
+      </View>
     </Animated.View>
   );
 }
@@ -429,6 +430,12 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     borderWidth: 1,
     padding: Spacing.md,
+    gap: Spacing.sm,
+  },
+  docContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
     gap: Spacing.sm,
   },
   categoryIcon: {
