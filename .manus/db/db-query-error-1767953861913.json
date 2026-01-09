@@ -1,0 +1,8 @@
+{
+  "query": "INSERT INTO promo_codes (code, credits, max_uses, current_uses, expires_at, is_active, created_at)\nVALUES \n  ('TESTFREE100', 100, 999, 0, '2026-12-31 23:59:59', true, NOW()),\n  ('BETATESTER', 50, 100, 0, '2026-12-31 23:59:59', true, NOW()),\n  ('WELCOME20', 20, 1000, 0, '2026-06-30 23:59:59', true, NOW())\nRETURNING *;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3cm1rAYqFTLZz8b.ead05c4c62f7 --database jxNutJmZj7bf8VEqqERusH --execute INSERT INTO promo_codes (code, credits, max_uses, current_uses, expires_at, is_active, created_at)\nVALUES \n  ('TESTFREE100', 100, 999, 0, '2026-12-31 23:59:59', true, NOW()),\n  ('BETATESTER', 50, 100, 0, '2026-12-31 23:59:59', true, NOW()),\n  ('WELCOME20', 20, 1000, 0, '2026-06-30 23:59:59', true, NOW())\nRETURNING *;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 6 column 10 near \"RETURNING *\""
+  ]
+}

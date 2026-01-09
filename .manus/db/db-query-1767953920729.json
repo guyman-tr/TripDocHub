@@ -1,0 +1,40 @@
+{
+  "query": "SELECT * FROM promo_codes;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3cm1rAYqFTLZz8b.ead05c4c62f7 --database jxNutJmZj7bf8VEqqERusH --execute SELECT * FROM promo_codes;",
+  "rows": [
+    {
+      "id": "1",
+      "code": "TESTFREE100",
+      "credits": "100",
+      "maxUses": "999",
+      "currentUses": "0",
+      "expiresAt": "2026-12-31 23:59:59",
+      "isActive": "1",
+      "createdAt": "2026-01-09 10:18:35"
+    },
+    {
+      "id": "2",
+      "code": "BETATESTER",
+      "credits": "50",
+      "maxUses": "100",
+      "currentUses": "0",
+      "expiresAt": "2026-12-31 23:59:59",
+      "isActive": "1",
+      "createdAt": "2026-01-09 10:18:35"
+    },
+    {
+      "id": "3",
+      "code": "WELCOME20",
+      "credits": "20",
+      "maxUses": "1000",
+      "currentUses": "0",
+      "expiresAt": "2026-06-30 23:59:59",
+      "isActive": "1",
+      "createdAt": "2026-01-09 10:18:35"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tcredits\tmaxUses\tcurrentUses\texpiresAt\tisActive\tcreatedAt\n1\tTESTFREE100\t100\t999\t0\t2026-12-31 23:59:59\t1\t2026-01-09 10:18:35\n2\tBETATESTER\t50\t100\t0\t2026-12-31 23:59:59\t1\t2026-01-09 10:18:35\n3\tWELCOME20\t20\t1000\t0\t2026-06-30 23:59:59\t1\t2026-01-09 10:18:35\n",
+  "stderr": "",
+  "execution_time_ms": 1571
+}

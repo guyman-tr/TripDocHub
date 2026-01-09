@@ -118,3 +118,6 @@
 
 ## Production Backend URL
 - [ ] Discover/confirm production backend URL for Mailgun webhook
+
+## Bugs (Active)
+- [x] Fix credit consumption - credits UI not refreshing after document processing (added invalidation)

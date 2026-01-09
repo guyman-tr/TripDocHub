@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO promo_codes (code, credits, maxUses, currentUses, expiresAt, isActive, createdAt)\nVALUES \n  ('TESTFREE100', 100, 999, 0, '2026-12-31 23:59:59', true, NOW()),\n  ('BETATESTER', 50, 100, 0, '2026-12-31 23:59:59', true, NOW()),\n  ('WELCOME20', 20, 1000, 0, '2026-06-30 23:59:59', true, NOW());",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3cm1rAYqFTLZz8b.ead05c4c62f7 --database jxNutJmZj7bf8VEqqERusH --execute INSERT INTO promo_codes (code, credits, maxUses, currentUses, expiresAt, isActive, createdAt)\nVALUES \n  ('TESTFREE100', 100, 999, 0, '2026-12-31 23:59:59', true, NOW()),\n  ('BETATESTER', 50, 100, 0, '2026-12-31 23:59:59', true, NOW()),\n  ('WELCOME20', 20, 1000, 0, '2026-06-30 23:59:59', true, NOW());",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1582
+}

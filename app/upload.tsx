@@ -68,6 +68,7 @@ export default function UploadScreen() {
     onSuccess: (data) => {
       utils.documents.inbox.invalidate();
       utils.documents.inboxCount.invalidate();
+      utils.user.getCredits.invalidate(); // Refresh credits after processing
       if (tripId || data.autoAssignedTripId) {
         utils.documents.byTrip.invalidate({ tripId: tripId || data.autoAssignedTripId! });
         utils.trips.list.invalidate();
