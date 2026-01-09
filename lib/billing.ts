@@ -16,7 +16,7 @@ export const CREDIT_AMOUNTS: Record<ProductId, number> = {
   [PRODUCT_IDS.CREDITS_100]: 100,
 };
 
-// Product display info (prices will be fetched from Google Play)
+// Product display info
 export interface Product {
   productId: ProductId;
   title: string;
@@ -31,10 +31,12 @@ export interface Product {
 export interface PurchaseResult {
   productId: string;
   purchaseToken?: string;
-  acknowledged?: boolean;
+  transactionId?: string;
 }
 
-let isConnected = false;
+let isInitialized = false;
+let purchaseUpdateSubscription: any = null;
+let purchaseErrorSubscription: any = null;
 
 // Mock products for web preview
 const MOCK_PRODUCTS: Product[] = [
@@ -70,10 +72,14 @@ export async function initializeBilling(): Promise<boolean> {
     return false;
   }
 
+  if (isInitialized) {
+    return true;
+  }
+
   try {
-    const InAppPurchases = require("expo-in-app-purchases");
-    await InAppPurchases.connectAsync();
-    isConnected = true;
+    const RNIap = require("react-native-iap");
+    await RNIap.initConnection();
+    isInitialized = true;
     console.log("[Billing] Connected to billing service");
     return true;
   } catch (error) {
@@ -86,12 +92,23 @@ export async function initializeBilling(): Promise<boolean> {
  * Disconnect from billing service
  */
 export async function disconnectBilling(): Promise<void> {
-  if (Platform.OS === "web" || !isConnected) return;
+  if (Platform.OS === "web" || !isInitialized) return;
 
   try {
-    const InAppPurchases = require("expo-in-app-purchases");
-    await InAppPurchases.disconnectAsync();
-    isConnected = false;
+    const RNIap = require("react-native-iap");
+    await RNIap.endConnection();
+    isInitialized = false;
+    
+    // Remove listeners
+    if (purchaseUpdateSubscription) {
+      purchaseUpdateSubscription.remove();
+      purchaseUpdateSubscription = null;
+    }
+    if (purchaseErrorSubscription) {
+      purchaseErrorSubscription.remove();
+      purchaseErrorSubscription = null;
+    }
+    
     console.log("[Billing] Disconnected from billing service");
   } catch (error) {
     console.error("[Billing] Failed to disconnect:", error);
@@ -107,29 +124,34 @@ export async function getProducts(): Promise<Product[]> {
     return MOCK_PRODUCTS;
   }
 
-  if (!isConnected) {
+  if (!isInitialized) {
     const connected = await initializeBilling();
-    if (!connected) return [];
+    if (!connected) return MOCK_PRODUCTS; // Return mock products if connection fails
   }
 
   try {
-    const InAppPurchases = require("expo-in-app-purchases");
-    const { results } = await InAppPurchases.getProductsAsync(
-      Object.values(PRODUCT_IDS)
-    );
+    const RNIap = require("react-native-iap");
+    const products = await RNIap.getProducts({
+      skus: Object.values(PRODUCT_IDS),
+    });
 
-    return (results ?? []).map((item: any) => ({
+    if (!products || products.length === 0) {
+      console.log("[Billing] No products found, returning mock products");
+      return MOCK_PRODUCTS;
+    }
+
+    return products.map((item: any) => ({
       productId: item.productId as ProductId,
-      title: item.title,
-      description: item.description,
+      title: item.title || item.name || `${CREDIT_AMOUNTS[item.productId as ProductId]} Credits`,
+      description: item.description || `Process ${CREDIT_AMOUNTS[item.productId as ProductId]} documents`,
       credits: CREDIT_AMOUNTS[item.productId as ProductId] || 0,
-      price: item.price,
+      price: item.localizedPrice || item.price || "N/A",
       priceAmountMicros: item.priceAmountMicros,
-      currencyCode: item.priceCurrencyCode,
+      currencyCode: item.currency,
     }));
   } catch (error) {
     console.error("[Billing] Failed to get products:", error);
-    return [];
+    return MOCK_PRODUCTS;
   }
 }
 
@@ -143,7 +165,7 @@ export async function purchaseProduct(
     return { success: false, error: "Purchases not available on web" };
   }
 
-  if (!isConnected) {
+  if (!isInitialized) {
     const connected = await initializeBilling();
     if (!connected) {
       return { success: false, error: "Failed to connect to billing service" };
@@ -151,8 +173,8 @@ export async function purchaseProduct(
   }
 
   try {
-    const InAppPurchases = require("expo-in-app-purchases");
-    await InAppPurchases.purchaseItemAsync(productId);
+    const RNIap = require("react-native-iap");
+    await RNIap.requestPurchase({ skus: [productId] });
     
     // The purchase result will come through the purchase listener
     // Return success here - the actual verification happens in the listener
@@ -160,7 +182,8 @@ export async function purchaseProduct(
   } catch (error: any) {
     console.error("[Billing] Purchase failed:", error);
     
-    if (error.code === "E_USER_CANCELLED") {
+    // Handle user cancellation
+    if (error.code === "E_USER_CANCELLED" || error.message?.includes("cancelled")) {
       return { success: false, error: "Purchase cancelled" };
     }
     
@@ -179,37 +202,61 @@ export function setPurchaseListener(
   }
 
   try {
-    const InAppPurchases = require("expo-in-app-purchases");
-    InAppPurchases.setPurchaseListener(({ responseCode, results }: any) => {
-      if (responseCode === InAppPurchases.IAPResponseCode.OK && results) {
-        for (const purchase of results ?? []) {
-          if (!purchase.acknowledged) {
-            onPurchase(purchase);
-          }
+    const RNIap = require("react-native-iap");
+    
+    // Listen for successful purchases
+    purchaseUpdateSubscription = RNIap.purchaseUpdatedListener(
+      async (purchase: any) => {
+        console.log("[Billing] Purchase update:", purchase.productId);
+        
+        const receipt = purchase.transactionReceipt || purchase.purchaseToken;
+        if (receipt) {
+          onPurchase({
+            productId: purchase.productId,
+            purchaseToken: purchase.purchaseToken,
+            transactionId: purchase.transactionId,
+          });
         }
       }
+    );
+
+    // Listen for purchase errors
+    purchaseErrorSubscription = RNIap.purchaseErrorListener((error: any) => {
+      console.error("[Billing] Purchase error:", error);
     });
   } catch (error) {
     console.error("[Billing] Failed to set purchase listener:", error);
   }
 
   return () => {
-    // Cleanup if needed
+    if (purchaseUpdateSubscription) {
+      purchaseUpdateSubscription.remove();
+      purchaseUpdateSubscription = null;
+    }
+    if (purchaseErrorSubscription) {
+      purchaseErrorSubscription.remove();
+      purchaseErrorSubscription = null;
+    }
   };
 }
 
 /**
- * Acknowledge a purchase (required after successful verification)
+ * Acknowledge/finish a purchase (required after successful verification)
  */
 export async function acknowledgePurchase(purchaseToken: string): Promise<boolean> {
   if (Platform.OS === "web") return false;
 
   try {
-    const InAppPurchases = require("expo-in-app-purchases");
-    await InAppPurchases.finishTransactionAsync(
-      { purchaseToken } as any,
-      true
-    );
+    const RNIap = require("react-native-iap");
+    
+    // For Android, acknowledge the purchase
+    if (Platform.OS === "android") {
+      await RNIap.acknowledgePurchaseAndroid({ token: purchaseToken });
+    }
+    
+    // Finish the transaction
+    await RNIap.finishTransaction({ purchaseToken } as any, false);
+    
     console.log("[Billing] Purchase acknowledged");
     return true;
   } catch (error) {
@@ -219,22 +266,27 @@ export async function acknowledgePurchase(purchaseToken: string): Promise<boolea
 }
 
 /**
- * Get pending purchases (for restoring)
+ * Get available purchases (for restoring)
  */
-export async function getPendingPurchases(): Promise<PurchaseResult[]> {
+export async function getAvailablePurchases(): Promise<PurchaseResult[]> {
   if (Platform.OS === "web") return [];
 
-  if (!isConnected) {
+  if (!isInitialized) {
     const connected = await initializeBilling();
     if (!connected) return [];
   }
 
   try {
-    const InAppPurchases = require("expo-in-app-purchases");
-    const { results } = await InAppPurchases.getPurchaseHistoryAsync();
-    return results?.filter((p: any) => !p.acknowledged) || [];
+    const RNIap = require("react-native-iap");
+    const purchases = await RNIap.getAvailablePurchases();
+    
+    return purchases.map((p: any) => ({
+      productId: p.productId,
+      purchaseToken: p.purchaseToken,
+      transactionId: p.transactionId,
+    }));
   } catch (error) {
-    console.error("[Billing] Failed to get pending purchases:", error);
+    console.error("[Billing] Failed to get available purchases:", error);
     return [];
   }
 }
