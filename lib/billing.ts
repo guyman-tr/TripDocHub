@@ -1,4 +1,3 @@
-import * as InAppPurchases from "expo-in-app-purchases";
 import { Platform } from "react-native";
 
 // Product IDs - these must match what you create in Google Play Console
@@ -28,8 +27,39 @@ export interface Product {
   currencyCode?: string;
 }
 
+// Purchase result interface
+export interface PurchaseResult {
+  productId: string;
+  purchaseToken?: string;
+  acknowledged?: boolean;
+}
+
 let isConnected = false;
-let purchaseListener: InAppPurchases.IAPItemDetails[] | null = null;
+
+// Mock products for web preview
+const MOCK_PRODUCTS: Product[] = [
+  {
+    productId: PRODUCT_IDS.CREDITS_10,
+    title: "10 Credits",
+    description: "Process 10 documents",
+    credits: 10,
+    price: "$0.99",
+  },
+  {
+    productId: PRODUCT_IDS.CREDITS_50,
+    title: "50 Credits",
+    description: "Process 50 documents",
+    credits: 50,
+    price: "$3.99",
+  },
+  {
+    productId: PRODUCT_IDS.CREDITS_100,
+    title: "100 Credits",
+    description: "Process 100 documents",
+    credits: 100,
+    price: "$6.99",
+  },
+];
 
 /**
  * Initialize the billing system
@@ -41,6 +71,7 @@ export async function initializeBilling(): Promise<boolean> {
   }
 
   try {
+    const InAppPurchases = require("expo-in-app-purchases");
     await InAppPurchases.connectAsync();
     isConnected = true;
     console.log("[Billing] Connected to billing service");
@@ -55,9 +86,10 @@ export async function initializeBilling(): Promise<boolean> {
  * Disconnect from billing service
  */
 export async function disconnectBilling(): Promise<void> {
-  if (!isConnected) return;
+  if (Platform.OS === "web" || !isConnected) return;
 
   try {
+    const InAppPurchases = require("expo-in-app-purchases");
     await InAppPurchases.disconnectAsync();
     isConnected = false;
     console.log("[Billing] Disconnected from billing service");
@@ -72,29 +104,7 @@ export async function disconnectBilling(): Promise<void> {
 export async function getProducts(): Promise<Product[]> {
   if (Platform.OS === "web") {
     // Return mock products for web preview
-    return [
-      {
-        productId: PRODUCT_IDS.CREDITS_10,
-        title: "10 Credits",
-        description: "Process 10 documents",
-        credits: 10,
-        price: "$0.99",
-      },
-      {
-        productId: PRODUCT_IDS.CREDITS_50,
-        title: "50 Credits",
-        description: "Process 50 documents",
-        credits: 50,
-        price: "$3.99",
-      },
-      {
-        productId: PRODUCT_IDS.CREDITS_100,
-        title: "100 Credits",
-        description: "Process 100 documents",
-        credits: 100,
-        price: "$6.99",
-      },
-    ];
+    return MOCK_PRODUCTS;
   }
 
   if (!isConnected) {
@@ -103,11 +113,12 @@ export async function getProducts(): Promise<Product[]> {
   }
 
   try {
+    const InAppPurchases = require("expo-in-app-purchases");
     const { results } = await InAppPurchases.getProductsAsync(
       Object.values(PRODUCT_IDS)
     );
 
-    return (results ?? []).map((item) => ({
+    return (results ?? []).map((item: any) => ({
       productId: item.productId as ProductId,
       title: item.title,
       description: item.description,
@@ -140,6 +151,7 @@ export async function purchaseProduct(
   }
 
   try {
+    const InAppPurchases = require("expo-in-app-purchases");
     await InAppPurchases.purchaseItemAsync(productId);
     
     // The purchase result will come through the purchase listener
@@ -160,21 +172,26 @@ export async function purchaseProduct(
  * Set up purchase update listener
  */
 export function setPurchaseListener(
-  onPurchase: (purchase: InAppPurchases.InAppPurchase) => void
+  onPurchase: (purchase: PurchaseResult) => void
 ): () => void {
   if (Platform.OS === "web") {
     return () => {};
   }
 
-  const subscription = InAppPurchases.setPurchaseListener(({ responseCode, results }) => {
-    if (responseCode === InAppPurchases.IAPResponseCode.OK && results) {
-      for (const purchase of results ?? []) {
-        if (!purchase.acknowledged) {
-          onPurchase(purchase);
+  try {
+    const InAppPurchases = require("expo-in-app-purchases");
+    InAppPurchases.setPurchaseListener(({ responseCode, results }: any) => {
+      if (responseCode === InAppPurchases.IAPResponseCode.OK && results) {
+        for (const purchase of results ?? []) {
+          if (!purchase.acknowledged) {
+            onPurchase(purchase);
+          }
         }
       }
-    }
-  });
+    });
+  } catch (error) {
+    console.error("[Billing] Failed to set purchase listener:", error);
+  }
 
   return () => {
     // Cleanup if needed
@@ -188,8 +205,9 @@ export async function acknowledgePurchase(purchaseToken: string): Promise<boolea
   if (Platform.OS === "web") return false;
 
   try {
+    const InAppPurchases = require("expo-in-app-purchases");
     await InAppPurchases.finishTransactionAsync(
-      { purchaseToken } as InAppPurchases.InAppPurchase,
+      { purchaseToken } as any,
       true
     );
     console.log("[Billing] Purchase acknowledged");
@@ -203,7 +221,7 @@ export async function acknowledgePurchase(purchaseToken: string): Promise<boolea
 /**
  * Get pending purchases (for restoring)
  */
-export async function getPendingPurchases(): Promise<InAppPurchases.InAppPurchase[]> {
+export async function getPendingPurchases(): Promise<PurchaseResult[]> {
   if (Platform.OS === "web") return [];
 
   if (!isConnected) {
@@ -212,8 +230,9 @@ export async function getPendingPurchases(): Promise<InAppPurchases.InAppPurchas
   }
 
   try {
+    const InAppPurchases = require("expo-in-app-purchases");
     const { results } = await InAppPurchases.getPurchaseHistoryAsync();
-    return results?.filter((p) => !p.acknowledged) || [];
+    return results?.filter((p: any) => !p.acknowledged) || [];
   } catch (error) {
     console.error("[Billing] Failed to get pending purchases:", error);
     return [];
