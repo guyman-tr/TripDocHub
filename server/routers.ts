@@ -6,6 +6,13 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import * as db from "./db";
 import { parseDocument } from "./documentParser";
 
+// Credit amounts for each product (must match lib/billing.ts)
+const CREDIT_AMOUNTS: Record<string, number> = {
+  credits_10: 10,
+  credits_50: 50,
+  credits_100: 100,
+};
+
 export const appRouter = router({
   system: systemRouter,
 
@@ -198,6 +205,108 @@ export const appRouter = router({
       const canProcess = await db.canProcessDocument(ctx.user.id);
       return { canProcess };
     }),
+  }),
+
+  // ============ BILLING ============
+  billing: router({
+    // Redeem a promo code
+    redeemPromoCode: protectedProcedure
+      .input(z.object({ code: z.string().min(1).max(50) }))
+      .mutation(async ({ ctx, input }) => {
+        const promoCode = await db.getPromoCode(input.code);
+        
+        if (!promoCode) {
+          return { success: false, error: "Invalid promo code" };
+        }
+
+        const result = await db.redeemPromoCode(
+          ctx.user.id,
+          promoCode.id,
+          promoCode.credits
+        );
+
+        if (result.success) {
+          const { credits } = await db.getUserCredits(ctx.user.id);
+          return { 
+            success: true, 
+            creditsAdded: promoCode.credits,
+            newBalance: credits,
+          };
+        }
+
+        return result;
+      }),
+
+    // Process a Google Play purchase
+    processPurchase: protectedProcedure
+      .input(
+        z.object({
+          productId: z.string(),
+          purchaseToken: z.string(),
+          priceAmountMicros: z.number().optional(),
+          currencyCode: z.string().optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const creditsToAdd = CREDIT_AMOUNTS[input.productId];
+        
+        if (!creditsToAdd) {
+          return { success: false, error: "Invalid product ID" };
+        }
+
+        const result = await db.processPurchase(
+          ctx.user.id,
+          input.productId,
+          input.purchaseToken,
+          creditsToAdd,
+          input.priceAmountMicros,
+          input.currencyCode
+        );
+
+        if (result.success) {
+          const { credits } = await db.getUserCredits(ctx.user.id);
+          return {
+            success: true,
+            creditsAdded: creditsToAdd,
+            newBalance: credits,
+          };
+        }
+
+        return result;
+      }),
+
+    // Admin: Create a promo code (only for admin users)
+    createPromoCode: protectedProcedure
+      .input(
+        z.object({
+          code: z.string().min(1).max(50),
+          credits: z.number().min(1).max(10000),
+          maxUses: z.number().min(1).optional(),
+          expiresAt: z.string().optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        // Check if user is admin
+        if (ctx.user.role !== "admin") {
+          return { success: false, error: "Unauthorized" };
+        }
+
+        try {
+          const id = await db.createPromoCode({
+            code: input.code,
+            credits: input.credits,
+            maxUses: input.maxUses ?? null,
+            expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
+          });
+
+          return { success: true, id };
+        } catch (error: any) {
+          if (error.code === "ER_DUP_ENTRY") {
+            return { success: false, error: "Promo code already exists" };
+          }
+          throw error;
+        }
+      }),
   }),
 });
 

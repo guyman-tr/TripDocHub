@@ -240,16 +240,16 @@ export default function ProfileScreen() {
               <View style={styles.purchaseButtons}>
                 <Pressable
                   style={[styles.purchaseButton, { backgroundColor: colors.tint }]}
-                  onPress={() => Alert.alert("Coming Soon", "Credit purchases will be available when the app is published to Google Play.")}
+                  onPress={() => router.push("/store" as any)}
                 >
-                  <ThemedText style={styles.purchaseButtonText}>Buy 10 Credits - $0.99</ThemedText>
+                  <ThemedText style={styles.purchaseButtonText}>Get More Credits</ThemedText>
                 </Pressable>
                 <Pressable
                   style={[styles.subscribeButton, { borderColor: colors.tint }]}
-                  onPress={() => Alert.alert("Coming Soon", "Subscriptions will be available when the app is published to Google Play.")}
+                  onPress={() => router.push("/redeem" as any)}
                 >
                   <ThemedText style={[styles.subscribeButtonText, { color: colors.tint }]}>
-                    Unlimited - $1.99/month
+                    Redeem Promo Code
                   </ThemedText>
                 </Pressable>
               </View>

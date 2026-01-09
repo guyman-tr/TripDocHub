@@ -419,3 +419,162 @@ export async function canProcessDocument(userId: number): Promise<boolean> {
   const { credits, hasSubscription } = await getUserCredits(userId);
   return hasSubscription || credits > 0;
 }
+
+
+// ============ PROMO CODE FUNCTIONS ============
+
+import { promoCodes, promoRedemptions, purchases, InsertPromoCode, InsertPurchase } from "../drizzle/schema";
+
+export async function getPromoCode(code: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db
+    .select()
+    .from(promoCodes)
+    .where(eq(promoCodes.code, code.toUpperCase()))
+    .limit(1);
+
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function hasUserRedeemedCode(userId: number, promoCodeId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+
+  const result = await db
+    .select()
+    .from(promoRedemptions)
+    .where(and(eq(promoRedemptions.userId, userId), eq(promoRedemptions.promoCodeId, promoCodeId)))
+    .limit(1);
+
+  return result.length > 0;
+}
+
+export async function redeemPromoCode(
+  userId: number,
+  promoCodeId: number,
+  credits: number
+): Promise<{ success: boolean; error?: string }> {
+  const db = await getDb();
+  if (!db) return { success: false, error: "Database not available" };
+
+  // Get the promo code
+  const codeResult = await db
+    .select()
+    .from(promoCodes)
+    .where(eq(promoCodes.id, promoCodeId))
+    .limit(1);
+
+  if (codeResult.length === 0) {
+    return { success: false, error: "Promo code not found" };
+  }
+
+  const code = codeResult[0];
+
+  // Check if code is active
+  if (!code.isActive) {
+    return { success: false, error: "This promo code is no longer active" };
+  }
+
+  // Check if code has expired
+  if (code.expiresAt && code.expiresAt < new Date()) {
+    return { success: false, error: "This promo code has expired" };
+  }
+
+  // Check if max uses reached
+  if (code.maxUses !== null && code.currentUses >= code.maxUses) {
+    return { success: false, error: "This promo code has reached its maximum uses" };
+  }
+
+  // Check if user already redeemed this code
+  const alreadyRedeemed = await hasUserRedeemedCode(userId, promoCodeId);
+  if (alreadyRedeemed) {
+    return { success: false, error: "You have already redeemed this promo code" };
+  }
+
+  // Add credits to user
+  await addCredits(userId, credits);
+
+  // Record the redemption
+  await db.insert(promoRedemptions).values({
+    userId,
+    promoCodeId,
+    creditsAdded: credits,
+  });
+
+  // Increment usage count
+  await db
+    .update(promoCodes)
+    .set({ currentUses: code.currentUses + 1 })
+    .where(eq(promoCodes.id, promoCodeId));
+
+  return { success: true };
+}
+
+export async function createPromoCode(data: InsertPromoCode): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(promoCodes).values({
+    ...data,
+    code: data.code.toUpperCase(),
+  });
+  return Number(result[0].insertId);
+}
+
+// ============ PURCHASE FUNCTIONS ============
+
+export async function recordPurchase(data: InsertPurchase): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(purchases).values(data);
+  return Number(result[0].insertId);
+}
+
+export async function getPurchaseByToken(purchaseToken: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db
+    .select()
+    .from(purchases)
+    .where(eq(purchases.purchaseToken, purchaseToken))
+    .limit(1);
+
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function processPurchase(
+  userId: number,
+  productId: string,
+  purchaseToken: string,
+  creditsToAdd: number,
+  priceAmountMicros?: number,
+  currencyCode?: string
+): Promise<{ success: boolean; error?: string }> {
+  const db = await getDb();
+  if (!db) return { success: false, error: "Database not available" };
+
+  // Check if this purchase was already processed
+  const existingPurchase = await getPurchaseByToken(purchaseToken);
+  if (existingPurchase) {
+    return { success: false, error: "This purchase has already been processed" };
+  }
+
+  // Add credits to user
+  await addCredits(userId, creditsToAdd);
+
+  // Record the purchase
+  await recordPurchase({
+    userId,
+    productId,
+    purchaseToken,
+    creditsAdded: creditsToAdd,
+    priceAmountMicros,
+    currencyCode,
+  });
+
+  return { success: true };
+}

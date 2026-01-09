@@ -99,3 +99,22 @@
 
 ## Bugs
 - [x] Fix Unauthorized error on document upload in production APK (added Bearer token auth)
+
+## Landing Page (mytripdochub.com)
+- [x] Create landing page with app description and features
+- [x] Add app screenshots/mockups
+- [x] Include Google Play Store download link
+- [x] Add Privacy Policy and Terms of Service sections
+- [x] Package for deployment to free hosting (Netlify/Vercel)
+- [x] Provide GoDaddy DNS configuration instructions
+
+
+## Google Play Billing & Payments
+- [x] Implement Google Play Billing for credit purchases
+- [ ] Create in-app products in Google Play Console
+- [x] Add coupon/promo code system for free credits (testing bypass)
+- [x] Handle purchase verification on backend
+- [x] Update credits after successful purchase
+
+## Production Backend URL
+- [ ] Discover/confirm production backend URL for Mailgun webhook

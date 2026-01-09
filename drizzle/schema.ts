@@ -145,3 +145,51 @@ export interface DocumentDetails {
   venueAddress?: string; // Full address for event venue
   [key: string]: string | undefined;
 }
+
+/**
+ * Promo codes table - for adding free credits
+ */
+export const promoCodes = mysqlTable("promo_codes", {
+  id: int("id").autoincrement().primaryKey(),
+  code: varchar("code", { length: 50 }).notNull().unique(),
+  credits: int("credits").notNull(), // Number of credits to add
+  maxUses: int("maxUses"), // Null = unlimited uses
+  currentUses: int("currentUses").default(0).notNull(),
+  expiresAt: timestamp("expiresAt"), // Null = never expires
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PromoCode = typeof promoCodes.$inferSelect;
+export type InsertPromoCode = typeof promoCodes.$inferInsert;
+
+/**
+ * Promo code redemptions - track who used which code
+ */
+export const promoRedemptions = mysqlTable("promo_redemptions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  promoCodeId: int("promoCodeId").notNull(),
+  creditsAdded: int("creditsAdded").notNull(),
+  redeemedAt: timestamp("redeemedAt").defaultNow().notNull(),
+});
+
+export type PromoRedemption = typeof promoRedemptions.$inferSelect;
+export type InsertPromoRedemption = typeof promoRedemptions.$inferInsert;
+
+/**
+ * Purchase history - track Google Play purchases
+ */
+export const purchases = mysqlTable("purchases", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  productId: varchar("productId", { length: 100 }).notNull(),
+  purchaseToken: varchar("purchaseToken", { length: 500 }).notNull(),
+  creditsAdded: int("creditsAdded").notNull(),
+  priceAmountMicros: int("priceAmountMicros"),
+  currencyCode: varchar("currencyCode", { length: 10 }),
+  purchasedAt: timestamp("purchasedAt").defaultNow().notNull(),
+});
+
+export type Purchase = typeof purchases.$inferSelect;
+export type InsertPurchase = typeof purchases.$inferInsert;
