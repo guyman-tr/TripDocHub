@@ -154,6 +154,13 @@ router.post("/", upload.any(), async (req: Request, res: Response) => {
         const parseResult = await parseDocument(fileUrl, mimeType);
         console.log(`[Mailgun] Parsed ${parseResult.documents.length} documents from ${fileName}`);
 
+        // Check for duplicate before processing (prevents reprocessing on webhook retries)
+        const existingDoc = await db.findDuplicateDocument(user.id, parseResult.contentHash);
+        if (existingDoc) {
+          console.log(`[Mailgun] Skipping duplicate document (hash: ${parseResult.contentHash.substring(0, 8)}...)`);
+          continue;
+        }
+
         // Create documents in database
         for (const doc of parseResult.documents) {
           // Try to auto-assign based on date

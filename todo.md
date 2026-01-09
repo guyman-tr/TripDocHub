@@ -122,6 +122,7 @@
 ## Bugs (Active)
 - [x] Fix credit consumption - credits UI not refreshing after document processing (added invalidation)
 - [x] Fix trash buttons not responding in inbox
+- [x] Fix duplicate document creation from Mailgun webhook retries
 
 ## UI Improvements
 - [x] Add trash icon to inbox document items for easy deletion of duplicates

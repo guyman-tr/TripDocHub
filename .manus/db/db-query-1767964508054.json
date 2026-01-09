@@ -1,0 +1,220 @@
+{
+  "query": "SELECT id, title, documentType, createdAt, contentHash FROM documents ORDER BY createdAt DESC LIMIT 30;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3cm1rAYqFTLZz8b.ead05c4c62f7 --database jxNutJmZj7bf8VEqqERusH --execute SELECT id, title, documentType, createdAt, contentHash FROM documents ORDER BY createdAt DESC LIMIT 30;",
+  "rows": [
+    {
+      "id": "180027",
+      "title": "TLV → BUD",
+      "documentType": "eTicket",
+      "createdAt": "2026-01-09 13:13:03",
+      "contentHash": "90cb555c36b0d419d45f0f90da6de4d6e26a3263ef45df48e6ece20c803c1471"
+    },
+    {
+      "id": "180026",
+      "title": "TLV → BUD",
+      "documentType": "eTicket",
+      "createdAt": "2026-01-09 13:12:56",
+      "contentHash": "db1275c29116ec7c118b046f0659acff78d1d0fa20982826b82a210b900e9090"
+    },
+    {
+      "id": "180025",
+      "title": "BUD → TLV",
+      "documentType": "eTicket",
+      "createdAt": "2026-01-09 13:12:55",
+      "contentHash": "a576fe2f42b378c0535a58a29e2e925549b1430fbfebabd843441e72ed63f89e"
+    },
+    {
+      "id": "180024",
+      "title": "BUD → TLV",
+      "documentType": "eTicket",
+      "createdAt": "2026-01-09 13:12:48",
+      "contentHash": "21067ae2258a7f465029e3078481d3bf1c8fa78e57cc5eb21c3bc7463d612962"
+    },
+    {
+      "id": "180023",
+      "title": "BUD → TLV",
+      "documentType": "eTicket",
+      "createdAt": "2026-01-09 13:12:46",
+      "contentHash": "fd4a54ff9ec72137972bfa4308af1f9c06344d912903cef76034a91f34ee7339"
+    },
+    {
+      "id": "180022",
+      "title": "BUD → TLV",
+      "documentType": "eTicket",
+      "createdAt": "2026-01-09 13:12:39",
+      "contentHash": "e4737b9807a29577c1e08487d6e30be7960ba5959a4c9832d500f88c7f693181"
+    },
+    {
+      "id": "180021",
+      "title": "BUD → TLV",
+      "documentType": "eTicket",
+      "createdAt": "2026-01-09 13:12:30",
+      "contentHash": "164354c6ea9d4575dbdc27168a7b7126f6c57cc1615f44203e63377d0f2738dd"
+    },
+    {
+      "id": "180020",
+      "title": "BUD → TLV",
+      "documentType": "eTicket",
+      "createdAt": "2026-01-09 13:12:24",
+      "contentHash": "edffb745cc705c4863fb61a92a3a61ba43b5ff709920e2a64ec3638ecdbdb7fd"
+    },
+    {
+      "id": "180016",
+      "title": "BUD → TLV",
+      "documentType": "eTicket",
+      "createdAt": "2026-01-09 12:57:08",
+      "contentHash": "9c8fd61eb1078bd9deb08d75b68e87d77d73908c1e33feff33a4474957f386ab"
+    },
+    {
+      "id": "180015",
+      "title": "BUD → TLV",
+      "documentType": "eTicket",
+      "createdAt": "2026-01-09 12:57:07",
+      "contentHash": "ebd3e3d64cb47183b399f5f2149588058130fee3a5ed12c10cdf86f3fa4a2d88"
+    },
+    {
+      "id": "180014",
+      "title": "BUD → TLV",
+      "documentType": "eTicket",
+      "createdAt": "2026-01-09 12:57:00",
+      "contentHash": "e4b1d2b877543fbce400a660166c9be3f05b425a055b875fefcf54db6bf4ae72"
+    },
+    {
+      "id": "180013",
+      "title": "Flight Booking",
+      "documentType": "Booking Confirmation",
+      "createdAt": "2026-01-09 12:56:58",
+      "contentHash": "22cc2b8d0116c0cab705a5892f609f62963f046c8e05bdb2df736d36531e2870"
+    },
+    {
+      "id": "180012",
+      "title": "Israir Flight Booking",
+      "documentType": "Booking Confirmation",
+      "createdAt": "2026-01-09 12:56:50",
+      "contentHash": "a35cfdd5e18aff7a2dc6447ae26cdb694127ebe2b53b1a35764922867ffef581"
+    },
+    {
+      "id": "180011",
+      "title": "BUD → TLV",
+      "documentType": "eTicket",
+      "createdAt": "2026-01-09 12:56:50",
+      "contentHash": "ccc806069c54bac55e5ff7d85f6d00784cfa4de27e2c38a0deb489ce3a9045b3"
+    },
+    {
+      "id": "180010",
+      "title": "BUD → TLV",
+      "documentType": "eTicket",
+      "createdAt": "2026-01-09 12:56:42",
+      "contentHash": "ef46ec1ab81f4053ac1bab14ee7e6c43a3f833c54ce3666b62e7302d700d66e0"
+    },
+    {
+      "id": "180009",
+      "title": "TLV → BUD",
+      "documentType": "eTicket",
+      "createdAt": "2026-01-09 12:47:14",
+      "contentHash": "f4d509bd03cd6aa11ebda351baaa2be95cf991e3d02bea4fb41b86cf0ceef16e"
+    },
+    {
+      "id": "180008",
+      "title": "BUD → TLV",
+      "documentType": "eTicket",
+      "createdAt": "2026-01-09 12:47:06",
+      "contentHash": "eb7137feaac50d706b4c1f33355b8c2e0026c443f83bb374d588c056b68522e2"
+    },
+    {
+      "id": "180007",
+      "title": "TLV → BUD",
+      "documentType": "eTicket",
+      "createdAt": "2026-01-09 12:47:05",
+      "contentHash": "d7395667ed9ffd08736ab6eebefa9ad80e4b28785340618c3c332e6581bafe3c"
+    },
+    {
+      "id": "180005",
+      "title": "BUD → TLV",
+      "documentType": "eTicket",
+      "createdAt": "2026-01-09 12:46:57",
+      "contentHash": "97cb81eaf522069660ced4377efa9a757f6bf519446d5b1d2bcafc6a1adabfee"
+    },
+    {
+      "id": "180006",
+      "title": "BUD → TLV",
+      "documentType": "eTicket",
+      "createdAt": "2026-01-09 12:46:57",
+      "contentHash": "02d8d18373a7f50c85e9b7c9c6c10ad5744a73a2ab0f8be3e78a3dd6499fdba7"
+    },
+    {
+      "id": "180003",
+      "title": "Flight Booking",
+      "documentType": "Booking Confirmation",
+      "createdAt": "2026-01-09 12:46:48",
+      "contentHash": "a8a2dda134da62cf4b8750d39c82e55dbde41a9f29755cc4398af45fcc123f9b"
+    },
+    {
+      "id": "180004",
+      "title": "BUD → TLV",
+      "documentType": "eTicket",
+      "createdAt": "2026-01-09 12:46:48",
+      "contentHash": "8ad78db409ae91d7d6ffd59a8ed491cb1220ac98e24096cefa297c380ce36152"
+    },
+    {
+      "id": "180002",
+      "title": "BUD → TLV",
+      "documentType": "eTicket",
+      "createdAt": "2026-01-09 12:46:39",
+      "contentHash": "418d1676ad26aab40fd2c9654bcc0874619619b9ed54fee2d1c40b22e07ea234"
+    },
+    {
+      "id": "180001",
+      "title": "BUD → TLV",
+      "documentType": "eTicket",
+      "createdAt": "2026-01-09 12:46:32",
+      "contentHash": "a53c2f741bb4dcb62030cd97bb052cecd55072e6d29c59997af0ce5a4b0ea941"
+    },
+    {
+      "id": "150003",
+      "title": "TLV → TBS",
+      "documentType": "Booking Confirmation",
+      "createdAt": "2026-01-09 10:27:38",
+      "contentHash": "b111ece18c493fb43e4556d541ca52fb3f3111ea058fbf94744b26e1502c4fef"
+    },
+    {
+      "id": "150004",
+      "title": "TBS → TLV",
+      "documentType": "Booking Confirmation",
+      "createdAt": "2026-01-09 10:27:38",
+      "contentHash": "b111ece18c493fb43e4556d541ca52fb3f3111ea058fbf94744b26e1502c4fef"
+    },
+    {
+      "id": "120001",
+      "title": "Car Hire Confirmation",
+      "documentType": "Booking Confirmation",
+      "createdAt": "2025-12-26 10:07:58",
+      "contentHash": "b1e3e717c4d012c742e1de6a3cd640c4aee82a785d790e83af12b7c4f773b80c"
+    },
+    {
+      "id": "90001",
+      "title": "TLV → BUD",
+      "documentType": "Booking Confirmation",
+      "createdAt": "2025-12-24 16:28:51",
+      "contentHash": "c9da9d983b8d7a4c05872f0f993aa382992ed81f8cbd408454325a7f2b5c094c"
+    },
+    {
+      "id": "60004",
+      "title": "Car Rental: Budapest Airport",
+      "documentType": "Booking Confirmation",
+      "createdAt": "2025-12-18 12:42:14",
+      "contentHash": "0dbc6ae5cfdf074b237fe64220774f356be3f84fbe5871c8a20e112daac6a312"
+    },
+    {
+      "id": "30003",
+      "title": "Hotel Studničky",
+      "documentType": "Booking Confirmation",
+      "createdAt": "2025-12-16 20:44:48",
+      "contentHash": "1e91504855906f66fc383cb2ca5deebd7944fdc32060df59fb56e738a9964c5f"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitle\tdocumentType\tcreatedAt\tcontentHash\n180027\tTLV → BUD\teTicket\t2026-01-09 13:13:03\t90cb555c36b0d419d45f0f90da6de4d6e26a3263ef45df48e6ece20c803c1471\n180026\tTLV → BUD\teTicket\t2026-01-09 13:12:56\tdb1275c29116ec7c118b046f0659acff78d1d0fa20982826b82a210b900e9090\n180025\tBUD → TLV\teTicket\t2026-01-09 13:12:55\ta576fe2f42b378c0535a58a29e2e925549b1430fbfebabd843441e72ed63f89e\n180024\tBUD → TLV\teTicket\t2026-01-09 13:12:48\t21067ae2258a7f465029e3078481d3bf1c8fa78e57cc5eb21c3bc7463d612962\n180023\tBUD → TLV\teTicket\t2026-01-09 13:12:46\tfd4a54ff9ec72137972bfa4308af1f9c06344d912903cef76034a91f34ee7339\n180022\tBUD → TLV\teTicket\t2026-01-09 13:12:39\te4737b9807a29577c1e08487d6e30be7960ba5959a4c9832d500f88c7f693181\n180021\tBUD → TLV\teTicket\t2026-01-09 13:12:30\t164354c6ea9d4575dbdc27168a7b7126f6c57cc1615f44203e63377d0f2738dd\n180020\tBUD → TLV\teTicket\t2026-01-09 13:12:24\tedffb745cc705c4863fb61a92a3a61ba43b5ff709920e2a64ec3638ecdbdb7fd\n180016\tBUD → TLV\teTicket\t2026-01-09 12:57:08\t9c8fd61eb1078bd9deb08d75b68e87d77d73908c1e33feff33a4474957f386ab\n180015\tBUD → TLV\teTicket\t2026-01-09 12:57:07\tebd3e3d64cb47183b399f5f2149588058130fee3a5ed12c10cdf86f3fa4a2d88\n180014\tBUD → TLV\teTicket\t2026-01-09 12:57:00\te4b1d2b877543fbce400a660166c9be3f05b425a055b875fefcf54db6bf4ae72\n180013\tFlight Booking\tBooking Confirmation\t2026-01-09 12:56:58\t22cc2b8d0116c0cab705a5892f609f62963f046c8e05bdb2df736d36531e2870\n180012\tIsrair Flight Booking\tBooking Confirmation\t2026-01-09 12:56:50\ta35cfdd5e18aff7a2dc6447ae26cdb694127ebe2b53b1a35764922867ffef581\n180011\tBUD → TLV\teTicket\t2026-01-09 12:56:50\tccc806069c54bac55e5ff7d85f6d00784cfa4de27e2c38a0deb489ce3a9045b3\n180010\tBUD → TLV\teTicket\t2026-01-09 12:56:42\tef46ec1ab81f4053ac1bab14ee7e6c43a3f833c54ce3666b62e7302d700d66e0\n180009\tTLV → BUD\teTicket\t2026-01-09 12:47:14\tf4d509bd03cd6aa11ebda351baaa2be95cf991e3d02bea4fb41b86cf0ceef16e\n180008\tBUD → TLV\teTicket\t2026-01-09 12:47:06\teb7137feaac50d706b4c1f33355b8c2e0026c443f83bb374d588c056b68522e2\n180007\tTLV → BUD\teTicket\t2026-01-09 12:47:05\td7395667ed9ffd08736ab6eebefa9ad80e4b28785340618c3c332e6581bafe3c\n180005\tBUD → TLV\teTicket\t2026-01-09 12:46:57\t97cb81eaf522069660ced4377efa9a757f6bf519446d5b1d2bcafc6a1adabfee\n180006\tBUD → TLV\teTicket\t2026-01-09 12:46:57\t02d8d18373a7f50c85e9b7c9c6c10ad5744a73a2ab0f8be3e78a3dd6499fdba7\n180003\tFlight Booking\tBooking Confirmation\t2026-01-09 12:46:48\ta8a2dda134da62cf4b8750d39c82e55dbde41a9f29755cc4398af45fcc123f9b\n180004\tBUD → TLV\teTicket\t2026-01-09 12:46:48\t8ad78db409ae91d7d6ffd59a8ed491cb1220ac98e24096cefa297c380ce36152\n180002\tBUD → TLV\teTicket\t2026-01-09 12:46:39\t418d1676ad26aab40fd2c9654bcc0874619619b9ed54fee2d1c40b22e07ea234\n180001\tBUD → TLV\teTicket\t2026-01-09 12:46:32\ta53c2f741bb4dcb62030cd97bb052cecd55072e6d29c59997af0ce5a4b0ea941\n150003\tTLV → TBS\tBooking Confirmation\t2026-01-09 10:27:38\tb111ece18c493fb43e4556d541ca52fb3f3111ea058fbf94744b26e1502c4fef\n150004\tTBS → TLV\tBooking Confirmation\t2026-01-09 10:27:38\tb111ece18c493fb43e4556d541ca52fb3f3111ea058fbf94744b26e1502c4fef\n120001\tCar Hire Confirmation\tBooking Confirmation\t2025-12-26 10:07:58\tb1e3e717c4d012c742e1de6a3cd640c4aee82a785d790e83af12b7c4f773b80c\n90001\tTLV → BUD\tBooking Confirmation\t2025-12-24 16:28:51\tc9da9d983b8d7a4c05872f0f993aa382992ed81f8cbd408454325a7f2b5c094c\n60004\tCar Rental: Budapest Airport\tBooking Confirmation\t2025-12-18 12:42:14\t0dbc6ae5cfdf074b237fe64220774f356be3f84fbe5871c8a20e112daac6a312\n30003\tHotel Studničky\tBooking Confirmation\t2025-12-16 20:44:48\t1e91504855906f66fc383cb2ca5deebd7944fdc32060df59fb56e738a9964c5f\n",
+  "stderr": "",
+  "execution_time_ms": 1565
+}
