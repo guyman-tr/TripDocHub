@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Pressable,
   StyleSheet,
@@ -251,7 +252,18 @@ export default function InboxScreen() {
   });
 
   const handleDeletePress = useCallback((document: Document) => {
-    deleteMutation.mutate({ id: document.id });
+    Alert.alert(
+      "Delete Document",
+      `Are you sure you want to delete "${document.title}"?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => deleteMutation.mutate({ id: document.id }),
+        },
+      ]
+    );
   }, [deleteMutation]);
 
   const clearInboxMutation = trpc.documents.clearInbox.useMutation({
@@ -262,8 +274,20 @@ export default function InboxScreen() {
   });
 
   const handleClearAll = useCallback(() => {
-    clearInboxMutation.mutate();
-  }, [clearInboxMutation]);
+    const count = documents?.length || 0;
+    Alert.alert(
+      "Clear Inbox",
+      `Are you sure you want to delete all ${count} document${count !== 1 ? "s" : ""}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => clearInboxMutation.mutate(),
+        },
+      ]
+    );
+  }, [clearInboxMutation, documents?.length]);
 
   const handleDocumentPress = useCallback((document: Document) => {
     router.push(`/document/${document.id}` as any);
