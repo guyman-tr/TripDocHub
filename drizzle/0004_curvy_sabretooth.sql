@@ -1,0 +1,1 @@
+ALTER TABLE `trips` ADD `isArchived` boolean DEFAULT false NOT NULL;

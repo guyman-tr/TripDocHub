@@ -29,6 +29,7 @@ const MAPPING = {
   "plus": "add",
   "plus.circle.fill": "add-circle",
   "trash.fill": "delete",
+  "archivebox.fill": "archive",
   "pencil": "edit",
   "square.and.arrow.up": "share",
   "doc.viewfinder": "document-scanner",

@@ -8,7 +8,6 @@ import {
   View,
   RefreshControl,
   Alert,
-  TouchableOpacity,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
@@ -33,7 +32,7 @@ type TripWithCount = {
   documentCount: number;
 };
 
-function TripCard({ 
+function ArchivedTripCard({ 
   trip, 
   onPress, 
   onLongPress,
@@ -47,11 +46,6 @@ function TripCard({
   
   const startDate = new Date(trip.startDate);
   const endDate = new Date(trip.endDate);
-  const now = new Date();
-  
-  const isUpcoming = startDate > now;
-  const isOngoing = startDate <= now && endDate >= now;
-  const isPast = endDate < now;
 
   return (
     <Animated.View
@@ -71,27 +65,11 @@ function TripCard({
               <ThemedText type="subtitle" numberOfLines={1} style={styles.tripName}>
                 {trip.name}
               </ThemedText>
-              {isUpcoming && (
-                <View style={[styles.statusBadge, { backgroundColor: colors.tint + "20" }]}>
-                  <ThemedText style={[styles.statusText, { color: colors.tint }]}>
-                    Upcoming
-                  </ThemedText>
-                </View>
-              )}
-              {isOngoing && (
-                <View style={[styles.statusBadge, { backgroundColor: colors.success + "20" }]}>
-                  <ThemedText style={[styles.statusText, { color: colors.success }]}>
-                    Ongoing
-                  </ThemedText>
-                </View>
-              )}
-              {isPast && (
-                <View style={[styles.statusBadge, { backgroundColor: colors.textSecondary + "20" }]}>
-                  <ThemedText style={[styles.statusText, { color: colors.textSecondary }]}>
-                    Past
-                  </ThemedText>
-                </View>
-              )}
+              <View style={[styles.statusBadge, { backgroundColor: colors.textSecondary + "20" }]}>
+                <ThemedText style={[styles.statusText, { color: colors.textSecondary }]}>
+                  Archived
+                </ThemedText>
+              </View>
             </View>
             <View style={styles.tripMeta}>
               <IconSymbol name="calendar" size={14} color={colors.textSecondary} />
@@ -113,50 +91,24 @@ function TripCard({
   );
 }
 
-function EmptyState({ onCreateTrip }: { onCreateTrip: () => void }) {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? "light"];
-
-  return (
-    <View style={styles.emptyContainer}>
-      <IconSymbol name="suitcase.fill" size={64} color={colors.textSecondary} />
-      <ThemedText type="subtitle" style={styles.emptyTitle}>
-        No trips yet
-      </ThemedText>
-      <ThemedText style={[styles.emptyText, { color: colors.textSecondary }]}>
-        Create your first trip to start organizing your travel documents
-      </ThemedText>
-      <Pressable
-        style={[styles.createButton, { backgroundColor: colors.tint }]}
-        onPress={onCreateTrip}
-      >
-        <IconSymbol name="plus" size={20} color="#FFFFFF" />
-        <ThemedText style={styles.createButtonText}>Create Trip</ThemedText>
-      </Pressable>
-    </View>
-  );
-}
-
-export default function TripsScreen() {
+export default function ArchivedTripsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
   const { isAuthenticated, loading: authLoading } = useAuth();
+  const utils = trpc.useUtils();
 
   const { 
-    data: trips, 
+    data: archivedTrips, 
     isLoading, 
     refetch 
-  } = trpc.trips.list.useQuery(undefined, { enabled: isAuthenticated });
+  } = trpc.trips.listArchived.useQuery(undefined, { enabled: isAuthenticated });
 
-  const { data: archivedTrips } = trpc.trips.listArchived.useQuery(undefined, { 
-    enabled: isAuthenticated 
-  });
-
-  const archiveMutation = trpc.trips.archive.useMutation({
+  const unarchiveMutation = trpc.trips.unarchive.useMutation({
     onSuccess: () => {
       refetch();
+      utils.trips.list.invalidate();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
   });
@@ -167,10 +119,6 @@ export default function TripsScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
   });
-
-  const handleCreateTrip = useCallback(() => {
-    router.push("/add-trip" as any);
-  }, [router]);
 
   const handleTripPress = useCallback((tripId: number) => {
     router.push(`/trip/${tripId}` as any);
@@ -184,8 +132,8 @@ export default function TripsScreen() {
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: "Archive",
-          onPress: () => archiveMutation.mutate({ id: trip.id }),
+          text: "Unarchive",
+          onPress: () => unarchiveMutation.mutate({ id: trip.id }),
         },
         {
           text: "Delete",
@@ -207,11 +155,7 @@ export default function TripsScreen() {
         },
       ]
     );
-  }, [archiveMutation, deleteMutation]);
-
-  const handleViewArchive = useCallback(() => {
-    router.push("/archived-trips" as any);
-  }, [router]);
+  }, [unarchiveMutation, deleteMutation]);
 
   if (authLoading || isLoading) {
     return (
@@ -225,50 +169,44 @@ export default function TripsScreen() {
     return (
       <ThemedView style={[styles.container, styles.centered]}>
         <ThemedText style={{ color: colors.textSecondary }}>
-          Please sign in to view your trips
+          Please sign in to view archived trips
         </ThemedText>
       </ThemedView>
     );
   }
 
-  const archivedCount = archivedTrips?.length || 0;
-
   return (
     <ThemedView style={styles.container}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
-        <ThemedText type="title">Trips</ThemedText>
+        <Pressable 
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <IconSymbol name="chevron.left" size={24} color={colors.tint} />
+        </Pressable>
+        <View style={styles.headerContent}>
+          <ThemedText type="title">Archived Trips</ThemedText>
+          <ThemedText style={[styles.subtitle, { color: colors.textSecondary }]}>
+            Long press to unarchive or delete
+          </ThemedText>
+        </View>
       </View>
 
-      {trips && trips.length > 0 ? (
+      {archivedTrips && archivedTrips.length > 0 ? (
         <FlatList
-          data={trips}
+          data={archivedTrips}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
-            <TripCard
+            <ArchivedTripCard
               trip={item}
               onPress={() => handleTripPress(item.id)}
               onLongPress={() => handleTripLongPress(item)}
             />
           )}
-          ListFooterComponent={
-            archivedCount > 0 ? (
-              <TouchableOpacity
-                style={[styles.archiveButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                onPress={handleViewArchive}
-                activeOpacity={0.7}
-              >
-                <IconSymbol name="archivebox.fill" size={20} color={colors.textSecondary} />
-                <ThemedText style={[styles.archiveButtonText, { color: colors.textSecondary }]}>
-                  View Archived Trips ({archivedCount})
-                </ThemedText>
-                <IconSymbol name="chevron.right" size={16} color={colors.textSecondary} />
-              </TouchableOpacity>
-            ) : null
-          }
           contentContainerStyle={[
             styles.listContent,
-            { paddingBottom: insets.bottom + 80 },
+            { paddingBottom: insets.bottom + 20 },
           ]}
           refreshControl={
             <RefreshControl refreshing={isLoading} onRefresh={refetch} />
@@ -276,38 +214,15 @@ export default function TripsScreen() {
           showsVerticalScrollIndicator={false}
         />
       ) : (
-        <View style={styles.emptyWrapper}>
-          <EmptyState onCreateTrip={handleCreateTrip} />
-          {archivedCount > 0 && (
-            <TouchableOpacity
-              style={[styles.archiveButton, styles.archiveButtonEmpty, { backgroundColor: colors.surface, borderColor: colors.border }]}
-              onPress={handleViewArchive}
-              activeOpacity={0.7}
-            >
-              <IconSymbol name="archivebox.fill" size={20} color={colors.textSecondary} />
-              <ThemedText style={[styles.archiveButtonText, { color: colors.textSecondary }]}>
-                View Archived Trips ({archivedCount})
-              </ThemedText>
-              <IconSymbol name="chevron.right" size={16} color={colors.textSecondary} />
-            </TouchableOpacity>
-          )}
+        <View style={styles.emptyContainer}>
+          <IconSymbol name="archivebox.fill" size={64} color={colors.textSecondary} />
+          <ThemedText type="subtitle" style={styles.emptyTitle}>
+            No archived trips
+          </ThemedText>
+          <ThemedText style={[styles.emptyText, { color: colors.textSecondary }]}>
+            Trips you archive will appear here
+          </ThemedText>
         </View>
-      )}
-
-      {/* Floating Action Button */}
-      {trips && trips.length > 0 && (
-        <Pressable
-          style={[
-            styles.fab,
-            { 
-              backgroundColor: colors.tint,
-              bottom: insets.bottom + 16,
-            },
-          ]}
-          onPress={handleCreateTrip}
-        >
-          <IconSymbol name="plus" size={28} color="#FFFFFF" />
-        </Pressable>
       )}
     </ThemedView>
   );
@@ -322,8 +237,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   header: {
+    flexDirection: "row",
+    alignItems: "flex-start",
     paddingHorizontal: Spacing.md,
     paddingBottom: Spacing.md,
+    gap: Spacing.sm,
+  },
+  backButton: {
+    padding: Spacing.xs,
+    marginTop: 4,
+  },
+  headerContent: {
+    flex: 1,
+  },
+  subtitle: {
+    fontSize: 14,
+    marginTop: 2,
   },
   listContent: {
     paddingHorizontal: Spacing.md,
@@ -373,9 +302,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
-  emptyWrapper: {
-    flex: 1,
-  },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
@@ -390,52 +316,5 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 15,
     lineHeight: 22,
-  },
-  createButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.xs,
-    marginTop: Spacing.lg,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: BorderRadius.md,
-  },
-  createButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
-    lineHeight: 22,
-  },
-  archiveButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    marginTop: Spacing.md,
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-  },
-  archiveButtonEmpty: {
-    marginHorizontal: Spacing.md,
-    marginBottom: Spacing.xl,
-  },
-  archiveButtonText: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: "500",
-  },
-  fab: {
-    position: "absolute",
-    right: Spacing.md,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
   },
 });

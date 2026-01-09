@@ -44,6 +44,7 @@ export const trips = mysqlTable("trips", {
   name: varchar("name", { length: 255 }).notNull(),
   startDate: timestamp("startDate").notNull(),
   endDate: timestamp("endDate").notNull(),
+  isArchived: boolean("isArchived").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

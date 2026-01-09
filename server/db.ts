@@ -122,7 +122,7 @@ export async function getUserTrips(userId: number): Promise<Trip[]> {
   return db
     .select()
     .from(trips)
-    .where(eq(trips.userId, userId))
+    .where(and(eq(trips.userId, userId), eq(trips.isArchived, false)))
     .orderBy(desc(trips.startDate));
 }
 
@@ -159,6 +159,50 @@ export async function deleteTrip(tripId: number, userId: number): Promise<void> 
 
   // Then delete the trip
   await db.delete(trips).where(and(eq(trips.id, tripId), eq(trips.userId, userId)));
+}
+
+export async function deleteTripWithDocuments(tripId: number, userId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Delete all documents associated with this trip
+  await db
+    .delete(documents)
+    .where(and(eq(documents.tripId, tripId), eq(documents.userId, userId)));
+
+  // Then delete the trip
+  await db.delete(trips).where(and(eq(trips.id, tripId), eq(trips.userId, userId)));
+}
+
+export async function archiveTrip(tripId: number, userId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(trips)
+    .set({ isArchived: true })
+    .where(and(eq(trips.id, tripId), eq(trips.userId, userId)));
+}
+
+export async function unarchiveTrip(tripId: number, userId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(trips)
+    .set({ isArchived: false })
+    .where(and(eq(trips.id, tripId), eq(trips.userId, userId)));
+}
+
+export async function getArchivedTrips(userId: number): Promise<Trip[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db
+    .select()
+    .from(trips)
+    .where(and(eq(trips.userId, userId), eq(trips.isArchived, true)))
+    .orderBy(desc(trips.startDate));
 }
 
 // ============ DOCUMENT FUNCTIONS ============

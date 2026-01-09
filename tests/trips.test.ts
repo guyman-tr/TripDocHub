@@ -24,6 +24,7 @@ describe("Trips Database Functions", () => {
         name: "Hungary Aug 2025",
         startDate: new Date("2025-08-15"),
         endDate: new Date("2025-08-22"),
+        isArchived: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -33,6 +34,7 @@ describe("Trips Database Functions", () => {
         name: "Japan Trip",
         startDate: new Date("2025-10-01"),
         endDate: new Date("2025-10-14"),
+        isArchived: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -62,6 +64,7 @@ describe("Trips Database Functions", () => {
       name: "Hungary Aug 2025",
       startDate: new Date("2025-08-15"),
       endDate: new Date("2025-08-22"),
+      isArchived: false,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

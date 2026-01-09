@@ -128,3 +128,8 @@
 - [x] Add trash icon to inbox document items for easy deletion of duplicates
 - [x] Add Clear All button to inbox header to delete all documents at once
 - [x] Add confirmation dialog for delete actions (individual and Clear All)
+- [x] Add archive functionality for trips (archive vs delete option)
+- [x] Add long-press on Home screen trip cards
+- [x] Add archived trips section in Trips screen
+- [x] Create archived trips list screen
+- [x] Delete trip should also delete associated documents

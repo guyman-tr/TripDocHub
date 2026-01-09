@@ -63,9 +63,33 @@ export const appRouter = router({
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ ctx, input }) => {
-        await db.deleteTrip(input.id, ctx.user.id);
+        // Delete trip and all associated documents
+        await db.deleteTripWithDocuments(input.id, ctx.user.id);
         return { success: true };
       }),
+
+    archive: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await db.archiveTrip(input.id, ctx.user.id);
+        return { success: true };
+      }),
+
+    unarchive: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await db.unarchiveTrip(input.id, ctx.user.id);
+        return { success: true };
+      }),
+
+    listArchived: protectedProcedure.query(async ({ ctx }) => {
+      const trips = await db.getArchivedTrips(ctx.user.id);
+      const counts = await db.getDocumentCounts(ctx.user.id);
+      return trips.map((trip) => ({
+        ...trip,
+        documentCount: counts.byTrip[trip.id] || 0,
+      }));
+    }),
   }),
 
   // ============ DOCUMENTS ============

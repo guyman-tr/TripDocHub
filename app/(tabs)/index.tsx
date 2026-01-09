@@ -12,6 +12,7 @@ import {
   FlatList,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Clipboard from "expo-clipboard";
@@ -146,6 +147,53 @@ export default function HomeScreen() {
     setActiveIndex(index);
   }, []);
 
+  const archiveMutation = trpc.trips.archive.useMutation({
+    onSuccess: () => {
+      refetchTrips();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+  });
+
+  const deleteTripMutation = trpc.trips.delete.useMutation({
+    onSuccess: () => {
+      refetchTrips();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+  });
+
+  const handleTripLongPress = useCallback((trip: typeof sortedTrips[0]) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Alert.alert(
+      trip.name,
+      "What would you like to do with this trip?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Archive",
+          onPress: () => archiveMutation.mutate({ id: trip.id }),
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            Alert.alert(
+              "Delete Trip",
+              `Are you sure you want to delete "${trip.name}"? This will also delete all ${trip.documentCount} associated document${trip.documentCount !== 1 ? "s" : ""}.`,
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Delete",
+                  style: "destructive",
+                  onPress: () => deleteTripMutation.mutate({ id: trip.id }),
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  }, [archiveMutation, deleteTripMutation]);
+
   const renderTripCard = useCallback(({ item: trip, index }: { item: typeof sortedTrips[0]; index: number }) => {
     const daysUntil = getDaysUntilTrip(trip.startDate);
     const isUpcoming = daysUntil > 0;
@@ -164,6 +212,8 @@ export default function HomeScreen() {
           }
         ]}
         onPress={() => router.push(`/trip/${trip.id}`)}
+        onLongPress={() => handleTripLongPress(trip)}
+        delayLongPress={500}
       >
         <View style={styles.tripCardHeader}>
           <ThemedText style={styles.tripCardLabel}>
