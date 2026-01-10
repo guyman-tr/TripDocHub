@@ -133,3 +133,5 @@
 - [x] Add archived trips section in Trips screen
 - [x] Create archived trips list screen
 - [x] Delete trip should also delete associated documents
+- [x] Make archived trips button more prominent/visible
+- [x] Add swipe-left gesture for archive/delete on trip cards
