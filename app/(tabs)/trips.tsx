@@ -349,6 +349,28 @@ export default function TripsScreen() {
         </View>
       </View>
 
+      {/* Archived Trips Banner - Always visible when there are archived trips */}
+      {archivedCount > 0 && (
+        <TouchableOpacity
+          style={[styles.archiveBanner, { backgroundColor: "#FF9500" + "15", borderColor: "#FF9500" + "40" }]}
+          onPress={handleViewArchive}
+          activeOpacity={0.7}
+        >
+          <View style={styles.archiveBannerContent}>
+            <IconSymbol name="archivebox.fill" size={20} color="#FF9500" />
+            <View style={styles.archiveBannerText}>
+              <ThemedText style={[styles.archiveBannerTitle, { color: "#FF9500" }]}>
+                {archivedCount} Archived Trip{archivedCount !== 1 ? "s" : ""}
+              </ThemedText>
+              <ThemedText style={[styles.archiveBannerSubtitle, { color: colors.textSecondary }]}>
+                Tap to view and restore
+              </ThemedText>
+            </View>
+          </View>
+          <IconSymbol name="chevron.right" size={20} color="#FF9500" />
+        </TouchableOpacity>
+      )}
+
       {trips && trips.length > 0 ? (
         <FlatList
           data={trips}
@@ -437,6 +459,33 @@ const styles = StyleSheet.create({
   archiveHeaderText: {
     fontSize: 14,
     fontWeight: "600",
+  },
+  archiveBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginHorizontal: Spacing.md,
+    marginBottom: Spacing.md,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+  },
+  archiveBannerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  archiveBannerText: {
+    gap: 2,
+  },
+  archiveBannerTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    lineHeight: 20,
+  },
+  archiveBannerSubtitle: {
+    fontSize: 13,
+    lineHeight: 18,
   },
   listContent: {
     paddingHorizontal: Spacing.md,

@@ -135,3 +135,4 @@
 - [x] Delete trip should also delete associated documents
 - [x] Make archived trips button more prominent/visible
 - [x] Add swipe-left gesture for archive/delete on trip cards
+- [x] Make archived trips button more prominent and easier to find
