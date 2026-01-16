@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { useCallback, useState, useRef } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -189,11 +190,32 @@ export default function AddTripScreen() {
       return;
     }
 
-    createMutation.mutate({
-      name: name.trim(),
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
-    });
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tripEndDate = new Date(endDate);
+    tripEndDate.setHours(0, 0, 0, 0);
+
+    const createTrip = () => {
+      createMutation.mutate({
+        name: name.trim(),
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+      });
+    };
+
+    // Check if trip is in the past
+    if (tripEndDate < today) {
+      Alert.alert(
+        "Past Trip",
+        "This trip's dates are in the past. Are you sure you want to create it?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Create Anyway", onPress: createTrip },
+        ]
+      );
+    } else {
+      createTrip();
+    }
   }, [name, startDate, endDate, createMutation]);
 
   const handleStartDateSelect = (date: Date) => {
@@ -334,7 +356,6 @@ export default function AddTripScreen() {
             <Calendar
               selectedDate={startDate}
               onSelectDate={handleStartDateSelect}
-              minimumDate={new Date()}
               onClose={() => setShowStartPicker(false)}
             />
           </Pressable>

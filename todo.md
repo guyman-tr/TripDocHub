@@ -139,3 +139,5 @@
 - [x] Rename app from TripHub to TripDocHub throughout codebase
 - [x] Fix calendar and buttons for large font accessibility (capped scaling + flexible layouts)
 - [x] App-wide audit and fix for large font accessibility issues
+- [x] Allow past dates for trip creation with warning popup
+- [x] Grey out end dates before selected start date in calendar
