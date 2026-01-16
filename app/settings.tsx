@@ -19,6 +19,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { FontScaling } from "@/constants/accessibility";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTheme, ThemePreference } from "@/contexts/theme-context";
 import { useNotifications } from "@/hooks/use-notifications";
 import {
   getScheduledNotificationCount,
@@ -26,11 +27,56 @@ import {
   initializeNotifications,
 } from "@/lib/notifications";
 
+// Theme option component
+function ThemeOption({
+  label,
+  icon,
+  selected,
+  onPress,
+  colors,
+}: {
+  label: string;
+  icon: string;
+  selected: boolean;
+  onPress: () => void;
+  colors: typeof Colors.light;
+}) {
+  return (
+    <Pressable
+      style={[
+        styles.themeOption,
+        selected && { backgroundColor: colors.tint + "15" },
+      ]}
+      onPress={onPress}
+    >
+      <IconSymbol
+        name={icon as any}
+        size={22}
+        color={selected ? colors.tint : colors.textSecondary}
+      />
+      <ThemedText
+        style={[
+          styles.themeOptionLabel,
+          { color: selected ? colors.tint : colors.text },
+          selected && { fontWeight: "600" },
+        ]}
+        maxFontSizeMultiplier={FontScaling.label}
+      >
+        {label}
+      </ThemedText>
+      {selected && (
+        <IconSymbol name="checkmark" size={18} color={colors.tint} />
+      )}
+    </Pressable>
+  );
+}
+
 export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
+  const { themePreference, setThemePreference } = useTheme();
   
   const { enabled: notificationsEnabled, toggleNotifications, initialized } = useNotifications();
   const [scheduledCount, setScheduledCount] = useState(0);
@@ -122,6 +168,54 @@ export default function SettingsScreen() {
           { paddingBottom: insets.bottom + 40 },
         ]}
       >
+        {/* Appearance Section */}
+        <View style={styles.section}>
+          <ThemedText type="subtitle" style={styles.sectionTitle} maxFontSizeMultiplier={FontScaling.title}>
+            Appearance
+          </ThemedText>
+          <ThemedText 
+            style={[styles.sectionDescription, { color: colors.textSecondary }]}
+            maxFontSizeMultiplier={FontScaling.body}
+          >
+            Choose how TripDocHub looks on your device.
+          </ThemedText>
+
+          <View style={[styles.themeSelector, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <ThemeOption
+              label="Light"
+              icon="sun.max.fill"
+              selected={themePreference === "light"}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setThemePreference("light");
+              }}
+              colors={colors}
+            />
+            <View style={[styles.themeDivider, { backgroundColor: colors.border }]} />
+            <ThemeOption
+              label="Dark"
+              icon="moon.fill"
+              selected={themePreference === "dark"}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setThemePreference("dark");
+              }}
+              colors={colors}
+            />
+            <View style={[styles.themeDivider, { backgroundColor: colors.border }]} />
+            <ThemeOption
+              label="System"
+              icon="gear"
+              selected={themePreference === "system"}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setThemePreference("system");
+              }}
+              colors={colors}
+            />
+          </View>
+        </View>
+
         {/* Notifications Section */}
         <View style={styles.section}>
           <ThemedText type="subtitle" style={styles.sectionTitle} maxFontSizeMultiplier={FontScaling.title}>
@@ -370,5 +464,26 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     lineHeight: 18,
+  },
+  themeSelector: {
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  themeOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    gap: Spacing.md,
+  },
+  themeOptionLabel: {
+    flex: 1,
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  themeDivider: {
+    height: 1,
+    marginHorizontal: Spacing.md,
   },
 });

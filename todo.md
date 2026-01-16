@@ -152,3 +152,4 @@
 - [x] Add during-trip notifications (flight check-in, car return)
 - [x] Add notification settings screen with toggle
 - [x] Fix duplicate detection to hash actual file content instead of URL
+- [x] Add theme selector (dark/light/system) to Settings

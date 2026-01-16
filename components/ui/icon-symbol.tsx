@@ -69,6 +69,14 @@ const MAPPING = {
   "gearshape.fill": "settings",
   "arrow.clockwise": "refresh",
   "magnifyingglass": "search",
+  
+  // Theme & Settings
+  "sun.max.fill": "light-mode",
+  "moon.fill": "dark-mode",
+  "gear": "settings",
+  "lock.fill": "lock",
+  "bell.fill": "notifications",
+  "trash": "delete-outline",
 } as IconMapping;
 
 /**

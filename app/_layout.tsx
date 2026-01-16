@@ -1,4 +1,4 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
+import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from "@react-navigation/native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -15,6 +15,7 @@ import {
 import type { EdgeInsets, Metrics, Rect } from "react-native-safe-area-context";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { ThemeProvider } from "@/contexts/theme-context";
 import { trpc, createTRPCClient } from "@/lib/trpc";
 import { initManusRuntime, subscribeSafeAreaInsets } from "@/lib/manus-runtime";
 import { persistQueryCache, restoreQueryCache } from "@/lib/query-persistence";
@@ -99,25 +100,9 @@ export default function RootLayout() {
 
   const content = (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <trpc.Provider client={trpcClient} queryClient={queryClient}>
-        <QueryClientProvider client={queryClient}>
-          <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-            <Stack>
-              <Stack.Screen name="onboarding" options={{ headerShown: false, animation: "fade" }} />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="modal" options={{ presentation: "modal", title: "Modal" }} />
-              <Stack.Screen name="oauth/callback" options={{ headerShown: false }} />
-              <Stack.Screen name="add-trip" options={{ presentation: "modal", headerShown: false }} />
-              <Stack.Screen name="upload" options={{ presentation: "modal", headerShown: false }} />
-              <Stack.Screen name="trip/[id]" options={{ headerShown: false }} />
-              <Stack.Screen name="document/[id]" options={{ headerShown: false }} />
-              <Stack.Screen name="settings" options={{ headerShown: false }} />
-              <Stack.Screen name="edit-trip" options={{ presentation: "modal", headerShown: false }} />
-            </Stack>
-            <StatusBar style="auto" />
-          </ThemeProvider>
-        </QueryClientProvider>
-      </trpc.Provider>
+      <ThemeProvider>
+        <ThemeAwareContent trpcClient={trpcClient} queryClient={queryClient} />
+      </ThemeProvider>
     </GestureHandlerRootView>
   );
 
@@ -134,4 +119,31 @@ export default function RootLayout() {
   }
 
   return <SafeAreaProvider initialMetrics={providerInitialMetrics}>{content}</SafeAreaProvider>;
+}
+
+// Separate component to use the theme context
+function ThemeAwareContent({ trpcClient, queryClient }: { trpcClient: any; queryClient: any }) {
+  const colorScheme = useColorScheme();
+
+  return (
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <NavigationThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+            <Stack>
+              <Stack.Screen name="onboarding" options={{ headerShown: false, animation: "fade" }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="modal" options={{ presentation: "modal", title: "Modal" }} />
+              <Stack.Screen name="oauth/callback" options={{ headerShown: false }} />
+              <Stack.Screen name="add-trip" options={{ presentation: "modal", headerShown: false }} />
+              <Stack.Screen name="upload" options={{ presentation: "modal", headerShown: false }} />
+              <Stack.Screen name="trip/[id]" options={{ headerShown: false }} />
+              <Stack.Screen name="document/[id]" options={{ headerShown: false }} />
+              <Stack.Screen name="settings" options={{ headerShown: false }} />
+              <Stack.Screen name="edit-trip" options={{ presentation: "modal", headerShown: false }} />
+            </Stack>
+            <StatusBar style="auto" />
+        </NavigationThemeProvider>
+      </QueryClientProvider>
+    </trpc.Provider>
+  );
 }
