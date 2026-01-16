@@ -17,6 +17,8 @@ import type { EdgeInsets, Metrics, Rect } from "react-native-safe-area-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { trpc, createTRPCClient } from "@/lib/trpc";
 import { initManusRuntime, subscribeSafeAreaInsets } from "@/lib/manus-runtime";
+import { persistQueryCache, restoreQueryCache } from "@/lib/query-persistence";
+import { AppState, AppStateStatus } from "react-native";
 
 const DEFAULT_WEB_INSETS: EdgeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 const DEFAULT_WEB_FRAME: Rect = { x: 0, y: 0, width: 0, height: 0 };
@@ -60,11 +62,35 @@ export default function RootLayout() {
             refetchOnWindowFocus: false,
             // Retry failed requests once
             retry: 1,
+            // Keep data fresh for 5 minutes
+            staleTime: 5 * 60 * 1000,
+            // Keep cached data for 30 minutes
+            gcTime: 30 * 60 * 1000,
           },
         },
       }),
   );
   const [trpcClient] = useState(() => createTRPCClient());
+  const [cacheRestored, setCacheRestored] = useState(false);
+
+  // Restore cache on app start
+  useEffect(() => {
+    restoreQueryCache(queryClient).then(() => {
+      setCacheRestored(true);
+    });
+  }, [queryClient]);
+
+  // Persist cache when app goes to background
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (nextAppState === "background" || nextAppState === "inactive") {
+        persistQueryCache(queryClient);
+      }
+    };
+
+    const subscription = AppState.addEventListener("change", handleAppStateChange);
+    return () => subscription.remove();
+  }, [queryClient]);
 
   const providerInitialMetrics = useMemo(
     () => initialWindowMetrics ?? { insets: initialInsets, frame: initialFrame },
