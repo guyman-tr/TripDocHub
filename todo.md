@@ -153,5 +153,3 @@
 - [x] Add notification settings screen with toggle
 - [x] Fix duplicate detection to hash actual file content instead of URL
 - [x] Add theme selector (dark/light/system) to Settings
-- [x] Fix app icon centering (off-center on home screen, splash, installation)
-- [x] Improve onboarding screen layouts (images too small, text cut off)
