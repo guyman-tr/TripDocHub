@@ -21,6 +21,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAuth } from "@/hooks/use-auth";
 import { trpc } from "@/lib/trpc";
 import type { DocumentDetails } from "@/drizzle/schema";
+import { FontScaling } from "@/constants/accessibility";
 
 const categoryConfig: Record<string, { icon: any; color: string; label: string }> = {
   flight: { icon: "airplane", color: CategoryColors.flight, label: "Flight" },
@@ -39,10 +40,19 @@ function DetailRow({ label, value }: { label: string; value: string | undefined 
 
   return (
     <View style={styles.detailRow}>
-      <ThemedText style={[styles.detailLabel, { color: colors.textSecondary }]}>
+      <ThemedText 
+        style={[styles.detailLabel, { color: colors.textSecondary }]}
+        maxFontSizeMultiplier={FontScaling.label}
+      >
         {label}
       </ThemedText>
-      <ThemedText style={styles.detailValue}>{value}</ThemedText>
+      <ThemedText 
+        style={styles.detailValue}
+        maxFontSizeMultiplier={FontScaling.body}
+        numberOfLines={2}
+      >
+        {value}
+      </ThemedText>
     </View>
   );
 }
@@ -185,23 +195,36 @@ export default function DocumentDetailScreen() {
         {/* Category Badge */}
         <View style={[styles.categoryBadge, { backgroundColor: config.color + "20" }]}>
           <IconSymbol name={config.icon} size={24} color={config.color} />
-          <ThemedText style={[styles.categoryLabel, { color: config.color }]}>
+          <ThemedText 
+            style={[styles.categoryLabel, { color: config.color }]}
+            maxFontSizeMultiplier={FontScaling.badge}
+          >
             {config.label}
           </ThemedText>
         </View>
 
         {/* Title Card */}
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <ThemedText type="title" style={styles.documentTitle}>
+          <ThemedText 
+            type="title" 
+            style={styles.documentTitle}
+            maxFontSizeMultiplier={FontScaling.title}
+          >
             {document.title}
           </ThemedText>
           {document.subtitle && (
-            <ThemedText style={[styles.documentSubtitle, { color: colors.textSecondary }]}>
+            <ThemedText 
+              style={[styles.documentSubtitle, { color: colors.textSecondary }]}
+              maxFontSizeMultiplier={FontScaling.body}
+            >
               {document.subtitle}
             </ThemedText>
           )}
           <View style={styles.typeBadge}>
-            <ThemedText style={[styles.typeText, { color: colors.textSecondary }]}>
+            <ThemedText 
+              style={[styles.typeText, { color: colors.textSecondary }]}
+              maxFontSizeMultiplier={FontScaling.badge}
+            >
               {document.documentType}
             </ThemedText>
           </View>
@@ -253,7 +276,7 @@ export default function DocumentDetailScreen() {
               onPress={() => handleOpenMaps(getAddressFromDetails(details, document.category)!)}
             >
               <IconSymbol name="location.fill" size={20} color="#FFFFFF" />
-              <ThemedText style={styles.actionButtonText}>Navigate</ThemedText>
+              <ThemedText style={styles.actionButtonText} maxFontSizeMultiplier={FontScaling.button}>Navigate</ThemedText>
             </Pressable>
           )}
 
@@ -263,7 +286,7 @@ export default function DocumentDetailScreen() {
               onPress={handleViewOriginal}
             >
               <IconSymbol name="doc.fill" size={20} color="#FFFFFF" />
-              <ThemedText style={styles.actionButtonText}>View Original</ThemedText>
+              <ThemedText style={styles.actionButtonText} maxFontSizeMultiplier={FontScaling.button}>View Original</ThemedText>
             </Pressable>
           )}
 
@@ -272,7 +295,7 @@ export default function DocumentDetailScreen() {
             onPress={() => setReassignModalVisible(true)}
           >
             <IconSymbol name="arrow.right.arrow.left" size={20} color={colors.tint} />
-            <ThemedText style={[styles.actionButtonText, { color: colors.tint }]}>
+            <ThemedText style={[styles.actionButtonText, { color: colors.tint }]} maxFontSizeMultiplier={FontScaling.button}>
               Reassign to Trip
             </ThemedText>
           </Pressable>
@@ -281,18 +304,18 @@ export default function DocumentDetailScreen() {
         {/* Metadata */}
         <View style={[styles.metadata, { borderColor: colors.border }]}>
           <View style={styles.metaRow}>
-            <ThemedText style={[styles.metaLabel, { color: colors.textSecondary }]}>
+            <ThemedText style={[styles.metaLabel, { color: colors.textSecondary }]} maxFontSizeMultiplier={FontScaling.label}>
               Source
             </ThemedText>
-            <ThemedText style={[styles.metaValue, { color: colors.textSecondary }]}>
+            <ThemedText style={[styles.metaValue, { color: colors.textSecondary }]} maxFontSizeMultiplier={FontScaling.body}>
               {document.source === "email" ? "Email Forwarding" : document.source === "camera" ? "Camera" : "Upload"}
             </ThemedText>
           </View>
           <View style={styles.metaRow}>
-            <ThemedText style={[styles.metaLabel, { color: colors.textSecondary }]}>
+            <ThemedText style={[styles.metaLabel, { color: colors.textSecondary }]} maxFontSizeMultiplier={FontScaling.label}>
               Added
             </ThemedText>
-            <ThemedText style={[styles.metaValue, { color: colors.textSecondary }]}>
+            <ThemedText style={[styles.metaValue, { color: colors.textSecondary }]} maxFontSizeMultiplier={FontScaling.body}>
               {new Date(document.createdAt).toLocaleDateString()}
             </ThemedText>
           </View>

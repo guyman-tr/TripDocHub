@@ -25,6 +25,7 @@ import {
   ProductId,
   CREDIT_AMOUNTS,
 } from "@/lib/billing";
+import { FontScaling } from "@/constants/accessibility";
 
 export default function StoreScreen() {
   const insets = useSafeAreaInsets();
@@ -132,7 +133,7 @@ export default function StoreScreen() {
           <Pressable onPress={() => router.back()} style={styles.backButton}>
             <ThemedText style={styles.backText}>Close</ThemedText>
           </Pressable>
-          <ThemedText type="title" style={styles.title}>
+          <ThemedText type="title" style={styles.title} maxFontSizeMultiplier={FontScaling.title}>
             Get Credits
           </ThemedText>
           <View style={styles.backButton} />
@@ -140,8 +141,8 @@ export default function StoreScreen() {
 
         {/* Current Balance */}
         <View style={styles.balanceCard}>
-          <ThemedText style={styles.balanceLabel}>Current Balance</ThemedText>
-          <ThemedText style={styles.balanceValue}>
+          <ThemedText style={styles.balanceLabel} maxFontSizeMultiplier={FontScaling.label}>Current Balance</ThemedText>
+          <ThemedText style={styles.balanceValue} maxFontSizeMultiplier={FontScaling.display}>
             {creditsData?.credits ?? 0} credits
           </ThemedText>
         </View>
@@ -180,11 +181,11 @@ export default function StoreScreen() {
                   <ActivityIndicator color="#007AFF" />
                 ) : (
                   <>
-                    <ThemedText style={styles.productCredits}>
+                    <ThemedText style={styles.productCredits} maxFontSizeMultiplier={FontScaling.display}>
                       {product.credits}
                     </ThemedText>
-                    <ThemedText style={styles.productLabel}>credits</ThemedText>
-                    <ThemedText style={styles.productPrice}>
+                    <ThemedText style={styles.productLabel} maxFontSizeMultiplier={FontScaling.label}>credits</ThemedText>
+                    <ThemedText style={styles.productPrice} maxFontSizeMultiplier={FontScaling.button}>
                       {product.price}
                     </ThemedText>
                   </>
@@ -203,7 +204,7 @@ export default function StoreScreen() {
             style={styles.promoButton}
             onPress={() => router.push("/redeem" as any)}
           >
-            <ThemedText style={styles.promoButtonText}>
+            <ThemedText style={styles.promoButtonText} maxFontSizeMultiplier={FontScaling.button}>
               Redeem Promo Code
             </ThemedText>
           </Pressable>
@@ -211,10 +212,10 @@ export default function StoreScreen() {
 
         {/* Info */}
         <View style={styles.infoSection}>
-          <ThemedText style={styles.infoText}>
+          <ThemedText style={styles.infoText} maxFontSizeMultiplier={FontScaling.body}>
             1 credit = 1 document processed
           </ThemedText>
-          <ThemedText style={styles.infoText}>
+          <ThemedText style={styles.infoText} maxFontSizeMultiplier={FontScaling.body}>
             Credits never expire
           </ThemedText>
         </View>

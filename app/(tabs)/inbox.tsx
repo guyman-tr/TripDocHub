@@ -19,6 +19,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors, Spacing, BorderRadius, CategoryColors } from "@/constants/theme";
+import { FontScaling } from "@/constants/accessibility";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAuth } from "@/hooks/use-auth";
 import { trpc } from "@/lib/trpc";
@@ -76,7 +77,7 @@ function DocumentCard({
             <IconSymbol name={categoryIcon} size={24} color={categoryColor} />
           </View>
           <View style={styles.docInfo}>
-            <ThemedText type="defaultSemiBold" numberOfLines={1}>
+            <ThemedText type="defaultSemiBold" numberOfLines={1} maxFontSizeMultiplier={FontScaling.label}>
               {document.title}
             </ThemedText>
             {document.subtitle && (
@@ -88,9 +89,9 @@ function DocumentCard({
               </ThemedText>
             )}
             <View style={styles.docMeta}>
-              <ThemedText style={[styles.docType, { color: colors.textSecondary }]}>
-                {document.documentType}
-              </ThemedText>
+            <ThemedText style={[styles.docType, { color: colors.textSecondary }]} maxFontSizeMultiplier={FontScaling.badge}>
+              {document.documentType}
+            </ThemedText>
               {!document.isRead && (
                 <View style={[styles.unreadDot, { backgroundColor: colors.tint }]} />
               )}
@@ -102,7 +103,7 @@ function DocumentCard({
           onPress={() => onAssign()}
           activeOpacity={0.7}
         >
-          <ThemedText style={styles.assignButtonText}>Assign</ThemedText>
+          <ThemedText style={styles.assignButtonText} maxFontSizeMultiplier={FontScaling.button}>Assign</ThemedText>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.deleteButton}
@@ -336,7 +337,7 @@ export default function InboxScreen() {
               disabled={clearInboxMutation.isPending}
             >
               <IconSymbol name="trash.fill" size={18} color={colors.destructive} />
-              <ThemedText style={[styles.clearAllText, { color: colors.destructive }]}>
+              <ThemedText style={[styles.clearAllText, { color: colors.destructive }]} maxFontSizeMultiplier={FontScaling.button}>
                 Clear All
               </ThemedText>
             </Pressable>

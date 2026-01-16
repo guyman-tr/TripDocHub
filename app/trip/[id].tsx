@@ -26,6 +26,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAuth } from "@/hooks/use-auth";
 import { trpc } from "@/lib/trpc";
 import type { Document } from "@/drizzle/schema";
+import { FontScaling } from "@/constants/accessibility";
 import { useState } from "react";
 
 const categoryConfig: Record<string, { icon: any; color: string; label: string }> = {
@@ -74,11 +75,11 @@ function CollapsibleSection({
         <View style={[styles.sectionIcon, { backgroundColor: color + "20" }]}>
           <IconSymbol name={icon} size={20} color={color} />
         </View>
-        <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
+        <ThemedText type="defaultSemiBold" style={styles.sectionTitle} maxFontSizeMultiplier={FontScaling.label}>
           {title}
         </ThemedText>
         <View style={styles.sectionBadge}>
-          <ThemedText style={[styles.sectionCount, { color: colors.textSecondary }]}>
+          <ThemedText style={[styles.sectionCount, { color: colors.textSecondary }]} maxFontSizeMultiplier={FontScaling.badge}>
             {documents.length}
           </ThemedText>
         </View>
@@ -96,12 +97,13 @@ function CollapsibleSection({
               onPress={() => onDocumentPress(doc)}
             >
               <View style={styles.documentInfo}>
-                <ThemedText type="defaultSemiBold" numberOfLines={1} style={styles.documentTypeTitle}>
+                <ThemedText type="defaultSemiBold" numberOfLines={1} style={styles.documentTypeTitle} maxFontSizeMultiplier={FontScaling.label}>
                   {doc.documentType}
                 </ThemedText>
                 <ThemedText
                   style={[styles.documentTitle, { color: colors.textSecondary }]}
                   numberOfLines={1}
+                  maxFontSizeMultiplier={FontScaling.body}
                 >
                   {doc.title}
                 </ThemedText>
@@ -109,6 +111,7 @@ function CollapsibleSection({
                   <ThemedText
                     style={[styles.documentSubtitle, { color: colors.textSecondary }]}
                     numberOfLines={1}
+                    maxFontSizeMultiplier={FontScaling.body}
                   >
                     {doc.subtitle}
                   </ThemedText>
@@ -141,7 +144,7 @@ function EmptyState({ onUpload }: { onUpload: () => void }) {
         onPress={onUpload}
       >
         <IconSymbol name="plus" size={20} color="#FFFFFF" />
-        <ThemedText style={styles.uploadButtonText}>Add Document</ThemedText>
+        <ThemedText style={styles.uploadButtonText} maxFontSizeMultiplier={FontScaling.button}>Add Document</ThemedText>
       </Pressable>
     </View>
   );
@@ -221,7 +224,7 @@ export default function TripDetailScreen() {
           style={[styles.backButton, { backgroundColor: colors.tint }]}
           onPress={() => router.back()}
         >
-          <ThemedText style={styles.backButtonText}>Go Back</ThemedText>
+          <ThemedText style={styles.backButtonText} maxFontSizeMultiplier={FontScaling.button}>Go Back</ThemedText>
         </Pressable>
       </ThemedView>
     );
@@ -240,10 +243,10 @@ export default function TripDetailScreen() {
           <IconSymbol name="chevron.left" size={24} color="#FFFFFF" />
         </Pressable>
         <View style={styles.headerContent}>
-          <ThemedText style={styles.headerTitle} numberOfLines={1}>
+          <ThemedText style={styles.headerTitle} numberOfLines={1} maxFontSizeMultiplier={FontScaling.title}>
             {trip.name}
           </ThemedText>
-          <ThemedText style={styles.headerDates}>
+          <ThemedText style={styles.headerDates} maxFontSizeMultiplier={FontScaling.badge}>
             {new Date(trip.startDate).toLocaleDateString()} -{" "}
             {new Date(trip.endDate).toLocaleDateString()}
           </ThemedText>

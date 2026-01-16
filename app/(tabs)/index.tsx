@@ -23,6 +23,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
+import { FontScaling } from "@/constants/accessibility";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAuth } from "@/hooks/use-auth";
 import { useOnboarding } from "@/hooks/use-onboarding";
@@ -227,13 +228,13 @@ export default function HomeScreen() {
             </View>
           )}
         </View>
-        <ThemedText style={styles.tripName}>{trip.name}</ThemedText>
-        <ThemedText style={styles.tripDates}>
+        <ThemedText style={styles.tripName} maxFontSizeMultiplier={FontScaling.label}>{trip.name}</ThemedText>
+        <ThemedText style={styles.tripDates} maxFontSizeMultiplier={FontScaling.badge}>
           {new Date(trip.startDate).toLocaleDateString()} -{" "}
           {new Date(trip.endDate).toLocaleDateString()}
         </ThemedText>
         <View style={styles.tripCardFooter}>
-          <ThemedText style={styles.docCount}>
+          <ThemedText style={styles.docCount} maxFontSizeMultiplier={FontScaling.badge}>
             {trip.documentCount} document{trip.documentCount !== 1 ? "s" : ""}
           </ThemedText>
           <IconSymbol name="chevron.right" size={20} color="rgba(255,255,255,0.8)" />
@@ -275,7 +276,7 @@ export default function HomeScreen() {
             {isLoggingIn ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <ThemedText style={styles.loginButtonText}>Sign In to Get Started</ThemedText>
+              <ThemedText style={styles.loginButtonText} maxFontSizeMultiplier={FontScaling.button}>Sign In to Get Started</ThemedText>
             )}
           </Pressable>
         </View>
@@ -392,7 +393,7 @@ export default function HomeScreen() {
               <View style={[styles.actionIcon, { backgroundColor: colors.tint + "15" }]}>
                 <IconSymbol name="plus.circle.fill" size={28} color={colors.tint} />
               </View>
-              <ThemedText type="defaultSemiBold">New Trip</ThemedText>
+              <ThemedText type="defaultSemiBold" maxFontSizeMultiplier={FontScaling.button}>New Trip</ThemedText>
             </Pressable>
             
             <Pressable
@@ -402,7 +403,7 @@ export default function HomeScreen() {
               <View style={[styles.actionIcon, { backgroundColor: colors.success + "15" }]}>
                 <IconSymbol name="doc.viewfinder" size={28} color={colors.success} />
               </View>
-              <ThemedText type="defaultSemiBold">Upload Doc</ThemedText>
+              <ThemedText type="defaultSemiBold" maxFontSizeMultiplier={FontScaling.button}>Upload Doc</ThemedText>
             </Pressable>
           </View>
         </View>

@@ -27,6 +27,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
+import { FontScaling } from "@/constants/accessibility";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAuth } from "@/hooks/use-auth";
 import { trpc } from "@/lib/trpc";
@@ -166,26 +167,26 @@ function SwipeableTripCard({
           <View style={styles.tripCardContent}>
             <View style={styles.tripInfo}>
               <View style={styles.tripHeader}>
-                <ThemedText type="subtitle" numberOfLines={1} style={styles.tripName}>
+                <ThemedText type="subtitle" numberOfLines={1} style={styles.tripName} maxFontSizeMultiplier={FontScaling.label}>
                   {trip.name}
                 </ThemedText>
                 {isUpcoming && (
                   <View style={[styles.statusBadge, { backgroundColor: colors.tint + "20" }]}>
-                    <ThemedText style={[styles.statusText, { color: colors.tint }]}>
+                    <ThemedText style={[styles.statusText, { color: colors.tint }]} maxFontSizeMultiplier={FontScaling.badge}>
                       Upcoming
                     </ThemedText>
                   </View>
                 )}
                 {isOngoing && (
                   <View style={[styles.statusBadge, { backgroundColor: colors.success + "20" }]}>
-                    <ThemedText style={[styles.statusText, { color: colors.success }]}>
+                    <ThemedText style={[styles.statusText, { color: colors.success }]} maxFontSizeMultiplier={FontScaling.badge}>
                       Ongoing
                     </ThemedText>
                   </View>
                 )}
                 {isPast && (
                   <View style={[styles.statusBadge, { backgroundColor: colors.textSecondary + "20" }]}>
-                    <ThemedText style={[styles.statusText, { color: colors.textSecondary }]}>
+                    <ThemedText style={[styles.statusText, { color: colors.textSecondary }]} maxFontSizeMultiplier={FontScaling.badge}>
                       Past
                     </ThemedText>
                   </View>
@@ -193,13 +194,13 @@ function SwipeableTripCard({
               </View>
               <View style={styles.tripMeta}>
                 <IconSymbol name="calendar" size={14} color={colors.textSecondary} />
-                <ThemedText style={[styles.tripDates, { color: colors.textSecondary }]}>
+                <ThemedText style={[styles.tripDates, { color: colors.textSecondary }]} maxFontSizeMultiplier={FontScaling.badge}>
                   {startDate.toLocaleDateString()} - {endDate.toLocaleDateString()}
                 </ThemedText>
               </View>
               <View style={styles.tripMeta}>
                 <IconSymbol name="doc.fill" size={14} color={colors.textSecondary} />
-                <ThemedText style={[styles.docCount, { color: colors.textSecondary }]}>
+                <ThemedText style={[styles.docCount, { color: colors.textSecondary }]} maxFontSizeMultiplier={FontScaling.badge}>
                   {trip.documentCount} document{trip.documentCount !== 1 ? "s" : ""}
                 </ThemedText>
               </View>
@@ -230,7 +231,7 @@ function EmptyState({ onCreateTrip }: { onCreateTrip: () => void }) {
         onPress={onCreateTrip}
       >
         <IconSymbol name="plus" size={20} color="#FFFFFF" />
-        <ThemedText style={styles.createButtonText}>Create Trip</ThemedText>
+        <ThemedText style={styles.createButtonText} maxFontSizeMultiplier={FontScaling.button}>Create Trip</ThemedText>
       </Pressable>
     </View>
   );

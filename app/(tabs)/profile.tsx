@@ -18,6 +18,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
+import { FontScaling } from "@/constants/accessibility";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAuth } from "@/hooks/use-auth";
 import { useOnboarding } from "@/hooks/use-onboarding";
@@ -222,10 +223,10 @@ export default function ProfileScreen() {
               ) : (
                 <>
                   <View style={styles.creditsDisplay}>
-                    <ThemedText style={[styles.creditsNumber, { color: colors.tint }]}>
+                    <ThemedText style={[styles.creditsNumber, { color: colors.tint }]} maxFontSizeMultiplier={FontScaling.display}>
                       {creditsData?.credits ?? 0}
                     </ThemedText>
-                    <ThemedText style={[styles.creditsLabel, { color: colors.textSecondary }]}>
+                    <ThemedText style={[styles.creditsLabel, { color: colors.textSecondary }]} maxFontSizeMultiplier={FontScaling.label}>
                       credits remaining
                     </ThemedText>
                   </View>
@@ -242,13 +243,13 @@ export default function ProfileScreen() {
                   style={[styles.purchaseButton, { backgroundColor: colors.tint }]}
                   onPress={() => router.push("/store" as any)}
                 >
-                  <ThemedText style={styles.purchaseButtonText}>Get More Credits</ThemedText>
+                  <ThemedText style={styles.purchaseButtonText} maxFontSizeMultiplier={FontScaling.button}>Get More Credits</ThemedText>
                 </Pressable>
                 <Pressable
                   style={[styles.subscribeButton, { borderColor: colors.tint }]}
                   onPress={() => router.push("/redeem" as any)}
                 >
-                  <ThemedText style={[styles.subscribeButtonText, { color: colors.tint }]}>
+                  <ThemedText style={[styles.subscribeButtonText, { color: colors.tint }]} maxFontSizeMultiplier={FontScaling.button}>
                     Redeem Promo Code
                   </ThemedText>
                 </Pressable>
