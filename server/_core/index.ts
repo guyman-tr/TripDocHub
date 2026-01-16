@@ -11,6 +11,7 @@ import { createContext } from "./context";
 import mailgunWebhook from "../webhooks/mailgun";
 import { storagePut } from "../storage";
 import { nanoid } from "nanoid";
+import { createHash } from "crypto";
 import { COOKIE_NAME } from "../../shared/const";
 import { sdk } from "./sdk";
 import { getDb } from "../db";
@@ -267,6 +268,9 @@ async function startServer() {
         return;
       }
 
+      // Generate content hash from actual file data for duplicate detection
+      const contentHash = createHash("sha256").update(file.buffer).digest("hex");
+
       // Generate a unique file key
       const ext = file.originalname.split(".").pop() || "bin";
       const fileKey = `documents/${user.id}/${nanoid()}.${ext}`;
@@ -274,7 +278,7 @@ async function startServer() {
       // Upload to S3
       const result = await storagePut(fileKey, file.buffer, file.mimetype);
 
-      res.json({ url: result.url, key: result.key });
+      res.json({ url: result.url, key: result.key, contentHash });
     } catch (error: any) {
       console.error("Upload error:", error);
       res.status(500).json({ error: error.message || "Upload failed" });

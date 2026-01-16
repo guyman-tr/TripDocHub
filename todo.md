@@ -151,3 +151,4 @@
 - [x] Implement smart trip notifications (7 days and 1 day before)
 - [x] Add during-trip notifications (flight check-in, car return)
 - [x] Add notification settings screen with toggle
+- [x] Fix duplicate detection to hash actual file content instead of URL

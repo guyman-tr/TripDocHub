@@ -166,13 +166,11 @@ export const appRouter = router({
     checkDuplicate: protectedProcedure
       .input(
         z.object({
-          fileUrl: z.string().url(),
+          contentHash: z.string().length(64),
         })
       )
       .mutation(async ({ ctx, input }) => {
-        const { createHash } = await import("crypto");
-        const contentHash = createHash("sha256").update(input.fileUrl).digest("hex").substring(0, 64);
-        const existingDoc = await db.findDuplicateDocument(ctx.user.id, contentHash);
+        const existingDoc = await db.findDuplicateDocument(ctx.user.id, input.contentHash);
         
         if (existingDoc) {
           return {
@@ -197,6 +195,7 @@ export const appRouter = router({
           fileUrl: z.string().url(),
           mimeType: z.string(),
           tripId: z.number().nullable().optional(),
+          contentHash: z.string().length(64).optional(),
         })
       )
       .mutation(async ({ ctx, input }) => {
@@ -242,7 +241,7 @@ export const appRouter = router({
             originalFileUrl: input.fileUrl,
             source: "upload",
             documentDate: doc.documentDate,
-            contentHash: parseResult.contentHash,
+            contentHash: input.contentHash || parseResult.contentHash,
           });
           createdDocs.push(docId);
 

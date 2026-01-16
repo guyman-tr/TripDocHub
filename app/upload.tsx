@@ -61,6 +61,7 @@ export default function UploadScreen() {
   } | null>(null);
   const [pendingFileUrl, setPendingFileUrl] = useState<string | null>(null);
   const [pendingMimeType, setPendingMimeType] = useState<string | null>(null);
+  const [pendingContentHash, setPendingContentHash] = useState<string | null>(null);
 
   // Ref for web file input
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -174,6 +175,7 @@ export default function UploadScreen() {
         fileUrl: pendingFileUrl,
         mimeType: pendingMimeType,
         tripId: tripId,
+        contentHash: pendingContentHash || undefined,
       });
     } catch (error: any) {
       if (!isBackgroundProcessing) {
@@ -186,8 +188,9 @@ export default function UploadScreen() {
     
     setPendingFileUrl(null);
     setPendingMimeType(null);
+    setPendingContentHash(null);
     setDuplicateInfo(null);
-  }, [pendingFileUrl, pendingMimeType, tripId, parseAndCreateMutation, isBackgroundProcessing]);
+  }, [pendingFileUrl, pendingMimeType, pendingContentHash, tripId, parseAndCreateMutation, isBackgroundProcessing]);
   
   // Cancel duplicate upload
   const handleCancelDuplicate = useCallback(() => {
@@ -195,6 +198,7 @@ export default function UploadScreen() {
     setIsProcessing(false);
     setPendingFileUrl(null);
     setPendingMimeType(null);
+    setPendingContentHash(null);
     setDuplicateInfo(null);
     setSelectedFile(null);
   }, []);
@@ -250,10 +254,11 @@ export default function UploadScreen() {
 
       const uploadResult = await uploadResponse.json();
       const fileUrl = uploadResult.url;
+      const contentHash = uploadResult.contentHash;
 
-      // Check for duplicates before processing
+      // Check for duplicates using the content hash from server
       setProcessingStatus("Checking for duplicates...");
-      const duplicateCheck = await checkDuplicateMutation.mutateAsync({ fileUrl });
+      const duplicateCheck = await checkDuplicateMutation.mutateAsync({ contentHash });
       
       if (duplicateCheck.isDuplicate && duplicateCheck.existingDocument) {
         // Show duplicate warning modal
@@ -265,6 +270,7 @@ export default function UploadScreen() {
         });
         setPendingFileUrl(fileUrl);
         setPendingMimeType(file.type);
+        setPendingContentHash(contentHash);
         setShowDuplicateModal(true);
         return;
       }
@@ -274,6 +280,7 @@ export default function UploadScreen() {
         fileUrl,
         mimeType: file.type,
         tripId: tripId,
+        contentHash,
       });
       
     } catch (error: any) {
