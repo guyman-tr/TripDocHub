@@ -105,7 +105,10 @@ function Calendar({
       <View style={styles.calendarWeekRow}>
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
           <View key={day} style={styles.calendarDayCell}>
-            <ThemedText style={[styles.calendarDayName, { color: colors.textSecondary }]}>
+            <ThemedText 
+              style={[styles.calendarDayName, { color: colors.textSecondary }]}
+              maxFontSizeMultiplier={1.2}
+            >
               {day}
             </ThemedText>
           </View>
@@ -132,6 +135,9 @@ function Calendar({
                     isSelectedDate(day) && styles.calendarDayTextSelected,
                     isDateDisabled(day) && { color: colors.textDisabled },
                   ]}
+                  maxFontSizeMultiplier={1.2}
+                  adjustsFontSizeToFit
+                  numberOfLines={1}
                 >
                   {day}
                 </ThemedText>
@@ -146,7 +152,7 @@ function Calendar({
         style={[styles.calendarCloseButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
         onPress={onClose}
       >
-        <ThemedText>Cancel</ThemedText>
+        <ThemedText maxFontSizeMultiplier={1.3}>Cancel</ThemedText>
       </Pressable>
     </View>
   );
@@ -480,11 +486,13 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   calendarDay: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: "85%",
+    aspectRatio: 1,
+    borderRadius: 999,
     justifyContent: "center",
     alignItems: "center",
+    maxWidth: 36,
+    maxHeight: 36,
   },
   calendarDayDisabled: {
     opacity: 0.4,
@@ -499,8 +507,10 @@ const styles = StyleSheet.create({
   calendarCloseButton: {
     marginTop: Spacing.md,
     paddingVertical: 12,
+    paddingHorizontal: Spacing.lg,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
     alignItems: "center",
+    minWidth: 100,
   },
 });

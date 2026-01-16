@@ -137,3 +137,4 @@
 - [x] Add swipe-left gesture for archive/delete on trip cards
 - [x] Make archived trips button more prominent and easier to find
 - [x] Rename app from TripHub to TripDocHub throughout codebase
+- [x] Fix calendar and buttons for large font accessibility (capped scaling + flexible layouts)
