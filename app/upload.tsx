@@ -50,6 +50,17 @@ export default function UploadScreen() {
   // Manual assignment modal state
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [pendingDocumentIds, setPendingDocumentIds] = useState<number[]>([]);
+  
+  // Duplicate detection state
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [duplicateInfo, setDuplicateInfo] = useState<{
+    title: string;
+    documentType: string;
+    category: string;
+    createdAt: Date;
+  } | null>(null);
+  const [pendingFileUrl, setPendingFileUrl] = useState<string | null>(null);
+  const [pendingMimeType, setPendingMimeType] = useState<string | null>(null);
 
   // Ref for web file input
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -67,6 +78,9 @@ export default function UploadScreen() {
       utils.trips.list.invalidate();
     },
   });
+  
+  // Check duplicate mutation
+  const checkDuplicateMutation = trpc.documents.checkDuplicate.useMutation();
 
   const parseAndCreateMutation = trpc.documents.parseAndCreate.useMutation({
     onSuccess: (data) => {
@@ -147,6 +161,43 @@ export default function UploadScreen() {
       [{ text: "OK", onPress: () => router.back() }]
     );
   };
+  
+  // Continue processing after duplicate warning
+  const handleContinueWithDuplicate = useCallback(async () => {
+    setShowDuplicateModal(false);
+    
+    if (!pendingFileUrl || !pendingMimeType) return;
+    
+    setProcessingStatus("Analyzing document with AI...");
+    try {
+      await parseAndCreateMutation.mutateAsync({
+        fileUrl: pendingFileUrl,
+        mimeType: pendingMimeType,
+        tripId: tripId,
+      });
+    } catch (error: any) {
+      if (!isBackgroundProcessing) {
+        console.error("Parse error:", error);
+        setIsProcessing(false);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        Alert.alert("Processing Failed", error.message || "Please try again.");
+      }
+    }
+    
+    setPendingFileUrl(null);
+    setPendingMimeType(null);
+    setDuplicateInfo(null);
+  }, [pendingFileUrl, pendingMimeType, tripId, parseAndCreateMutation, isBackgroundProcessing]);
+  
+  // Cancel duplicate upload
+  const handleCancelDuplicate = useCallback(() => {
+    setShowDuplicateModal(false);
+    setIsProcessing(false);
+    setPendingFileUrl(null);
+    setPendingMimeType(null);
+    setDuplicateInfo(null);
+    setSelectedFile(null);
+  }, []);
 
   // Auto-start processing when file is selected
   const processFile = useCallback(async (file: {
@@ -200,6 +251,24 @@ export default function UploadScreen() {
       const uploadResult = await uploadResponse.json();
       const fileUrl = uploadResult.url;
 
+      // Check for duplicates before processing
+      setProcessingStatus("Checking for duplicates...");
+      const duplicateCheck = await checkDuplicateMutation.mutateAsync({ fileUrl });
+      
+      if (duplicateCheck.isDuplicate && duplicateCheck.existingDocument) {
+        // Show duplicate warning modal
+        setDuplicateInfo({
+          title: duplicateCheck.existingDocument.title,
+          documentType: duplicateCheck.existingDocument.documentType,
+          category: duplicateCheck.existingDocument.category,
+          createdAt: new Date(duplicateCheck.existingDocument.createdAt),
+        });
+        setPendingFileUrl(fileUrl);
+        setPendingMimeType(file.type);
+        setShowDuplicateModal(true);
+        return;
+      }
+
       setProcessingStatus("Analyzing document with AI...");
       await parseAndCreateMutation.mutateAsync({
         fileUrl,
@@ -215,7 +284,7 @@ export default function UploadScreen() {
         Alert.alert("Upload Failed", error.message || "Please try again.");
       }
     }
-  }, [tripId, parseAndCreateMutation, isBackgroundProcessing]);
+  }, [tripId, parseAndCreateMutation, checkDuplicateMutation, isBackgroundProcessing]);
 
   // Start processing when file is selected
   useEffect(() => {
@@ -352,9 +421,21 @@ export default function UploadScreen() {
       year: "numeric",
     });
   };
+  
+  const formatCategory = (category: string) => {
+    const categoryLabels: Record<string, string> = {
+      flight: "Flight",
+      carRental: "Car Rental",
+      accommodation: "Accommodation",
+      medical: "Medical",
+      event: "Event",
+      other: "Other",
+    };
+    return categoryLabels[category] || category;
+  };
 
   // Processing overlay
-  if (isProcessing) {
+  if (isProcessing && !showDuplicateModal) {
     return (
       <ThemedView style={styles.container}>
         <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
@@ -434,6 +515,94 @@ export default function UploadScreen() {
           accept="application/pdf,image/*"
         />
       )}
+
+      {/* Duplicate Detection Modal */}
+      <Modal
+        visible={showDuplicateModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={handleCancelDuplicate}
+      >
+        <View style={styles.duplicateModalOverlay}>
+          <View style={[styles.duplicateModalContent, { backgroundColor: colors.surface }]}>
+            <View style={[styles.duplicateIconContainer, { backgroundColor: colors.warning + "20" }]}>
+              <IconSymbol name="exclamationmark.triangle.fill" size={32} color={colors.warning} />
+            </View>
+            
+            <ThemedText 
+              type="subtitle" 
+              style={styles.duplicateTitle}
+              maxFontSizeMultiplier={FontScaling.title}
+            >
+              Possible Duplicate
+            </ThemedText>
+            
+            <ThemedText 
+              style={[styles.duplicateDescription, { color: colors.textSecondary }]}
+              maxFontSizeMultiplier={FontScaling.body}
+            >
+              This document appears to already exist in your account:
+            </ThemedText>
+            
+            {duplicateInfo && (
+              <View style={[styles.existingDocCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <ThemedText 
+                  type="defaultSemiBold" 
+                  numberOfLines={2}
+                  maxFontSizeMultiplier={FontScaling.body}
+                >
+                  {duplicateInfo.title}
+                </ThemedText>
+                <ThemedText 
+                  style={[styles.existingDocMeta, { color: colors.textSecondary }]}
+                  maxFontSizeMultiplier={FontScaling.label}
+                >
+                  {duplicateInfo.documentType} • {formatCategory(duplicateInfo.category)}
+                </ThemedText>
+                <ThemedText 
+                  style={[styles.existingDocDate, { color: colors.textSecondary }]}
+                  maxFontSizeMultiplier={FontScaling.label}
+                >
+                  Added {formatDate(duplicateInfo.createdAt)}
+                </ThemedText>
+              </View>
+            )}
+            
+            <ThemedText 
+              style={[styles.duplicateQuestion, { color: colors.text }]}
+              maxFontSizeMultiplier={FontScaling.body}
+            >
+              Do you want to upload it anyway?
+            </ThemedText>
+            
+            <View style={styles.duplicateButtons}>
+              <Pressable
+                style={[styles.duplicateButton, styles.duplicateCancelButton, { borderColor: colors.border }]}
+                onPress={handleCancelDuplicate}
+              >
+                <ThemedText 
+                  style={[styles.duplicateButtonText, { color: colors.text }]}
+                  maxFontSizeMultiplier={FontScaling.button}
+                >
+                  Cancel
+                </ThemedText>
+              </Pressable>
+              
+              <Pressable
+                style={[styles.duplicateButton, styles.duplicateContinueButton, { backgroundColor: colors.warning }]}
+                onPress={handleContinueWithDuplicate}
+              >
+                <ThemedText 
+                  style={[styles.duplicateButtonText, { color: "#FFFFFF" }]}
+                  maxFontSizeMultiplier={FontScaling.button}
+                >
+                  Upload Anyway
+                </ThemedText>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Manual Assignment Modal */}
       <Modal
@@ -722,6 +891,82 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: Spacing.md,
     paddingHorizontal: Spacing.lg,
+  },
+  // Duplicate modal styles
+  duplicateModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: Spacing.lg,
+  },
+  duplicateModalContent: {
+    width: "100%",
+    maxWidth: 340,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    alignItems: "center",
+  },
+  duplicateIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: Spacing.md,
+  },
+  duplicateTitle: {
+    marginBottom: Spacing.sm,
+  },
+  duplicateDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: "center",
+    marginBottom: Spacing.md,
+  },
+  existingDocCard: {
+    width: "100%",
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    marginBottom: Spacing.md,
+  },
+  existingDocMeta: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 4,
+  },
+  existingDocDate: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  duplicateQuestion: {
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: "center",
+    marginBottom: Spacing.md,
+  },
+  duplicateButtons: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    width: "100%",
+  },
+  duplicateButton: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  duplicateCancelButton: {
+    borderWidth: 1,
+  },
+  duplicateContinueButton: {},
+  duplicateButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+    lineHeight: 20,
   },
   // Modal styles
   modalContainer: {

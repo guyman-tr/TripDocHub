@@ -338,6 +338,22 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* Settings Section */}
+        <View style={styles.section}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>
+            Settings
+          </ThemedText>
+          
+          <Pressable
+            style={[styles.legalButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={() => router.push("/settings" as any)}
+          >
+            <IconSymbol name="bell.fill" size={20} color={colors.tint} />
+            <ThemedText style={styles.legalButtonText}>Notifications</ThemedText>
+            <IconSymbol name="chevron.right" size={16} color={colors.textSecondary} />
+          </Pressable>
+        </View>
+
         {/* Support Section */}
         <View style={styles.section}>
           <ThemedText type="subtitle" style={styles.sectionTitle}>

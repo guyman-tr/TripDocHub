@@ -28,7 +28,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { trpc } from "@/lib/trpc";
 import type { Document } from "@/drizzle/schema";
 import { FontScaling } from "@/constants/accessibility";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { scheduleTripNotificationsWithDocuments } from "@/hooks/use-notifications";
 
 const categoryConfig: Record<string, { icon: any; color: string; label: string }> = {
   flight: { icon: "airplane", color: CategoryColors.flight, label: "Flights" },
@@ -226,6 +227,26 @@ export default function TripDetailScreen() {
     router.push(`/upload?tripId=${tripId}` as any);
   }, [router, tripId]);
 
+  // Schedule notifications when trip and documents are loaded
+  useEffect(() => {
+    if (trip && documents && !trip.isArchived) {
+      const docsForNotifications = documents.map((doc) => ({
+        category: doc.category,
+        documentType: doc.documentType,
+        details: doc.details as any,
+        documentDate: doc.documentDate,
+      }));
+      
+      scheduleTripNotificationsWithDocuments(
+        trip.id,
+        trip.name,
+        new Date(trip.startDate),
+        new Date(trip.endDate),
+        docsForNotifications
+      );
+    }
+  }, [trip, documents]);
+
   if (tripLoading || docsLoading) {
     return (
       <ThemedView style={[styles.container, styles.centered]}>
@@ -276,7 +297,25 @@ export default function TripDetailScreen() {
             </View>
           )}
         </View>
-        <View style={styles.headerSpacer} />
+        {!trip.isArchived && (
+          <Pressable
+            onPress={() => {
+              router.push({
+                pathname: "/edit-trip" as any,
+                params: {
+                  id: trip.id.toString(),
+                  name: trip.name,
+                  startDate: new Date(trip.startDate).toISOString(),
+                  endDate: new Date(trip.endDate).toISOString(),
+                },
+              });
+            }}
+            style={styles.headerButton}
+          >
+            <IconSymbol name="pencil" size={22} color="#FFFFFF" />
+          </Pressable>
+        )}
+        {trip.isArchived && <View style={styles.headerSpacer} />}
       </View>
 
       {/* Restore Banner for Archived Trips */}

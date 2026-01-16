@@ -90,6 +90,24 @@ export const appRouter = router({
         documentCount: counts.byTrip[trip.id] || 0,
       }));
     }),
+
+    update: protectedProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          name: z.string().min(1).max(255),
+          startDate: z.string().transform((s) => new Date(s)),
+          endDate: z.string().transform((s) => new Date(s)),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        await db.updateTrip(input.id, ctx.user.id, {
+          name: input.name,
+          startDate: input.startDate,
+          endDate: input.endDate,
+        });
+        return { success: true };
+      }),
   }),
 
   // ============ DOCUMENTS ============
@@ -142,6 +160,34 @@ export const appRouter = router({
       .mutation(async ({ ctx }) => {
         const deleted = await db.clearUserInbox(ctx.user.id);
         return { success: true, deletedCount: deleted };
+      }),
+
+    // Check if a document with the same content hash already exists
+    checkDuplicate: protectedProcedure
+      .input(
+        z.object({
+          fileUrl: z.string().url(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const { createHash } = await import("crypto");
+        const contentHash = createHash("sha256").update(input.fileUrl).digest("hex").substring(0, 64);
+        const existingDoc = await db.findDuplicateDocument(ctx.user.id, contentHash);
+        
+        if (existingDoc) {
+          return {
+            isDuplicate: true,
+            existingDocument: {
+              id: existingDoc.id,
+              title: existingDoc.title,
+              documentType: existingDoc.documentType,
+              category: existingDoc.category,
+              createdAt: existingDoc.createdAt,
+            },
+          };
+        }
+        
+        return { isDuplicate: false, existingDocument: null };
       }),
 
     // Parse and create document from uploaded file URL

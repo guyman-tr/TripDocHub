@@ -174,6 +174,24 @@ export async function deleteTripWithDocuments(tripId: number, userId: number): P
   await db.delete(trips).where(and(eq(trips.id, tripId), eq(trips.userId, userId)));
 }
 
+export async function updateTrip(
+  tripId: number,
+  userId: number,
+  data: { name: string; startDate: Date; endDate: Date }
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(trips)
+    .set({
+      name: data.name,
+      startDate: data.startDate,
+      endDate: data.endDate,
+    })
+    .where(and(eq(trips.id, tripId), eq(trips.userId, userId)));
+}
+
 export async function archiveTrip(tripId: number, userId: number): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

@@ -111,6 +111,8 @@ export default function RootLayout() {
               <Stack.Screen name="upload" options={{ presentation: "modal", headerShown: false }} />
               <Stack.Screen name="trip/[id]" options={{ headerShown: false }} />
               <Stack.Screen name="document/[id]" options={{ headerShown: false }} />
+              <Stack.Screen name="settings" options={{ headerShown: false }} />
+              <Stack.Screen name="edit-trip" options={{ presentation: "modal", headerShown: false }} />
             </Stack>
             <StatusBar style="auto" />
           </ThemeProvider>

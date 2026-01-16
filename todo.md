@@ -146,3 +146,8 @@
 - [x] Implement offline-first caching to preserve app state between sessions
 - [x] Auto-process documents after upload (remove manual Process button)
 - [x] Add "Continue in Background" option during processing
+- [x] Add trip editing (modify name and dates after creation)
+- [x] Add duplicate document detection on upload
+- [x] Implement smart trip notifications (7 days and 1 day before)
+- [x] Add during-trip notifications (flight check-in, car return)
+- [x] Add notification settings screen with toggle
