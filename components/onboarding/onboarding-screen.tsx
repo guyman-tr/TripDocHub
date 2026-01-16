@@ -118,8 +118,8 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       <View style={[styles.slide, { width: SCREEN_WIDTH }]}>
         <View style={styles.illustrationContainer}>
           <item.Illustration 
-            width={SCREEN_WIDTH * 0.85} 
-            height={320} 
+            width={SCREEN_WIDTH * 0.95} 
+            height={SCREEN_WIDTH * 1.1} 
             animate={isActive}
           />
         </View>
@@ -257,18 +257,19 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    maxHeight: 420,
+    paddingTop: Spacing.md,
   },
   textContainer: {
     alignItems: "center",
-    paddingHorizontal: Spacing.md,
-    paddingBottom: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
+    minHeight: 120,
   },
   title: {
-    fontSize: 26,
+    fontSize: 24,
     textAlign: "center",
-    marginBottom: Spacing.sm,
-    lineHeight: 32,
+    marginBottom: Spacing.xs,
+    lineHeight: 30,
   },
   description: {
     fontSize: 16,
