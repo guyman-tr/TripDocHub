@@ -107,7 +107,7 @@ export function CreateTripIllustration({ width = 320, height = 380, animate = tr
   );
 }
 
-// Step 2: Forward email to TripHub
+// Step 2: Forward email to TripDocHub
 export function ForwardEmailIllustration({ width = 320, height = 380, animate = true }: IllustrationProps) {
   const arrowProgress = useSharedValue(0);
   const toFieldOpacity = useSharedValue(0);

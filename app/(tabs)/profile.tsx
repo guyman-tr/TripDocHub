@@ -147,7 +147,7 @@ export default function ProfileScreen() {
           <View style={styles.signInContainer}>
             <IconSymbol name="person.fill" size={64} color={colors.textSecondary} />
             <ThemedText type="subtitle" style={styles.signInTitle}>
-              Sign in to TripHub
+              Sign in to TripDocHub
             </ThemedText>
             <ThemedText style={[styles.signInText, { color: colors.textSecondary }]}>
               Access your trips and documents across all your devices
@@ -191,7 +191,7 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.userInfo}>
             <ThemedText type="subtitle">
-              {user?.name || "TripHub User"}
+              {user?.name || "TripDocHub User"}
             </ThemedText>
             {user?.email && (
               <ThemedText style={[styles.userEmail, { color: colors.textSecondary }]}>
@@ -263,7 +263,7 @@ export default function ProfileScreen() {
             Email Forwarding
           </ThemedText>
           <ThemedText style={[styles.sectionDescription, { color: colors.textSecondary }]}>
-            Forward your booking confirmations to this email address to automatically add them to TripHub.
+            Forward your booking confirmations to this email address to automatically add them to TripDocHub.
           </ThemedText>
           
           {forwardingData?.email ? (
@@ -316,7 +316,7 @@ export default function ProfileScreen() {
                 <ThemedText style={styles.stepNumberText}>2</ThemedText>
               </View>
               <View style={styles.stepContent}>
-                <ThemedText type="defaultSemiBold">Forward to your TripHub email</ThemedText>
+                <ThemedText type="defaultSemiBold">Forward to your TripDocHub email</ThemedText>
                 <ThemedText style={[styles.stepDescription, { color: colors.textSecondary }]}>
                   Just forward the email with attachments
                 </ThemedText>

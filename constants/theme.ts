@@ -1,5 +1,5 @@
 /**
- * TripHub Theme Configuration
+ * TripDocHub Theme Configuration
  * Colors follow iOS Human Interface Guidelines with travel-inspired accents
  */
 

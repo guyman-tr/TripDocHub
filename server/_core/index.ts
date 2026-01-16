@@ -87,7 +87,7 @@ async function startServer() {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Privacy Policy - TripHub</title>
+  <title>Privacy Policy - TripDocHub</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; color: #333; }
     h1 { color: #007AFF; }
@@ -99,11 +99,11 @@ async function startServer() {
   <h1>Privacy Policy</h1>
   <p class="updated">Last updated: December 24, 2024</p>
   
-  <p>TripHub ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your information when you use our mobile application.</p>
+  <p>TripDocHub ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your information when you use our mobile application.</p>
 
   <h2>Information We Collect</h2>
   <p><strong>Account Information:</strong> When you sign in, we collect your name and email address through our authentication provider.</p>
-  <p><strong>Travel Documents:</strong> Documents you upload or forward to your TripHub email address, including PDFs and images of booking confirmations, tickets, and reservations.</p>
+  <p><strong>Travel Documents:</strong> Documents you upload or forward to your TripDocHub email address, including PDFs and images of booking confirmations, tickets, and reservations.</p>
   <p><strong>Trip Information:</strong> Trip names, dates, and destinations you create within the app.</p>
   <p><strong>Usage Data:</strong> Information about how you interact with the app to improve our services.</p>
 
@@ -120,7 +120,7 @@ async function startServer() {
   <p>We use the following third-party services:</p>
   <ul>
     <li><strong>Authentication Providers:</strong> For secure sign-in (Google, Microsoft, Apple)</li>
-    <li><strong>Mailgun:</strong> To receive emails forwarded to your unique TripHub email address</li>
+    <li><strong>Mailgun:</strong> To receive emails forwarded to your unique TripDocHub email address</li>
     <li><strong>OpenAI:</strong> To parse and extract information from your travel documents</li>
     <li><strong>Cloud Storage:</strong> To securely store your uploaded documents</li>
   </ul>
@@ -141,7 +141,7 @@ async function startServer() {
   <p>We retain your data for as long as your account is active. When you delete your account, all your personal data, trips, and documents are permanently removed from our systems.</p>
 
   <h2>Children's Privacy</h2>
-  <p>TripHub is not intended for children under 13. We do not knowingly collect personal information from children under 13.</p>
+  <p>TripDocHub is not intended for children under 13. We do not knowingly collect personal information from children under 13.</p>
 
   <h2>Changes to This Policy</h2>
   <p>We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last updated" date.</p>
@@ -162,7 +162,7 @@ async function startServer() {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Terms of Service - TripHub</title>
+  <title>Terms of Service - TripDocHub</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; color: #333; }
     h1 { color: #007AFF; }
@@ -174,16 +174,16 @@ async function startServer() {
   <h1>Terms of Service</h1>
   <p class="updated">Last updated: December 24, 2024</p>
   
-  <p>Welcome to TripHub. By using our mobile application, you agree to these Terms of Service.</p>
+  <p>Welcome to TripDocHub. By using our mobile application, you agree to these Terms of Service.</p>
 
   <h2>1. Acceptance of Terms</h2>
-  <p>By accessing or using TripHub, you agree to be bound by these Terms. If you do not agree, please do not use the app.</p>
+  <p>By accessing or using TripDocHub, you agree to be bound by these Terms. If you do not agree, please do not use the app.</p>
 
   <h2>2. Description of Service</h2>
-  <p>TripHub is a travel document organizer that helps you store, parse, and organize your travel bookings and confirmations. The service includes document upload, email forwarding, AI-powered parsing, and trip organization features.</p>
+  <p>TripDocHub is a travel document organizer that helps you store, parse, and organize your travel bookings and confirmations. The service includes document upload, email forwarding, AI-powered parsing, and trip organization features.</p>
 
   <h2>3. User Accounts</h2>
-  <p>You must create an account to use TripHub. You are responsible for maintaining the confidentiality of your account and for all activities that occur under your account.</p>
+  <p>You must create an account to use TripDocHub. You are responsible for maintaining the confidentiality of your account and for all activities that occur under your account.</p>
 
   <h2>4. Acceptable Use</h2>
   <p>You agree not to:</p>
@@ -196,16 +196,16 @@ async function startServer() {
   </ul>
 
   <h2>5. Credits and Payments</h2>
-  <p>TripHub uses a credit system for document processing. New users receive free credits. Additional credits or unlimited subscriptions may be purchased through the app. All purchases are processed through Google Play and are subject to Google's payment terms.</p>
+  <p>TripDocHub uses a credit system for document processing. New users receive free credits. Additional credits or unlimited subscriptions may be purchased through the app. All purchases are processed through Google Play and are subject to Google's payment terms.</p>
 
   <h2>6. Intellectual Property</h2>
-  <p>The TripHub app, including its design, features, and content, is owned by us and protected by intellectual property laws. Your uploaded documents remain your property.</p>
+  <p>The TripDocHub app, including its design, features, and content, is owned by us and protected by intellectual property laws. Your uploaded documents remain your property.</p>
 
   <h2>7. Disclaimer of Warranties</h2>
-  <p>TripHub is provided "as is" without warranties of any kind. We do not guarantee that the AI parsing will be 100% accurate. Always verify important booking details with the original documents.</p>
+  <p>TripDocHub is provided "as is" without warranties of any kind. We do not guarantee that the AI parsing will be 100% accurate. Always verify important booking details with the original documents.</p>
 
   <h2>8. Limitation of Liability</h2>
-  <p>We shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of TripHub, including missed flights or bookings due to parsing errors.</p>
+  <p>We shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of TripDocHub, including missed flights or bookings due to parsing errors.</p>
 
   <h2>9. Termination</h2>
   <p>We may terminate or suspend your account at any time for violations of these Terms. You may delete your account at any time through the app.</p>

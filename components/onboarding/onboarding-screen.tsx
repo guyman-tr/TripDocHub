@@ -48,8 +48,8 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
   },
   {
     id: "2",
-    title: "Forward to Your TripHub Email",
-    description: "Simply forward booking confirmation emails to your unique TripHub address. We'll handle the rest!",
+    title: "Forward to Your TripDocHub Email",
+    description: "Simply forward booking confirmation emails to your unique TripDocHub address. We'll handle the rest!",
     Illustration: ForwardEmailIllustration,
   },
   {

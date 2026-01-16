@@ -34,7 +34,7 @@ export default function PrivacyPolicyScreen() {
           </ThemedText>
 
           <ThemedText style={styles.paragraph}>
-            TripDocHub App ("we", "our", or "us") operates the TripHub mobile application. This Privacy Policy explains how we collect, use, and protect your information when you use our app.
+            TripDocHub App ("we", "our", or "us") operates the TripDocHub mobile application. This Privacy Policy explains how we collect, use, and protect your information when you use our app.
           </ThemedText>
 
           <ThemedText type="subtitle" style={styles.sectionTitle}>
@@ -76,7 +76,7 @@ export default function PrivacyPolicyScreen() {
             3. Third-Party Services
           </ThemedText>
           <ThemedText style={styles.paragraph}>
-            We use the following third-party services to operate TripHub:
+            We use the following third-party services to operate TripDocHub:
           </ThemedText>
           <ThemedText style={styles.bulletPoint}>
             • <ThemedText type="defaultSemiBold">Authentication Providers</ThemedText> (Google, Microsoft, Apple): To securely sign you in without storing passwords
@@ -131,7 +131,7 @@ export default function PrivacyPolicyScreen() {
             7. Children's Privacy
           </ThemedText>
           <ThemedText style={styles.paragraph}>
-            TripHub is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13.
+            TripDocHub is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13.
           </ThemedText>
 
           <ThemedText type="subtitle" style={styles.sectionTitle}>

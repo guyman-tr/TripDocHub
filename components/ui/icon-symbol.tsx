@@ -9,7 +9,7 @@ type IconMapping = Record<SymbolViewProps["name"], ComponentProps<typeof Materia
 type IconSymbolName = keyof typeof MAPPING;
 
 /**
- * SF Symbols to Material Icons mappings for TripHub
+ * SF Symbols to Material Icons mappings for TripDocHub
  */
 const MAPPING = {
   // Tab bar icons

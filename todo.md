@@ -1,4 +1,4 @@
-# TripHub - Project TODO
+# TripDocHub - Project TODO
 
 ## Core Setup
 - [x] Generate custom app logo
@@ -136,3 +136,4 @@
 - [x] Make archived trips button more prominent/visible
 - [x] Add swipe-left gesture for archive/delete on trip cards
 - [x] Make archived trips button more prominent and easier to find
+- [x] Rename app from TripHub to TripDocHub throughout codebase

@@ -262,7 +262,7 @@ export default function HomeScreen() {
         <View style={styles.welcomeContainer}>
           <IconSymbol name="suitcase.fill" size={80} color={colors.tint} />
           <ThemedText type="title" style={styles.welcomeTitle}>
-            Welcome to TripHub
+            Welcome to TripDocHub
           </ThemedText>
           <ThemedText style={[styles.welcomeSubtitle, { color: colors.textSecondary }]}>
             Organize all your travel documents in one place

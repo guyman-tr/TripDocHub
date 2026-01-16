@@ -34,35 +34,35 @@ export default function TermsOfServiceScreen() {
           </ThemedText>
 
           <ThemedText style={styles.paragraph}>
-            Welcome to TripHub. By using our mobile application, you agree to these Terms of Service. Please read them carefully.
+            Welcome to TripDocHub. By using our mobile application, you agree to these Terms of Service. Please read them carefully.
           </ThemedText>
 
           <ThemedText type="subtitle" style={styles.sectionTitle}>
             1. Acceptance of Terms
           </ThemedText>
           <ThemedText style={styles.paragraph}>
-            By accessing or using TripHub, you agree to be bound by these Terms of Service and our Privacy Policy. If you do not agree to these terms, please do not use the app.
+            By accessing or using TripDocHub, you agree to be bound by these Terms of Service and our Privacy Policy. If you do not agree to these terms, please do not use the app.
           </ThemedText>
 
           <ThemedText type="subtitle" style={styles.sectionTitle}>
             2. Description of Service
           </ThemedText>
           <ThemedText style={styles.paragraph}>
-            TripHub is a travel document organizer that allows you to upload, store, and organize travel-related documents such as flight confirmations, hotel bookings, and car rentals. The app uses AI technology to extract and parse information from your documents.
+            TripDocHub is a travel document organizer that allows you to upload, store, and organize travel-related documents such as flight confirmations, hotel bookings, and car rentals. The app uses AI technology to extract and parse information from your documents.
           </ThemedText>
 
           <ThemedText type="subtitle" style={styles.sectionTitle}>
             3. User Accounts
           </ThemedText>
           <ThemedText style={styles.paragraph}>
-            To use TripHub, you must create an account using one of our supported authentication providers (Google, Microsoft, Apple, or email). You are responsible for maintaining the security of your account and for all activities that occur under your account.
+            To use TripDocHub, you must create an account using one of our supported authentication providers (Google, Microsoft, Apple, or email). You are responsible for maintaining the security of your account and for all activities that occur under your account.
           </ThemedText>
 
           <ThemedText type="subtitle" style={styles.sectionTitle}>
             4. Acceptable Use
           </ThemedText>
           <ThemedText style={styles.paragraph}>
-            You agree to use TripHub only for lawful purposes and in accordance with these Terms. You agree not to:
+            You agree to use TripDocHub only for lawful purposes and in accordance with these Terms. You agree not to:
           </ThemedText>
           <ThemedText style={styles.bulletPoint}>
             • Upload content that is illegal, harmful, or violates the rights of others
@@ -81,28 +81,28 @@ export default function TermsOfServiceScreen() {
             5. User Content
           </ThemedText>
           <ThemedText style={styles.paragraph}>
-            You retain ownership of all documents and content you upload to TripHub. By uploading content, you grant us a limited license to store, process, and display your content solely for the purpose of providing the service to you.
+            You retain ownership of all documents and content you upload to TripDocHub. By uploading content, you grant us a limited license to store, process, and display your content solely for the purpose of providing the service to you.
           </ThemedText>
 
           <ThemedText type="subtitle" style={styles.sectionTitle}>
             6. AI Processing
           </ThemedText>
           <ThemedText style={styles.paragraph}>
-            TripHub uses artificial intelligence to analyze and extract information from your documents. While we strive for accuracy, AI-extracted information may contain errors. You should always verify important details against your original documents.
+            TripDocHub uses artificial intelligence to analyze and extract information from your documents. While we strive for accuracy, AI-extracted information may contain errors. You should always verify important details against your original documents.
           </ThemedText>
 
           <ThemedText type="subtitle" style={styles.sectionTitle}>
             7. Email Forwarding
           </ThemedText>
           <ThemedText style={styles.paragraph}>
-            TripHub provides you with a unique email address for forwarding booking confirmations. By using this feature, you acknowledge that emails sent to this address will be processed by our systems to extract attachments and document information.
+            TripDocHub provides you with a unique email address for forwarding booking confirmations. By using this feature, you acknowledge that emails sent to this address will be processed by our systems to extract attachments and document information.
           </ThemedText>
 
           <ThemedText type="subtitle" style={styles.sectionTitle}>
             8. Disclaimer of Warranties
           </ThemedText>
           <ThemedText style={styles.paragraph}>
-            TripHub is provided "as is" without warranties of any kind, either express or implied. We do not guarantee that the service will be uninterrupted, secure, or error-free. We are not responsible for any travel disruptions, missed flights, or other issues arising from reliance on information displayed in the app.
+            TripDocHub is provided "as is" without warranties of any kind, either express or implied. We do not guarantee that the service will be uninterrupted, secure, or error-free. We are not responsible for any travel disruptions, missed flights, or other issues arising from reliance on information displayed in the app.
           </ThemedText>
 
           <ThemedText type="subtitle" style={styles.sectionTitle}>
@@ -116,14 +116,14 @@ export default function TermsOfServiceScreen() {
             10. Changes to Terms
           </ThemedText>
           <ThemedText style={styles.paragraph}>
-            We may update these Terms of Service from time to time. We will notify you of any material changes by posting the new terms in the app. Your continued use of TripHub after changes are posted constitutes your acceptance of the modified terms.
+            We may update these Terms of Service from time to time. We will notify you of any material changes by posting the new terms in the app. Your continued use of TripDocHub after changes are posted constitutes your acceptance of the modified terms.
           </ThemedText>
 
           <ThemedText type="subtitle" style={styles.sectionTitle}>
             11. Termination
           </ThemedText>
           <ThemedText style={styles.paragraph}>
-            We reserve the right to suspend or terminate your access to TripHub at any time for violation of these Terms or for any other reason at our discretion. You may also delete your account at any time by contacting us.
+            We reserve the right to suspend or terminate your access to TripDocHub at any time for violation of these Terms or for any other reason at our discretion. You may also delete your account at any time by contacting us.
           </ThemedText>
 
           <ThemedText type="subtitle" style={styles.sectionTitle}>

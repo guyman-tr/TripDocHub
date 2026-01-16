@@ -1,8 +1,8 @@
-# TripHub - Mobile App Interface Design
+# TripDocHub - Mobile App Interface Design
 
 ## Design Philosophy
 
-TripHub follows Apple Human Interface Guidelines (HIG) to deliver a native iOS experience. The app is designed for **mobile portrait orientation (9:16)** with **one-handed usage** in mind. Every interaction should feel intuitive, with primary actions accessible in the thumb zone (bottom 1/3 of screen).
+TripDocHub follows Apple Human Interface Guidelines (HIG) to deliver a native iOS experience. The app is designed for **mobile portrait orientation (9:16)** with **one-handed usage** in mind. Every interaction should feel intuitive, with primary actions accessible in the thumb zone (bottom 1/3 of screen).
 
 ---
 
@@ -129,7 +129,7 @@ TripHub follows Apple Human Interface Guidelines (HIG) to deliver a native iOS e
 
 ## Color Choices
 
-TripHub uses a **travel-inspired palette** that feels premium and trustworthy:
+TripDocHub uses a **travel-inspired palette** that feels premium and trustworthy:
 
 | Role | Light Mode | Dark Mode | Usage |
 |------|------------|-----------|-------|
