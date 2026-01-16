@@ -1,5 +1,5 @@
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { useCallback, useState, useRef } from "react";
+import { useCallback, useState, useRef, useEffect } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -24,6 +24,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { trpc } from "@/lib/trpc";
 import * as Auth from "@/lib/auth";
 import { getApiBaseUrl } from "@/constants/oauth";
+import { FontScaling } from "@/constants/accessibility";
 
 export default function UploadScreen() {
   const router = useRouter();
@@ -34,14 +35,17 @@ export default function UploadScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
 
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState<string>("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<{
     uri: string;
     name: string;
     type: string;
     file?: File;
   } | null>(null);
+  
+  // Background processing state
+  const [isBackgroundProcessing, setIsBackgroundProcessing] = useState(false);
   
   // Manual assignment modal state
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -68,19 +72,25 @@ export default function UploadScreen() {
     onSuccess: (data) => {
       utils.documents.inbox.invalidate();
       utils.documents.inboxCount.invalidate();
-      utils.user.getCredits.invalidate(); // Refresh credits after processing
+      utils.user.getCredits.invalidate();
       if (tripId || data.autoAssignedTripId) {
         utils.documents.byTrip.invalidate({ tripId: tripId || data.autoAssignedTripId! });
         utils.trips.list.invalidate();
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       
+      // If processing in background, just show a subtle notification
+      if (isBackgroundProcessing) {
+        // User already navigated away, no alert needed
+        return;
+      }
+      
       // Check if we need manual assignment
       if (data.needsManualAssignment && !tripId) {
+        setIsProcessing(false);
         setPendingDocumentIds(data.documentIds);
         setShowAssignModal(true);
       } else if (data.autoAssignedTripId && data.autoAssignedTripName) {
-        // Auto-assigned to a trip
         const message = data.count === 1 
           ? `Document automatically assigned to "${data.autoAssignedTripName}".`
           : `${data.count} documents automatically assigned to "${data.autoAssignedTripName}".`;
@@ -91,7 +101,6 @@ export default function UploadScreen() {
           [{ text: "OK", onPress: () => router.back() }]
         );
       } else {
-        // Assigned to specified trip or no auto-assign needed
         const message = data.count === 1 
           ? "Your document has been processed and saved."
           : `${data.count} documents were extracted and saved.`;
@@ -104,7 +113,12 @@ export default function UploadScreen() {
       }
     },
     onError: (error) => {
+      if (isBackgroundProcessing) {
+        // User already navigated away, error will be visible in inbox
+        return;
+      }
       console.error("Parse error:", error);
+      setIsProcessing(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert("Processing Failed", error.message || "Please try again.");
     },
@@ -113,7 +127,6 @@ export default function UploadScreen() {
   const handleAssignToTrip = async (selectedTripId: number | null) => {
     setShowAssignModal(false);
     
-    // Assign all pending documents to the selected trip
     for (const docId of pendingDocumentIds) {
       await assignMutation.mutateAsync({ documentId: docId, tripId: selectedTripId });
     }
@@ -134,6 +147,88 @@ export default function UploadScreen() {
       [{ text: "OK", onPress: () => router.back() }]
     );
   };
+
+  // Auto-start processing when file is selected
+  const processFile = useCallback(async (file: {
+    uri: string;
+    name: string;
+    type: string;
+    file?: File;
+  }) => {
+    setIsProcessing(true);
+    setProcessingStatus("Uploading file...");
+    
+    try {
+      const formData = new FormData();
+      
+      if (Platform.OS === "web") {
+        if (file.file) {
+          formData.append("file", file.file, file.name);
+        } else {
+          const response = await fetch(file.uri);
+          const blob = await response.blob();
+          formData.append("file", blob, file.name);
+        }
+      } else {
+        formData.append("file", {
+          uri: file.uri,
+          type: file.type,
+          name: file.name,
+        } as any);
+      }
+
+      const apiBaseUrl = getApiBaseUrl();
+      const token = await Auth.getSessionToken();
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      
+      setProcessingStatus("Uploading to server...");
+      const uploadResponse = await fetch(`${apiBaseUrl}/api/upload`, {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+        headers,
+      });
+
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        throw new Error(`Upload failed: ${errorText}`);
+      }
+
+      const uploadResult = await uploadResponse.json();
+      const fileUrl = uploadResult.url;
+
+      setProcessingStatus("Analyzing document with AI...");
+      await parseAndCreateMutation.mutateAsync({
+        fileUrl,
+        mimeType: file.type,
+        tripId: tripId,
+      });
+      
+    } catch (error: any) {
+      if (!isBackgroundProcessing) {
+        console.error("Upload error:", error);
+        setIsProcessing(false);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        Alert.alert("Upload Failed", error.message || "Please try again.");
+      }
+    }
+  }, [tripId, parseAndCreateMutation, isBackgroundProcessing]);
+
+  // Start processing when file is selected
+  useEffect(() => {
+    if (selectedFile && !isProcessing) {
+      processFile(selectedFile);
+    }
+  }, [selectedFile]);
+
+  const handleContinueInBackground = useCallback(() => {
+    setIsBackgroundProcessing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.back();
+  }, [router]);
 
   const handleTakePhoto = useCallback(async () => {
     if (Platform.OS === "web") {
@@ -250,73 +345,6 @@ export default function UploadScreen() {
     }
   }, []);
 
-  const handleUpload = useCallback(async () => {
-    if (!selectedFile) return;
-
-    setIsUploading(true);
-    setUploadStatus("Uploading file...");
-    
-    try {
-      const formData = new FormData();
-      
-      if (Platform.OS === "web") {
-        if (selectedFile.file) {
-          formData.append("file", selectedFile.file, selectedFile.name);
-        } else {
-          const response = await fetch(selectedFile.uri);
-          const blob = await response.blob();
-          formData.append("file", blob, selectedFile.name);
-        }
-      } else {
-        formData.append("file", {
-          uri: selectedFile.uri,
-          type: selectedFile.type,
-          name: selectedFile.name,
-        } as any);
-      }
-
-      const apiBaseUrl = getApiBaseUrl();
-      
-      // Get auth token for native platforms (cookies don't work reliably on mobile)
-      const token = await Auth.getSessionToken();
-      const headers: Record<string, string> = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-      
-      setUploadStatus("Uploading to server...");
-      const uploadResponse = await fetch(`${apiBaseUrl}/api/upload`, {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-        headers,
-      });
-
-      if (!uploadResponse.ok) {
-        const errorText = await uploadResponse.text();
-        throw new Error(`Upload failed: ${errorText}`);
-      }
-
-      const uploadResult = await uploadResponse.json();
-      const fileUrl = uploadResult.url;
-
-      setUploadStatus("Analyzing document with AI...");
-      await parseAndCreateMutation.mutateAsync({
-        fileUrl,
-        mimeType: selectedFile.type,
-        tripId: tripId,
-      });
-      
-    } catch (error: any) {
-      console.error("Upload error:", error);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert("Upload Failed", error.message || "Please try again.");
-    } finally {
-      setIsUploading(false);
-      setUploadStatus("");
-    }
-  }, [selectedFile, tripId, parseAndCreateMutation]);
-
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString("en-US", {
       month: "short",
@@ -324,6 +352,75 @@ export default function UploadScreen() {
       year: "numeric",
     });
   };
+
+  // Processing overlay
+  if (isProcessing) {
+    return (
+      <ThemedView style={styles.container}>
+        <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
+          <View style={styles.closeButton} />
+          <ThemedText type="subtitle" maxFontSizeMultiplier={FontScaling.title}>Processing</ThemedText>
+          <View style={styles.headerSpacer} />
+        </View>
+        
+        <View style={styles.processingContainer}>
+          <View style={[styles.processingCard, { backgroundColor: colors.surface }]}>
+            <ActivityIndicator size="large" color={colors.tint} />
+            <ThemedText 
+              type="subtitle" 
+              style={styles.processingTitle}
+              maxFontSizeMultiplier={FontScaling.title}
+            >
+              Analyzing Document
+            </ThemedText>
+            <ThemedText 
+              style={[styles.processingStatus, { color: colors.textSecondary }]}
+              maxFontSizeMultiplier={FontScaling.body}
+            >
+              {processingStatus || "Please wait..."}
+            </ThemedText>
+            
+            {selectedFile && (
+              <View style={[styles.processingFile, { backgroundColor: colors.background }]}>
+                <IconSymbol 
+                  name={selectedFile.type.includes("pdf") ? "doc.fill" : "photo.fill"} 
+                  size={20} 
+                  color={colors.tint} 
+                />
+                <ThemedText 
+                  numberOfLines={1} 
+                  style={[styles.processingFileName, { color: colors.text }]}
+                  maxFontSizeMultiplier={FontScaling.body}
+                >
+                  {selectedFile.name}
+                </ThemedText>
+              </View>
+            )}
+          </View>
+          
+          <Pressable
+            style={[styles.backgroundButton, { borderColor: colors.border }]}
+            onPress={handleContinueInBackground}
+          >
+            <IconSymbol name="arrow.left" size={18} color={colors.tint} />
+            <ThemedText 
+              style={[styles.backgroundButtonText, { color: colors.tint }]}
+              maxFontSizeMultiplier={FontScaling.button}
+            >
+              Continue in Background
+            </ThemedText>
+          </Pressable>
+          
+          <ThemedText 
+            style={[styles.backgroundHint, { color: colors.textSecondary }]}
+            maxFontSizeMultiplier={FontScaling.label}
+          >
+            You can navigate away and the document will appear in your inbox when ready.
+          </ThemedText>
+        </View>
+      </ThemedView>
+    );
+  }
 
   return (
     <ThemedView style={styles.container}>
@@ -347,7 +444,7 @@ export default function UploadScreen() {
       >
         <ThemedView style={styles.modalContainer}>
           <View style={[styles.modalHeader, { paddingTop: Math.max(insets.top, 20) }]}>
-            <ThemedText type="subtitle">Assign to Trip</ThemedText>
+            <ThemedText type="subtitle" maxFontSizeMultiplier={FontScaling.title}>Assign to Trip</ThemedText>
             <Pressable onPress={() => {
               setShowAssignModal(false);
               router.back();
@@ -359,7 +456,10 @@ export default function UploadScreen() {
           <View style={styles.modalContent}>
             <View style={[styles.noMatchBanner, { backgroundColor: colors.warning + "15" }]}>
               <IconSymbol name="exclamationmark.triangle.fill" size={24} color={colors.warning} />
-              <ThemedText style={[styles.noMatchText, { color: colors.text }]}>
+              <ThemedText 
+                style={[styles.noMatchText, { color: colors.text }]}
+                maxFontSizeMultiplier={FontScaling.body}
+              >
                 No matching trip found for this document's dates. Please select a trip manually or keep it in your inbox.
               </ThemedText>
             </View>
@@ -377,8 +477,11 @@ export default function UploadScreen() {
                     <IconSymbol name="tray.fill" size={24} color={colors.textSecondary} />
                   </View>
                   <View style={styles.tripInfo}>
-                    <ThemedText type="defaultSemiBold">Keep in Inbox</ThemedText>
-                    <ThemedText style={[styles.tripDates, { color: colors.textSecondary }]}>
+                    <ThemedText type="defaultSemiBold" maxFontSizeMultiplier={FontScaling.body}>Keep in Inbox</ThemedText>
+                    <ThemedText 
+                      style={[styles.tripDates, { color: colors.textSecondary }]}
+                      maxFontSizeMultiplier={FontScaling.label}
+                    >
                       Assign to a trip later
                     </ThemedText>
                   </View>
@@ -394,8 +497,11 @@ export default function UploadScreen() {
                     <IconSymbol name="suitcase.fill" size={24} color={colors.tint} />
                   </View>
                   <View style={styles.tripInfo}>
-                    <ThemedText type="defaultSemiBold">{item.name}</ThemedText>
-                    <ThemedText style={[styles.tripDates, { color: colors.textSecondary }]}>
+                    <ThemedText type="defaultSemiBold" maxFontSizeMultiplier={FontScaling.body}>{item.name}</ThemedText>
+                    <ThemedText 
+                      style={[styles.tripDates, { color: colors.textSecondary }]}
+                      maxFontSizeMultiplier={FontScaling.label}
+                    >
                       {formatDate(item.startDate)} - {formatDate(item.endDate)}
                     </ThemedText>
                   </View>
@@ -404,7 +510,10 @@ export default function UploadScreen() {
               )}
               ListEmptyComponent={
                 <View style={styles.emptyTrips}>
-                  <ThemedText style={{ color: colors.textSecondary }}>
+                  <ThemedText 
+                    style={{ color: colors.textSecondary }}
+                    maxFontSizeMultiplier={FontScaling.body}
+                  >
                     No trips created yet. The document will be kept in your inbox.
                   </ThemedText>
                 </View>
@@ -419,7 +528,7 @@ export default function UploadScreen() {
         <Pressable onPress={() => router.back()} style={styles.closeButton}>
           <IconSymbol name="xmark" size={24} color={colors.text} />
         </Pressable>
-        <ThemedText type="subtitle">Upload Document</ThemedText>
+        <ThemedText type="subtitle" maxFontSizeMultiplier={FontScaling.title}>Upload Document</ThemedText>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -427,12 +536,15 @@ export default function UploadScreen() {
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: insets.bottom + 100 },
+          { paddingBottom: insets.bottom + 40 },
         ]}
       >
         {/* Instructions */}
         <View style={styles.instructions}>
-          <ThemedText style={[styles.instructionText, { color: colors.textSecondary }]}>
+          <ThemedText 
+            style={[styles.instructionText, { color: colors.textSecondary }]}
+            maxFontSizeMultiplier={FontScaling.body}
+          >
             Upload a booking confirmation, e-ticket, or any travel document. Our AI will automatically extract the important details.
           </ThemedText>
         </View>
@@ -442,13 +554,16 @@ export default function UploadScreen() {
           <Pressable
             style={[styles.optionButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={handleTakePhoto}
-            disabled={isUploading}
+            disabled={isProcessing}
           >
             <View style={[styles.optionIcon, { backgroundColor: colors.tint + "15" }]}>
               <IconSymbol name="camera.fill" size={32} color={colors.tint} />
             </View>
-            <ThemedText type="defaultSemiBold">Take Photo</ThemedText>
-            <ThemedText style={[styles.optionDescription, { color: colors.textSecondary }]}>
+            <ThemedText type="defaultSemiBold" maxFontSizeMultiplier={FontScaling.body}>Take Photo</ThemedText>
+            <ThemedText 
+              style={[styles.optionDescription, { color: colors.textSecondary }]}
+              maxFontSizeMultiplier={FontScaling.label}
+            >
               Capture a document with your camera
             </ThemedText>
           </Pressable>
@@ -456,13 +571,16 @@ export default function UploadScreen() {
           <Pressable
             style={[styles.optionButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={handleChooseFromLibrary}
-            disabled={isUploading}
+            disabled={isProcessing}
           >
             <View style={[styles.optionIcon, { backgroundColor: colors.success + "15" }]}>
               <IconSymbol name="photo.fill" size={32} color={colors.success} />
             </View>
-            <ThemedText type="defaultSemiBold">Photo Library</ThemedText>
-            <ThemedText style={[styles.optionDescription, { color: colors.textSecondary }]}>
+            <ThemedText type="defaultSemiBold" maxFontSizeMultiplier={FontScaling.body}>Photo Library</ThemedText>
+            <ThemedText 
+              style={[styles.optionDescription, { color: colors.textSecondary }]}
+              maxFontSizeMultiplier={FontScaling.label}
+            >
               Choose an image from your photos
             </ThemedText>
           </Pressable>
@@ -470,67 +588,21 @@ export default function UploadScreen() {
           <Pressable
             style={[styles.optionButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={handleChooseDocument}
-            disabled={isUploading}
+            disabled={isProcessing}
           >
             <View style={[styles.optionIcon, { backgroundColor: colors.warning + "15" }]}>
               <IconSymbol name="doc.fill" size={32} color={colors.warning} />
             </View>
-            <ThemedText type="defaultSemiBold">Choose File</ThemedText>
-            <ThemedText style={[styles.optionDescription, { color: colors.textSecondary }]}>
+            <ThemedText type="defaultSemiBold" maxFontSizeMultiplier={FontScaling.body}>Choose File</ThemedText>
+            <ThemedText 
+              style={[styles.optionDescription, { color: colors.textSecondary }]}
+              maxFontSizeMultiplier={FontScaling.label}
+            >
               Select a PDF or image file
             </ThemedText>
           </Pressable>
         </View>
-
-        {/* Selected File Preview */}
-        {selectedFile && (
-          <View style={[styles.selectedFile, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={styles.selectedFileInfo}>
-              <IconSymbol 
-                name={selectedFile.type.includes("pdf") ? "doc.fill" : "photo.fill"} 
-                size={24} 
-                color={colors.tint} 
-              />
-              <View style={styles.selectedFileText}>
-                <ThemedText type="defaultSemiBold" numberOfLines={1}>
-                  {selectedFile.name}
-                </ThemedText>
-                <ThemedText style={[styles.fileType, { color: colors.textSecondary }]}>
-                  {selectedFile.type}
-                </ThemedText>
-              </View>
-            </View>
-            {!isUploading && (
-              <Pressable
-                onPress={() => setSelectedFile(null)}
-                style={styles.removeButton}
-              >
-                <IconSymbol name="xmark" size={18} color={colors.textSecondary} />
-              </Pressable>
-            )}
-          </View>
-        )}
       </ScrollView>
-
-      {/* Upload Button */}
-      {selectedFile && (
-        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-          <Pressable
-            style={[styles.uploadButton, { backgroundColor: colors.tint }]}
-            onPress={handleUpload}
-            disabled={isUploading}
-          >
-            {isUploading ? (
-              <View style={styles.uploadingContent}>
-                <ActivityIndicator color="#FFFFFF" />
-                <ThemedText style={styles.uploadButtonText}>{uploadStatus || "Processing..."}</ThemedText>
-              </View>
-            ) : (
-              <ThemedText style={styles.uploadButtonText}>Upload & Parse Document</ThemedText>
-            )}
-          </Pressable>
-        </View>
-      )}
     </ThemedView>
   );
 }
@@ -592,58 +664,64 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     textAlign: "center",
   },
-  selectedFile: {
+  // Processing overlay styles
+  processingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: Spacing.xl,
+  },
+  processingCard: {
+    width: "100%",
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+    alignItems: "center",
+    gap: Spacing.md,
+  },
+  processingTitle: {
+    marginTop: Spacing.md,
+  },
+  processingStatus: {
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: "center",
+  },
+  processingFile: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginTop: Spacing.sm,
+    maxWidth: "100%",
+  },
+  processingFileName: {
+    fontSize: 13,
+    lineHeight: 18,
+    flex: 1,
+  },
+  backgroundButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    marginTop: Spacing.xl,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
-    padding: Spacing.md,
-    marginTop: Spacing.lg,
   },
-  selectedFileInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    flex: 1,
-  },
-  selectedFileText: {
-    flex: 1,
-  },
-  fileType: {
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  removeButton: {
-    width: 32,
-    height: 32,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  footer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.md,
-    backgroundColor: "transparent",
-  },
-  uploadButton: {
-    height: 52,
-    borderRadius: BorderRadius.md,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  uploadButtonText: {
-    color: "#FFFFFF",
-    fontSize: 17,
+  backgroundButtonText: {
+    fontSize: 16,
     fontWeight: "600",
+    lineHeight: 22,
   },
-  uploadingContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
+  backgroundHint: {
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: "center",
+    marginTop: Spacing.md,
+    paddingHorizontal: Spacing.lg,
   },
   // Modal styles
   modalContainer: {
@@ -676,7 +754,7 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   noMatchText: {
     flex: 1,
@@ -693,7 +771,6 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     borderWidth: 1,
     gap: Spacing.md,
-    marginBottom: Spacing.sm,
   },
   tripIcon: {
     width: 48,
@@ -704,11 +781,11 @@ const styles = StyleSheet.create({
   },
   tripInfo: {
     flex: 1,
+    gap: 2,
   },
   tripDates: {
     fontSize: 13,
     lineHeight: 18,
-    marginTop: 2,
   },
   emptyTrips: {
     padding: Spacing.lg,

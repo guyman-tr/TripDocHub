@@ -144,3 +144,5 @@
 - [x] Add swipe-to-restore/delete in archived trips list
 - [x] Add restore button in trip detail view for archived trips
 - [x] Implement offline-first caching to preserve app state between sessions
+- [x] Auto-process documents after upload (remove manual Process button)
+- [x] Add "Continue in Background" option during processing
