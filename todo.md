@@ -155,3 +155,4 @@
 - [x] Add theme selector (dark/light/system) to Settings
 - [x] Fix app icon centering (off-center on home screen, splash, installation)
 - [x] Improve onboarding screen layouts (images too small, text cut off)
+- [x] Restore boarding pass icon with simplified JFK text for better readability
