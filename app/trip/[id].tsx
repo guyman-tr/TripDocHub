@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useMemo } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Pressable,
   StyleSheet,
@@ -174,6 +175,23 @@ export default function TripDetailScreen() {
     { enabled: isAuthenticated && tripId > 0 }
   );
 
+  const utils = trpc.useUtils();
+
+  const unarchiveMutation = trpc.trips.unarchive.useMutation({
+    onSuccess: () => {
+      utils.trips.list.invalidate();
+      utils.trips.listArchived.invalidate();
+      utils.trips.get.invalidate({ id: tripId });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.back();
+    },
+  });
+
+  const handleRestore = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    unarchiveMutation.mutate({ id: tripId });
+  }, [tripId, unarchiveMutation]);
+
   const groupedDocuments = useMemo(() => {
     if (!documents) return [];
 
@@ -236,7 +254,7 @@ export default function TripDetailScreen() {
       <View
         style={[
           styles.header,
-          { paddingTop: Math.max(insets.top, 20), backgroundColor: colors.tint },
+          { paddingTop: Math.max(insets.top, 20), backgroundColor: trip.isArchived ? colors.textSecondary : colors.tint },
         ]}
       >
         <Pressable onPress={() => router.back()} style={styles.headerButton}>
@@ -250,9 +268,30 @@ export default function TripDetailScreen() {
             {new Date(trip.startDate).toLocaleDateString()} -{" "}
             {new Date(trip.endDate).toLocaleDateString()}
           </ThemedText>
+          {trip.isArchived && (
+            <View style={styles.archivedBadge}>
+              <ThemedText style={styles.archivedBadgeText} maxFontSizeMultiplier={FontScaling.badge}>
+                Archived
+              </ThemedText>
+            </View>
+          )}
         </View>
         <View style={styles.headerSpacer} />
       </View>
+
+      {/* Restore Banner for Archived Trips */}
+      {trip.isArchived && (
+        <Pressable
+          style={[styles.restoreBanner, { backgroundColor: "#34C759" }]}
+          onPress={handleRestore}
+          disabled={unarchiveMutation.isPending}
+        >
+          <IconSymbol name="arrow.uturn.backward" size={20} color="#FFFFFF" />
+          <ThemedText style={styles.restoreBannerText} maxFontSizeMultiplier={FontScaling.button}>
+            {unarchiveMutation.isPending ? "Restoring..." : "Restore to Active Trips"}
+          </ThemedText>
+        </Pressable>
+      )}
 
       {/* Content */}
       {groupedDocuments.length > 0 ? (
@@ -450,5 +489,32 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
+  },
+  archivedBadge: {
+    marginTop: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 10,
+  },
+  archivedBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "600",
+    lineHeight: 14,
+  },
+  restoreBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+  },
+  restoreBannerText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "600",
+    lineHeight: 20,
   },
 });

@@ -141,3 +141,5 @@
 - [x] App-wide audit and fix for large font accessibility issues
 - [x] Allow past dates for trip creation with warning popup
 - [x] Grey out end dates before selected start date in calendar
+- [x] Add swipe-to-restore/delete in archived trips list
+- [x] Add restore button in trip detail view for archived trips

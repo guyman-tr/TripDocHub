@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -8,15 +8,26 @@ import {
   View,
   RefreshControl,
   Alert,
+  TouchableOpacity,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-import Animated, { FadeIn, FadeOut, Layout } from "react-native-reanimated";
+import Animated, {
+  FadeIn,
+  FadeOut,
+  Layout,
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  runOnJS,
+} from "react-native-reanimated";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
+import { FontScaling } from "@/constants/accessibility";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAuth } from "@/hooks/use-auth";
 import { trpc } from "@/lib/trpc";
@@ -32,61 +43,140 @@ type TripWithCount = {
   documentCount: number;
 };
 
-function ArchivedTripCard({ 
+const SWIPE_THRESHOLD = 80;
+const ACTION_WIDTH = 160;
+
+function SwipeableArchivedTripCard({ 
   trip, 
   onPress, 
-  onLongPress,
+  onRestore,
+  onDelete,
 }: { 
   trip: TripWithCount; 
   onPress: () => void;
-  onLongPress: () => void;
+  onRestore: () => void;
+  onDelete: () => void;
 }) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
+  const translateX = useSharedValue(0);
+  const [isSwipeOpen, setIsSwipeOpen] = useState(false);
   
   const startDate = new Date(trip.startDate);
   const endDate = new Date(trip.endDate);
+
+  const resetSwipe = () => {
+    translateX.value = withSpring(0);
+    setIsSwipeOpen(false);
+  };
+
+  const openSwipe = () => {
+    translateX.value = withSpring(-ACTION_WIDTH);
+    setIsSwipeOpen(true);
+  };
+
+  const panGesture = Gesture.Pan()
+    .activeOffsetX([-10, 10])
+    .onUpdate((event) => {
+      const newValue = isSwipeOpen 
+        ? Math.max(-ACTION_WIDTH, Math.min(0, event.translationX - ACTION_WIDTH))
+        : Math.max(-ACTION_WIDTH, Math.min(0, event.translationX));
+      translateX.value = newValue;
+    })
+    .onEnd((event) => {
+      if (event.translationX < -SWIPE_THRESHOLD && !isSwipeOpen) {
+        runOnJS(openSwipe)();
+      } else if (event.translationX > SWIPE_THRESHOLD && isSwipeOpen) {
+        runOnJS(resetSwipe)();
+      } else if (isSwipeOpen) {
+        translateX.value = withSpring(-ACTION_WIDTH);
+      } else {
+        translateX.value = withSpring(0);
+      }
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  const handleRestore = () => {
+    resetSwipe();
+    onRestore();
+  };
+
+  const handleDelete = () => {
+    resetSwipe();
+    onDelete();
+  };
 
   return (
     <Animated.View
       entering={FadeIn}
       exiting={FadeOut}
       layout={Layout.springify()}
+      style={styles.swipeContainer}
     >
-      <Pressable
-        style={[styles.tripCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-        onPress={onPress}
-        onLongPress={onLongPress}
-        delayLongPress={500}
-      >
-        <View style={styles.tripCardContent}>
-          <View style={styles.tripInfo}>
-            <View style={styles.tripHeader}>
-              <ThemedText type="subtitle" numberOfLines={1} style={styles.tripName}>
-                {trip.name}
-              </ThemedText>
-              <View style={[styles.statusBadge, { backgroundColor: colors.textSecondary + "20" }]}>
-                <ThemedText style={[styles.statusText, { color: colors.textSecondary }]}>
-                  Archived
-                </ThemedText>
+      {/* Action buttons behind the card */}
+      <View style={styles.actionsContainer}>
+        <TouchableOpacity
+          style={[styles.actionButton, styles.restoreButton]}
+          onPress={handleRestore}
+          activeOpacity={0.8}
+        >
+          <IconSymbol name="arrow.uturn.backward" size={20} color="#FFFFFF" />
+          <ThemedText style={styles.actionText} maxFontSizeMultiplier={FontScaling.button}>
+            Restore
+          </ThemedText>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.actionButton, styles.deleteButton]}
+          onPress={handleDelete}
+          activeOpacity={0.8}
+        >
+          <IconSymbol name="trash.fill" size={20} color="#FFFFFF" />
+          <ThemedText style={styles.actionText} maxFontSizeMultiplier={FontScaling.button}>
+            Delete
+          </ThemedText>
+        </TouchableOpacity>
+      </View>
+
+      {/* Swipeable card */}
+      <GestureDetector gesture={panGesture}>
+        <Animated.View style={animatedStyle}>
+          <Pressable
+            style={[styles.tripCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={isSwipeOpen ? resetSwipe : onPress}
+          >
+            <View style={styles.tripCardContent}>
+              <View style={styles.tripInfo}>
+                <View style={styles.tripHeader}>
+                  <ThemedText type="subtitle" numberOfLines={1} style={styles.tripName} maxFontSizeMultiplier={FontScaling.label}>
+                    {trip.name}
+                  </ThemedText>
+                  <View style={[styles.statusBadge, { backgroundColor: colors.textSecondary + "20" }]}>
+                    <ThemedText style={[styles.statusText, { color: colors.textSecondary }]} maxFontSizeMultiplier={FontScaling.badge}>
+                      Archived
+                    </ThemedText>
+                  </View>
+                </View>
+                <View style={styles.tripMeta}>
+                  <IconSymbol name="calendar" size={14} color={colors.textSecondary} />
+                  <ThemedText style={[styles.tripDates, { color: colors.textSecondary }]} maxFontSizeMultiplier={FontScaling.badge}>
+                    {startDate.toLocaleDateString()} - {endDate.toLocaleDateString()}
+                  </ThemedText>
+                </View>
+                <View style={styles.tripMeta}>
+                  <IconSymbol name="doc.fill" size={14} color={colors.textSecondary} />
+                  <ThemedText style={[styles.docCount, { color: colors.textSecondary }]} maxFontSizeMultiplier={FontScaling.badge}>
+                    {trip.documentCount} document{trip.documentCount !== 1 ? "s" : ""}
+                  </ThemedText>
+                </View>
               </View>
+              <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
             </View>
-            <View style={styles.tripMeta}>
-              <IconSymbol name="calendar" size={14} color={colors.textSecondary} />
-              <ThemedText style={[styles.tripDates, { color: colors.textSecondary }]}>
-                {startDate.toLocaleDateString()} - {endDate.toLocaleDateString()}
-              </ThemedText>
-            </View>
-            <View style={styles.tripMeta}>
-              <IconSymbol name="doc.fill" size={14} color={colors.textSecondary} />
-              <ThemedText style={[styles.docCount, { color: colors.textSecondary }]}>
-                {trip.documentCount} document{trip.documentCount !== 1 ? "s" : ""}
-              </ThemedText>
-            </View>
-          </View>
-          <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
-        </View>
-      </Pressable>
+          </Pressable>
+        </Animated.View>
+      </GestureDetector>
     </Animated.View>
   );
 }
@@ -124,38 +214,26 @@ export default function ArchivedTripsScreen() {
     router.push(`/trip/${tripId}` as any);
   }, [router]);
 
-  const handleTripLongPress = useCallback((trip: TripWithCount) => {
+  const handleRestore = useCallback((trip: TripWithCount) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    unarchiveMutation.mutate({ id: trip.id });
+  }, [unarchiveMutation]);
+
+  const handleDelete = useCallback((trip: TripWithCount) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert(
-      trip.name,
-      "What would you like to do with this trip?",
+      "Delete Trip Forever",
+      `Are you sure you want to permanently delete "${trip.name}"? This will also delete all ${trip.documentCount} associated document${trip.documentCount !== 1 ? "s" : ""}. This action cannot be undone.`,
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: "Unarchive",
-          onPress: () => unarchiveMutation.mutate({ id: trip.id }),
-        },
-        {
-          text: "Delete",
+          text: "Delete Forever",
           style: "destructive",
-          onPress: () => {
-            Alert.alert(
-              "Delete Trip",
-              `Are you sure you want to delete "${trip.name}"? This will also delete all ${trip.documentCount} associated document${trip.documentCount !== 1 ? "s" : ""}.`,
-              [
-                { text: "Cancel", style: "cancel" },
-                {
-                  text: "Delete",
-                  style: "destructive",
-                  onPress: () => deleteMutation.mutate({ id: trip.id }),
-                },
-              ]
-            );
-          },
+          onPress: () => deleteMutation.mutate({ id: trip.id }),
         },
       ]
     );
-  }, [unarchiveMutation, deleteMutation]);
+  }, [deleteMutation]);
 
   if (authLoading || isLoading) {
     return (
@@ -188,7 +266,7 @@ export default function ArchivedTripsScreen() {
         <View style={styles.headerContent}>
           <ThemedText type="title">Archived Trips</ThemedText>
           <ThemedText style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Long press to unarchive or delete
+            Swipe left to restore or delete
           </ThemedText>
         </View>
       </View>
@@ -198,10 +276,11 @@ export default function ArchivedTripsScreen() {
           data={archivedTrips}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
-            <ArchivedTripCard
+            <SwipeableArchivedTripCard
               trip={item}
               onPress={() => handleTripPress(item.id)}
-              onLongPress={() => handleTripLongPress(item)}
+              onRestore={() => handleRestore(item)}
+              onDelete={() => handleDelete(item)}
             />
           )}
           contentContainerStyle={[
@@ -257,6 +336,35 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: Spacing.md,
     gap: Spacing.sm,
+  },
+  swipeContainer: {
+    overflow: "hidden",
+    borderRadius: BorderRadius.md,
+  },
+  actionsContainer: {
+    position: "absolute",
+    right: 0,
+    top: 0,
+    bottom: 0,
+    flexDirection: "row",
+    width: ACTION_WIDTH,
+  },
+  actionButton: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 4,
+  },
+  restoreButton: {
+    backgroundColor: "#34C759", // Green for restore
+  },
+  deleteButton: {
+    backgroundColor: "#FF3B30", // Red for delete
+  },
+  actionText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "600",
   },
   tripCard: {
     borderRadius: BorderRadius.md,
