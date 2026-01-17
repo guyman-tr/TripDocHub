@@ -1,0 +1,80 @@
+{
+  "query": "SELECT id, title, source, createdAt, userId FROM documents ORDER BY createdAt DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3cm1rAYqFTLZz8b.ead05c4c62f7 --database jxNutJmZj7bf8VEqqERusH --execute SELECT id, title, source, createdAt, userId FROM documents ORDER BY createdAt DESC LIMIT 10;",
+  "rows": [
+    {
+      "id": "390003",
+      "title": "Flight Booking",
+      "source": "email",
+      "createdAt": "2026-01-17 20:31:16",
+      "userId": "8"
+    },
+    {
+      "id": "390001",
+      "title": "TLV → MUC",
+      "source": "email",
+      "createdAt": "2026-01-17 20:31:06",
+      "userId": "8"
+    },
+    {
+      "id": "360005",
+      "title": "מצגות קורס 3 (Course 3 Presentations)",
+      "source": "upload",
+      "createdAt": "2026-01-17 15:15:25",
+      "userId": "630001"
+    },
+    {
+      "id": "360001",
+      "title": "סדנה חיצונית (External Workshop)",
+      "source": "upload",
+      "createdAt": "2026-01-17 15:15:25",
+      "userId": "630001"
+    },
+    {
+      "id": "360006",
+      "title": "מצגות קורס 3 (Course 3 Presentations)",
+      "source": "upload",
+      "createdAt": "2026-01-17 15:15:25",
+      "userId": "630001"
+    },
+    {
+      "id": "360003",
+      "title": "מצגות סיום קורס 2 (Course 2 Final Presentations)",
+      "source": "upload",
+      "createdAt": "2026-01-17 15:15:25",
+      "userId": "630001"
+    },
+    {
+      "id": "360007",
+      "title": "סדנה חיצונית (External Workshop)",
+      "source": "upload",
+      "createdAt": "2026-01-17 15:15:25",
+      "userId": "630001"
+    },
+    {
+      "id": "360002",
+      "title": "סדנה חיצונית (External Workshop)",
+      "source": "upload",
+      "createdAt": "2026-01-17 15:15:25",
+      "userId": "630001"
+    },
+    {
+      "id": "360004",
+      "title": "חשיבה עיצובית סדנה (Design Thinking Workshop)",
+      "source": "upload",
+      "createdAt": "2026-01-17 15:15:25",
+      "userId": "630001"
+    },
+    {
+      "id": "360008",
+      "title": "מצגות קורס 4 (Course 4 Presentations)",
+      "source": "upload",
+      "createdAt": "2026-01-17 15:15:25",
+      "userId": "630001"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitle\tsource\tcreatedAt\tuserId\n390003\tFlight Booking\temail\t2026-01-17 20:31:16\t8\n390001\tTLV → MUC\temail\t2026-01-17 20:31:06\t8\n360005\tמצגות קורס 3 (Course 3 Presentations)\tupload\t2026-01-17 15:15:25\t630001\n360001\tסדנה חיצונית (External Workshop)\tupload\t2026-01-17 15:15:25\t630001\n360006\tמצגות קורס 3 (Course 3 Presentations)\tupload\t2026-01-17 15:15:25\t630001\n360003\tמצגות סיום קורס 2 (Course 2 Final Presentations)\tupload\t2026-01-17 15:15:25\t630001\n360007\tסדנה חיצונית (External Workshop)\tupload\t2026-01-17 15:15:25\t630001\n360002\tסדנה חיצונית (External Workshop)\tupload\t2026-01-17 15:15:25\t630001\n360004\tחשיבה עיצובית סדנה (Design Thinking Workshop)\tupload\t2026-01-17 15:15:25\t630001\n360008\tמצגות קורס 4 (Course 4 Presentations)\tupload\t2026-01-17 15:15:25\t630001\n",
+  "stderr": "",
+  "execution_time_ms": 1546
+}

@@ -155,3 +155,5 @@
 - [x] Add theme selector (dark/light/system) to Settings
 - [x] Fix Mailgun webhook timeout (async processing to respond within 10s limit)
 - [x] Fix inbox showing empty when Home shows documents waiting (added refetchOnMount)
+- [x] Parse email body when no attachments (extract booking details from HTML/text)
+- [x] Add push notifications for email processing (received, completed, errors)
