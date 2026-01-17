@@ -24,6 +24,7 @@ function createAuthContext(): { ctx: TrpcContext; clearedCookies: CookieCall[] }
     credits: 20,
     subscriptionExpiresAt: null,
     paymentCustomerId: null,
+    expoPushToken: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     lastSignedIn: new Date(),

@@ -121,6 +121,14 @@ export default function RootLayout() {
   return <SafeAreaProvider initialMetrics={providerInitialMetrics}>{content}</SafeAreaProvider>;
 }
 
+// Component to register push token when authenticated
+function PushTokenRegistration() {
+  // Import dynamically to avoid issues on web
+  const { usePushTokenRegistration } = require("@/hooks/use-push-token");
+  usePushTokenRegistration();
+  return null;
+}
+
 // Separate component to use the theme context
 function ThemeAwareContent({ trpcClient, queryClient }: { trpcClient: any; queryClient: any }) {
   const colorScheme = useColorScheme();
@@ -142,6 +150,7 @@ function ThemeAwareContent({ trpcClient, queryClient }: { trpcClient: any; query
               <Stack.Screen name="edit-trip" options={{ presentation: "modal", headerShown: false }} />
             </Stack>
             <StatusBar style="auto" />
+            <PushTokenRegistration />
         </NavigationThemeProvider>
       </QueryClientProvider>
     </trpc.Provider>

@@ -280,6 +280,21 @@ export const appRouter = router({
       const canProcess = await db.canProcessDocument(ctx.user.id);
       return { canProcess };
     }),
+
+    // Register push token for notifications
+    registerPushToken: protectedProcedure
+      .input(z.object({ token: z.string().min(1).max(255) }))
+      .mutation(async ({ ctx, input }) => {
+        await db.updateUserPushToken(ctx.user.id, input.token);
+        return { success: true };
+      }),
+
+    // Unregister push token
+    unregisterPushToken: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        await db.updateUserPushToken(ctx.user.id, null);
+        return { success: true };
+      }),
   }),
 
   // ============ BILLING ============

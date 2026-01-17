@@ -27,6 +27,8 @@ export const users = mysqlTable("users", {
   subscriptionExpiresAt: timestamp("subscriptionExpiresAt"),
   // Stripe/Google Play customer ID for payment tracking
   paymentCustomerId: varchar("paymentCustomerId", { length: 255 }),
+  // Expo push token for native push notifications
+  expoPushToken: varchar("expoPushToken", { length: 255 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),

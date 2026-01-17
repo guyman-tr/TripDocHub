@@ -5,7 +5,7 @@ import { parseDocument, parseEmailBody } from "../documentParser";
 import * as db from "../db";
 import { storagePut } from "../storage";
 import { nanoid } from "nanoid";
-import { notifyOwner } from "../_core/notification";
+import { sendPushNotification, EmailProcessingNotifications } from "../pushNotification";
 
 const router = Router();
 
@@ -50,6 +50,7 @@ function verifyMailgunSignature(
  * Send push notification to user about email processing status
  */
 async function sendProcessingNotification(
+  userId: number,
   type: "received" | "completed" | "error" | "no_credits" | "no_bookings",
   details: {
     documentCount?: number;
@@ -58,40 +59,32 @@ async function sendProcessingNotification(
   }
 ): Promise<void> {
   try {
-    let title: string;
-    let content: string;
+    let payload;
 
     switch (type) {
       case "received":
-        title = "📧 Email Received";
-        content = details.subject 
-          ? `Processing email: "${details.subject.substring(0, 50)}${details.subject.length > 50 ? '...' : ''}"`
-          : "Processing your forwarded email...";
+        payload = EmailProcessingNotifications.received(details.subject);
         break;
       case "completed":
-        title = "✅ Documents Added";
-        content = details.documentCount === 1
-          ? "1 travel document was extracted and added to your inbox."
-          : `${details.documentCount} travel documents were extracted and added to your inbox.`;
+        payload = EmailProcessingNotifications.completed(details.documentCount || 0);
         break;
       case "error":
-        title = "❌ Processing Failed";
-        content = details.errorMessage || "There was an error processing your email. Please try again.";
+        payload = EmailProcessingNotifications.error(details.errorMessage);
         break;
       case "no_credits":
-        title = "⚠️ No Credits Remaining";
-        content = "Your email was received but couldn't be processed. Please add more credits to continue.";
+        payload = EmailProcessingNotifications.noCredits();
         break;
       case "no_bookings":
-        title = "📭 No Bookings Found";
-        content = details.subject
-          ? `No travel bookings were found in "${details.subject.substring(0, 40)}${details.subject.length > 40 ? '...' : ''}"`
-          : "No travel bookings were found in your email.";
+        payload = EmailProcessingNotifications.noBookingsFound(details.subject);
         break;
     }
 
-    await notifyOwner({ title, content });
-    console.log(`[Mailgun] Sent ${type} notification`);
+    const result = await sendPushNotification(userId, payload);
+    if (result.success) {
+      console.log(`[Mailgun] Sent ${type} push notification to user ${userId}`);
+    } else {
+      console.log(`[Mailgun] Failed to send ${type} notification: ${result.error}`);
+    }
   } catch (error) {
     console.error("[Mailgun] Failed to send notification:", error);
   }
@@ -156,7 +149,7 @@ async function processAttachmentsAsync(
         const hasCredits = await db.canProcessDocument(userId);
         if (!hasCredits) {
           console.log(`[Mailgun Async] User ${userId} ran out of credits during processing`);
-          await sendProcessingNotification("no_credits", {});
+          await sendProcessingNotification(userId, "no_credits", {});
           return;
         }
 
@@ -188,11 +181,11 @@ async function processAttachmentsAsync(
 
   // Send completion notification
   if (hasError && processedCount === 0) {
-    await sendProcessingNotification("error", { 
+    await sendProcessingNotification(userId, "error", { 
       errorMessage: "Failed to process email attachments. Please try uploading directly in the app." 
     });
   } else if (processedCount > 0) {
-    await sendProcessingNotification("completed", { documentCount: processedCount });
+    await sendProcessingNotification(userId, "completed", { documentCount: processedCount });
   }
 
   console.log(`[Mailgun Async] Completed attachment processing for user ${userId}. Total documents created: ${processedCount}`);
@@ -215,7 +208,7 @@ async function processEmailBodyAsync(
     const hasCredits = await db.canProcessDocument(userId);
     if (!hasCredits) {
       console.log(`[Mailgun Async] User ${userId} has no credits`);
-      await sendProcessingNotification("no_credits", {});
+      await sendProcessingNotification(userId, "no_credits", {});
       return;
     }
 
@@ -224,7 +217,7 @@ async function processEmailBodyAsync(
 
     if (parseResult.documents.length === 0) {
       console.log(`[Mailgun Async] No bookings found in email body`);
-      await sendProcessingNotification("no_bookings", { subject: emailSubject });
+      await sendProcessingNotification(userId, "no_bookings", { subject: emailSubject });
       return;
     }
 
@@ -232,7 +225,7 @@ async function processEmailBodyAsync(
     const existingDoc = await db.findDuplicateDocument(userId, parseResult.contentHash);
     if (existingDoc) {
       console.log(`[Mailgun Async] Skipping duplicate email (hash: ${parseResult.contentHash.substring(0, 8)}...)`);
-      await sendProcessingNotification("no_bookings", { subject: emailSubject });
+      await sendProcessingNotification(userId, "no_bookings", { subject: emailSubject });
       return;
     }
 
@@ -255,9 +248,9 @@ async function processEmailBodyAsync(
       if (!hasCredits) {
         console.log(`[Mailgun Async] User ${userId} ran out of credits during processing`);
         if (processedCount > 0) {
-          await sendProcessingNotification("completed", { documentCount: processedCount });
+          await sendProcessingNotification(userId, "completed", { documentCount: processedCount });
         }
-        await sendProcessingNotification("no_credits", {});
+        await sendProcessingNotification(userId, "no_credits", {});
         return;
       }
 
@@ -282,13 +275,13 @@ async function processEmailBodyAsync(
 
     // Send completion notification
     if (processedCount > 0) {
-      await sendProcessingNotification("completed", { documentCount: processedCount });
+      await sendProcessingNotification(userId, "completed", { documentCount: processedCount });
     }
 
     console.log(`[Mailgun Async] Completed email body processing for user ${userId}. Total documents created: ${processedCount}`);
   } catch (error) {
     console.error(`[Mailgun Async] Failed to process email body:`, error);
-    await sendProcessingNotification("error", { 
+    await sendProcessingNotification(userId, "error", { 
       errorMessage: "Failed to extract booking information from your email." 
     });
   }
@@ -368,7 +361,7 @@ router.post("/", upload.any(), async (req: Request, res: Response) => {
       console.log(`[Mailgun] User ${user.id} has no credits remaining`);
       // Send notification about no credits
       setImmediate(() => {
-        sendProcessingNotification("no_credits", {}).catch(console.error);
+        sendProcessingNotification(user.id, "no_credits", {}).catch(console.error);
       });
       return res.status(402).json({ error: "Insufficient credits" });
     }
@@ -398,7 +391,7 @@ router.post("/", upload.any(), async (req: Request, res: Response) => {
 
     // Send "received" notification
     setImmediate(() => {
-      sendProcessingNotification("received", { subject }).catch(console.error);
+      sendProcessingNotification(user.id, "received", { subject }).catch(console.error);
     });
 
     // Process the email asynchronously AFTER responding
@@ -408,7 +401,7 @@ router.post("/", upload.any(), async (req: Request, res: Response) => {
       setImmediate(() => {
         processAttachmentsAsync(user.id, files!, subject).catch((error) => {
           console.error("[Mailgun Async] Attachment processing failed:", error);
-          sendProcessingNotification("error", { 
+          sendProcessingNotification(user.id, "error", { 
             errorMessage: "Failed to process email attachments." 
           }).catch(console.error);
         });
@@ -418,7 +411,7 @@ router.post("/", upload.any(), async (req: Request, res: Response) => {
       setImmediate(() => {
         processEmailBodyAsync(user.id, bodyHtml, bodyPlain, subject, sender || from).catch((error) => {
           console.error("[Mailgun Async] Email body processing failed:", error);
-          sendProcessingNotification("error", { 
+          sendProcessingNotification(user.id, "error", { 
             errorMessage: "Failed to extract booking information from email." 
           }).catch(console.error);
         });

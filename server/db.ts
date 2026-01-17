@@ -652,3 +652,25 @@ export async function processPurchase(
 
   return { success: true };
 }
+
+// ============ PUSH TOKEN FUNCTIONS ============
+
+export async function updateUserPushToken(userId: number, expoPushToken: string | null): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(users).set({ expoPushToken }).where(eq(users.id, userId));
+}
+
+export async function getUserPushToken(userId: number): Promise<string | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select({ expoPushToken: users.expoPushToken })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  return result.length > 0 ? result[0].expoPushToken : null;
+}
