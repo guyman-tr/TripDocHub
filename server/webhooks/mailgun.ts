@@ -46,7 +46,100 @@ function verifyMailgunSignature(
 }
 
 /**
+ * Process email attachments asynchronously
+ * This runs in the background after we've already responded to Mailgun
+ */
+async function processEmailAsync(
+  userId: number,
+  files: Express.Multer.File[],
+  emailSubject: string | undefined
+): Promise<void> {
+  console.log(`[Mailgun Async] Starting background processing for user ${userId}, ${files.length} files`);
+  
+  let processedCount = 0;
+
+  for (const file of files) {
+    const mimeType = file.mimetype;
+    const fileName = file.originalname || file.fieldname;
+
+    console.log(`[Mailgun Async] Processing file: ${fileName} (${mimeType}, ${file.size} bytes)`);
+
+    // Only process PDFs and images
+    if (!mimeType.startsWith("image/") && mimeType !== "application/pdf") {
+      console.log(`[Mailgun Async] Skipping unsupported type: ${mimeType}`);
+      continue;
+    }
+
+    try {
+      // Upload to our storage
+      const fileKey = `documents/${userId}/${nanoid(12)}-${fileName}`;
+      const { url: fileUrl } = await storagePut(fileKey, file.buffer, mimeType);
+      console.log(`[Mailgun Async] Uploaded to S3: ${fileUrl}`);
+
+      // Parse the document using AI
+      const parseResult = await parseDocument(fileUrl, mimeType);
+      console.log(`[Mailgun Async] Parsed ${parseResult.documents.length} documents from ${fileName}`);
+
+      // Check for duplicate before processing (prevents reprocessing on webhook retries)
+      const existingDoc = await db.findDuplicateDocument(userId, parseResult.contentHash);
+      if (existingDoc) {
+        console.log(`[Mailgun Async] Skipping duplicate document (hash: ${parseResult.contentHash.substring(0, 8)}...)`);
+        continue;
+      }
+
+      // Create documents in database
+      for (const doc of parseResult.documents) {
+        // Try to auto-assign based on date
+        let tripId: number | null = null;
+        if (doc.documentDate) {
+          const matchingTrip = await db.findMatchingTrip(userId, doc.documentDate);
+          if (matchingTrip) {
+            tripId = matchingTrip.id;
+            console.log(`[Mailgun Async] Auto-assigned to trip: ${matchingTrip.name}`);
+          }
+        }
+
+        // Check credits before each document
+        const hasCredits = await db.canProcessDocument(userId);
+        if (!hasCredits) {
+          console.log(`[Mailgun Async] User ${userId} ran out of credits during processing`);
+          break;
+        }
+
+        await db.createDocument({
+          userId,
+          tripId,
+          category: doc.category,
+          documentType: doc.documentType,
+          title: doc.title,
+          subtitle: doc.subtitle,
+          details: doc.details,
+          originalFileUrl: fileUrl,
+          source: "email",
+          documentDate: doc.documentDate,
+          contentHash: parseResult.contentHash,
+        });
+
+        // Deduct credit for each document processed
+        await db.deductCredit(userId);
+        processedCount++;
+      }
+
+      console.log(`[Mailgun Async] Created ${parseResult.documents.length} documents from ${fileName}`);
+    } catch (error) {
+      console.error(`[Mailgun Async] Failed to process attachment ${fileName}:`, error);
+    }
+  }
+
+  console.log(`[Mailgun Async] Completed processing for user ${userId}. Total documents created: ${processedCount}`);
+}
+
+/**
  * Handle incoming email webhook from Mailgun
+ * 
+ * IMPORTANT: Mailgun has a 10-second timeout for webhook responses.
+ * We must respond immediately and process the email asynchronously.
+ * 
  * Mailgun sends parsed messages as multipart/form-data with these fields:
  * - recipient: the email address the message was sent to
  * - sender: the sender's email address
@@ -59,11 +152,12 @@ function verifyMailgunSignature(
  * - timestamp, token, signature: for webhook verification
  */
 router.post("/", upload.any(), async (req: Request, res: Response) => {
+  const startTime = Date.now();
+  
   try {
     console.log("[Mailgun] Received webhook");
     console.log("[Mailgun] Content-Type:", req.headers["content-type"]);
     console.log("[Mailgun] Body keys:", Object.keys(req.body));
-    console.log("[Mailgun] Files:", req.files ? (req.files as Express.Multer.File[]).map(f => ({ fieldname: f.fieldname, originalname: f.originalname, mimetype: f.mimetype, size: f.size })) : "none");
     
     // Extract fields from the parsed message
     const {
@@ -75,24 +169,19 @@ router.post("/", upload.any(), async (req: Request, res: Response) => {
       token,
       signature,
       "attachment-count": attachmentCountStr,
-      "body-plain": bodyPlain,
     } = req.body;
 
     console.log("[Mailgun] Recipient:", recipient);
     console.log("[Mailgun] Sender:", sender);
-    console.log("[Mailgun] From:", from);
     console.log("[Mailgun] Subject:", subject);
-    console.log("[Mailgun] Attachment count:", attachmentCountStr);
 
-    // Verify signature if provided
+    // Verify signature if provided (do this quickly)
     if (timestamp && token && signature) {
       if (!verifyMailgunSignature(timestamp, token, signature)) {
         console.error("[Mailgun] Invalid webhook signature");
         return res.status(401).json({ error: "Invalid signature" });
       }
       console.log("[Mailgun] Signature verified");
-    } else {
-      console.log("[Mailgun] No signature provided, skipping verification");
     }
 
     if (!recipient) {
@@ -100,7 +189,7 @@ router.post("/", upload.any(), async (req: Request, res: Response) => {
       return res.status(400).json({ error: "No recipient" });
     }
 
-    // Find user by forwarding email
+    // Find user by forwarding email (quick DB lookup)
     const user = await db.getUserByForwardingEmail(recipient);
     if (!user) {
       console.error("[Mailgun] No user found for forwarding email:", recipient);
@@ -118,101 +207,38 @@ router.post("/", upload.any(), async (req: Request, res: Response) => {
 
     // Get attachments from multer
     const files = req.files as Express.Multer.File[] | undefined;
-    const attachmentCount = parseInt(attachmentCountStr || "0", 10);
 
     if (!files || files.length === 0) {
       console.log("[Mailgun] No file attachments in email");
-      
-      // Even without attachments, we could process the email body
-      // For now, just return success
       return res.status(200).json({ message: "No attachments to process" });
     }
 
-    console.log(`[Mailgun] Processing ${files.length} file attachments`);
+    console.log(`[Mailgun] Found ${files.length} attachments, responding to Mailgun and processing async`);
 
-    let processedCount = 0;
-
-    for (const file of files) {
-      const mimeType = file.mimetype;
-      const fileName = file.originalname || file.fieldname;
-
-      console.log(`[Mailgun] Processing file: ${fileName} (${mimeType}, ${file.size} bytes)`);
-
-      // Only process PDFs and images
-      if (!mimeType.startsWith("image/") && mimeType !== "application/pdf") {
-        console.log(`[Mailgun] Skipping unsupported type: ${mimeType}`);
-        continue;
-      }
-
-      try {
-        // Upload to our storage
-        const fileKey = `documents/${user.id}/${nanoid(12)}-${fileName}`;
-        const { url: fileUrl } = await storagePut(fileKey, file.buffer, mimeType);
-        console.log(`[Mailgun] Uploaded to S3: ${fileUrl}`);
-
-        // Parse the document using AI
-        const parseResult = await parseDocument(fileUrl, mimeType);
-        console.log(`[Mailgun] Parsed ${parseResult.documents.length} documents from ${fileName}`);
-
-        // Check for duplicate before processing (prevents reprocessing on webhook retries)
-        const existingDoc = await db.findDuplicateDocument(user.id, parseResult.contentHash);
-        if (existingDoc) {
-          console.log(`[Mailgun] Skipping duplicate document (hash: ${parseResult.contentHash.substring(0, 8)}...)`);
-          continue;
-        }
-
-        // Create documents in database
-        for (const doc of parseResult.documents) {
-          // Try to auto-assign based on date
-          let tripId: number | null = null;
-          if (doc.documentDate) {
-            const matchingTrip = await db.findMatchingTrip(user.id, doc.documentDate);
-            if (matchingTrip) {
-              tripId = matchingTrip.id;
-              console.log(`[Mailgun] Auto-assigned to trip: ${matchingTrip.name}`);
-            }
-          }
-
-          // Check credits before each document
-          const hasCredits = await db.canProcessDocument(user.id);
-          if (!hasCredits) {
-            console.log(`[Mailgun] User ${user.id} ran out of credits during processing`);
-            break;
-          }
-
-          await db.createDocument({
-            userId: user.id,
-            tripId,
-            category: doc.category,
-            documentType: doc.documentType,
-            title: doc.title,
-            subtitle: doc.subtitle,
-            details: doc.details,
-            originalFileUrl: fileUrl,
-            source: "email",
-            documentDate: doc.documentDate,
-            contentHash: parseResult.contentHash,
-          });
-
-          // Deduct credit for each document processed
-          await db.deductCredit(user.id);
-          processedCount++;
-        }
-
-        console.log(`[Mailgun] Created ${parseResult.documents.length} documents from ${fileName}`);
-      } catch (error) {
-        console.error(`[Mailgun] Failed to process attachment ${fileName}:`, error);
-      }
-    }
-
-    console.log(`[Mailgun] Total documents created: ${processedCount}`);
-    return res.status(200).json({ 
-      message: "Email processed", 
-      documentsCreated: processedCount 
+    // RESPOND IMMEDIATELY to Mailgun (within their timeout window)
+    // This prevents Bad Gateway errors
+    res.status(200).json({ 
+      message: "Email received, processing in background",
+      attachmentCount: files.length
     });
+
+    // Log response time
+    console.log(`[Mailgun] Responded in ${Date.now() - startTime}ms, starting async processing`);
+
+    // Process the email asynchronously AFTER responding
+    // Use setImmediate to ensure the response is sent first
+    setImmediate(() => {
+      processEmailAsync(user.id, files, subject).catch((error) => {
+        console.error("[Mailgun Async] Background processing failed:", error);
+      });
+    });
+
   } catch (error) {
     console.error("[Mailgun] Webhook error:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    // Still try to respond quickly even on error
+    if (!res.headersSent) {
+      return res.status(500).json({ error: "Internal server error" });
+    }
   }
 });
 

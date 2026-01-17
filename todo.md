@@ -153,3 +153,4 @@
 - [x] Add notification settings screen with toggle
 - [x] Fix duplicate detection to hash actual file content instead of URL
 - [x] Add theme selector (dark/light/system) to Settings
+- [x] Fix Mailgun webhook timeout (async processing to respond within 10s limit)
