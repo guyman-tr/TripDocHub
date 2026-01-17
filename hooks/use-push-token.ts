@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
+import Constants from "expo-constants";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -39,12 +40,42 @@ export function usePushTokenRegistration() {
         }
 
         // Get the Expo push token
-        const tokenData = await Notifications.getExpoPushTokenAsync({
-          projectId: undefined, // Uses the project ID from app.json/app.config.ts
-        });
-
-        const token = tokenData.data;
-        console.log("[PushToken] Got token:", token.substring(0, 30) + "...");
+        // For EAS builds, we need to provide the projectId explicitly
+        // For Expo Go, it uses the experienceId from Constants
+        const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
+        
+        console.log("[PushToken] Getting token with projectId:", projectId);
+        console.log("[PushToken] Constants.expoConfig:", JSON.stringify(Constants.expoConfig?.extra));
+        console.log("[PushToken] Constants.easConfig:", JSON.stringify(Constants.easConfig));
+        
+        let token: string;
+        
+        try {
+          // Try to get Expo push token first
+          const tokenData = await Notifications.getExpoPushTokenAsync({
+            projectId: projectId,
+          });
+          token = tokenData.data;
+          console.log("[PushToken] Got Expo token:", token.substring(0, 30) + "...");
+        } catch (expoPushError) {
+          console.log("[PushToken] Failed to get Expo token, trying device token:", expoPushError);
+          
+          // Fallback to device push token (FCM for Android, APNs for iOS)
+          // This won't work with Expo Push API but at least we can log the issue
+          try {
+            const deviceToken = await Notifications.getDevicePushTokenAsync();
+            console.log("[PushToken] Got device token type:", deviceToken.type);
+            console.log("[PushToken] Device token:", String(deviceToken.data).substring(0, 30) + "...");
+            
+            // We can't use device tokens with Expo Push API
+            // Log this for debugging
+            console.error("[PushToken] Cannot use device token with Expo Push API. Need EAS projectId.");
+            return;
+          } catch (deviceError) {
+            console.error("[PushToken] Failed to get any push token:", deviceError);
+            return;
+          }
+        }
 
         // Register with server
         await registerMutation.mutateAsync({ token });

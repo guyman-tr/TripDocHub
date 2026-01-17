@@ -86,6 +86,14 @@ const config: ExpoConfig = {
     typedRoutes: true,
     reactCompiler: true,
   },
+  extra: {
+    eas: {
+      // This projectId is required for Expo push notifications
+      // It's a placeholder that will be replaced when building with EAS
+      // For development builds, the experienceId from Constants is used instead
+      projectId: process.env.EAS_PROJECT_ID || undefined,
+    },
+  },
 };
 
 export default config;

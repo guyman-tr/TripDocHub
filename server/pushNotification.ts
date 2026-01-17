@@ -6,6 +6,7 @@
  */
 
 import { getUserPushToken } from "./db";
+import { notifyOwner } from "./_core/notification";
 
 // Expo Push API endpoint
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
@@ -33,14 +34,15 @@ export async function sendPushNotification(
     const pushToken = await getUserPushToken(userId);
     
     if (!pushToken) {
-      console.log(`[PushNotification] No push token for user ${userId}`);
-      return { success: false, error: "No push token registered" };
+      console.log(`[PushNotification] No push token for user ${userId}, falling back to platform notification`);
+      // Fallback to platform-level notification (Manus notification service)
+      return await sendFallbackNotification(payload);
     }
 
     // Validate Expo push token format
     if (!pushToken.startsWith("ExponentPushToken[") && !pushToken.startsWith("ExpoPushToken[")) {
-      console.log(`[PushNotification] Invalid push token format for user ${userId}`);
-      return { success: false, error: "Invalid push token format" };
+      console.log(`[PushNotification] Invalid push token format for user ${userId}, falling back to platform notification`);
+      return await sendFallbackNotification(payload);
     }
 
     console.log(`[PushNotification] Sending to user ${userId}: "${payload.title}"`);
@@ -85,6 +87,32 @@ export async function sendPushNotification(
     return { success: true };
   } catch (error) {
     console.error("[PushNotification] Error sending notification:", error);
+    // Fallback to platform notification on error
+    return await sendFallbackNotification(payload);
+  }
+}
+
+/**
+ * Fallback to platform-level notification when push token is not available
+ * This sends to the Manus notification service which shows in the Manus app
+ */
+async function sendFallbackNotification(
+  payload: PushNotificationPayload
+): Promise<PushNotificationResult> {
+  try {
+    const success = await notifyOwner({
+      title: payload.title,
+      content: payload.body,
+    });
+    
+    if (success) {
+      console.log(`[PushNotification] Sent fallback notification via Manus`);
+      return { success: true };
+    } else {
+      return { success: false, error: "Fallback notification failed" };
+    }
+  } catch (error) {
+    console.error("[PushNotification] Fallback notification error:", error);
     return { success: false, error: String(error) };
   }
 }

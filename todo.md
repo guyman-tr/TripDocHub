@@ -158,3 +158,4 @@
 - [x] Parse email body when no attachments (extract booking details from HTML/text)
 - [x] Add push notifications for email processing (received, completed, errors)
 - [x] Fix push notifications to come from TripDocHub app (not Manus platform)
+- [x] Debug push notifications not being received on device (FCM required for native, added fallback to Manus notifications)

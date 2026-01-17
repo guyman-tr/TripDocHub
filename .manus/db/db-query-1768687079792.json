@@ -1,0 +1,16 @@
+{
+  "query": "SELECT id, SUBSTRING(name, 1, 20) as name, expoPushToken, credits FROM users WHERE expoPushToken IS NOT NULL OR credits = 0;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3cm1rAYqFTLZz8b.ead05c4c62f7 --database jxNutJmZj7bf8VEqqERusH --execute SELECT id, SUBSTRING(name, 1, 20) as name, expoPushToken, credits FROM users WHERE expoPushToken IS NOT NULL OR credits = 0;",
+  "rows": [
+    {
+      "id": "8",
+      "name": "Guy Manova",
+      "expoPushToken": "NULL",
+      "credits": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\texpoPushToken\tcredits\n8\tGuy Manova\tNULL\t0\n",
+  "stderr": "",
+  "execution_time_ms": 1518
+}

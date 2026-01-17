@@ -1,0 +1,45 @@
+{
+  "query": "SELECT id, name, email, expoPushToken, credits FROM users LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3cm1rAYqFTLZz8b.ead05c4c62f7 --database jxNutJmZj7bf8VEqqERusH --execute SELECT id, name, email, expoPushToken, credits FROM users LIMIT 5;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Guy Manova",
+      "email": "gmanovacanada@gmail.com",
+      "expoPushToken": "NULL",
+      "credits": "20"
+    },
+    {
+      "id": "8",
+      "name": "Guy Manova",
+      "email": "gmanova@gmail.com",
+      "expoPushToken": "NULL",
+      "credits": "0"
+    },
+    {
+      "id": "630001",
+      "name": "Inna Manova",
+      "email": "inna.druker@gmail.com",
+      "expoPushToken": "NULL",
+      "credits": "12"
+    },
+    {
+      "id": "750001",
+      "name": "Ronny Manova",
+      "email": "ronny.manova@gmail.com",
+      "expoPushToken": "NULL",
+      "credits": "20"
+    },
+    {
+      "id": "1020001",
+      "name": "tova manova",
+      "email": "tova.manova@gmail.com",
+      "expoPushToken": "NULL",
+      "credits": "20"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\texpoPushToken\tcredits\n1\tGuy Manova\tgmanovacanada@gmail.com\tNULL\t20\n8\tGuy Manova\tgmanova@gmail.com\tNULL\t0\n630001\tInna Manova\tinna.druker@gmail.com\tNULL\t12\n750001\tRonny Manova\tronny.manova@gmail.com\tNULL\t20\n1020001\ttova manova\ttova.manova@gmail.com\tNULL\t20\n",
+  "stderr": "",
+  "execution_time_ms": 1510
+}
