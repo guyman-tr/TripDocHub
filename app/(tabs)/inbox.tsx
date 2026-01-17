@@ -235,7 +235,11 @@ export default function InboxScreen() {
     data: documents, 
     isLoading, 
     refetch 
-  } = trpc.documents.inbox.useQuery(undefined, { enabled: isAuthenticated });
+  } = trpc.documents.inbox.useQuery(undefined, { 
+    enabled: isAuthenticated,
+    refetchOnMount: "always",
+    staleTime: 0,
+  });
 
   const assignMutation = trpc.documents.assign.useMutation({
     onSuccess: () => {

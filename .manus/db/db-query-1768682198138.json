@@ -1,0 +1,40 @@
+{
+  "query": "SELECT id, title, tripId, userId FROM documents WHERE tripId IS NULL LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3cm1rAYqFTLZz8b.ead05c4c62f7 --database jxNutJmZj7bf8VEqqERusH --execute SELECT id, title, tripId, userId FROM documents WHERE tripId IS NULL LIMIT 5;",
+  "rows": [
+    {
+      "id": "360001",
+      "title": "סדנה חיצונית (External Workshop)",
+      "tripId": "NULL",
+      "userId": "630001"
+    },
+    {
+      "id": "360002",
+      "title": "סדנה חיצונית (External Workshop)",
+      "tripId": "NULL",
+      "userId": "630001"
+    },
+    {
+      "id": "360003",
+      "title": "מצגות סיום קורס 2 (Course 2 Final Presentations)",
+      "tripId": "NULL",
+      "userId": "630001"
+    },
+    {
+      "id": "360004",
+      "title": "חשיבה עיצובית סדנה (Design Thinking Workshop)",
+      "tripId": "NULL",
+      "userId": "630001"
+    },
+    {
+      "id": "360005",
+      "title": "מצגות קורס 3 (Course 3 Presentations)",
+      "tripId": "NULL",
+      "userId": "630001"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitle\ttripId\tuserId\n360001\tסדנה חיצונית (External Workshop)\tNULL\t630001\n360002\tסדנה חיצונית (External Workshop)\tNULL\t630001\n360003\tמצגות סיום קורס 2 (Course 2 Final Presentations)\tNULL\t630001\n360004\tחשיבה עיצובית סדנה (Design Thinking Workshop)\tNULL\t630001\n360005\tמצגות קורס 3 (Course 3 Presentations)\tNULL\t630001\n",
+  "stderr": "",
+  "execution_time_ms": 1542
+}
