@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "836642800440",
+    "project_id": "tripdochub",
+    "storage_bucket": "tripdochub.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:836642800440:android:cd35ff589b307fefe137cd",
+        "android_client_info": {
+          "package_name": "space.manus.triphub.t20251216052638"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAkcvffJKbDkf2Uj-TCYWsQe7nhA2w9SgE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
