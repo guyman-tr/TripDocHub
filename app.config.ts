@@ -89,10 +89,9 @@ const config: ExpoConfig = {
   },
   extra: {
     eas: {
-      // This projectId is required for Expo push notifications
-      // It's a placeholder that will be replaced when building with EAS
-      // For development builds, the experienceId from Constants is used instead
-      projectId: process.env.EAS_PROJECT_ID || undefined,
+      // EAS Project ID for Expo Push Notifications
+      // This enables push notifications on both Android (via FCM) and iOS (via APNs)
+      projectId: "8ecc7ee6-7a8f-42c7-9aa4-4bea41063f33",
     },
   },
 };

@@ -1,0 +1,17 @@
+{
+  "query": "SELECT id, name, email, expoPushToken, credits FROM users WHERE expoPushToken IS NOT NULL OR id = 1 LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3cm1rAYqFTLZz8b.ead05c4c62f7 --database jxNutJmZj7bf8VEqqERusH --execute SELECT id, name, email, expoPushToken, credits FROM users WHERE expoPushToken IS NOT NULL OR id = 1 LIMIT 10;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Guy Manova",
+      "email": "gmanovacanada@gmail.com",
+      "expoPushToken": "NULL",
+      "credits": "20"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\texpoPushToken\tcredits\n1\tGuy Manova\tgmanovacanada@gmail.com\tNULL\t20\n",
+  "stderr": "",
+  "execution_time_ms": 1792
+}

@@ -160,3 +160,4 @@
 - [x] Fix push notifications to come from TripDocHub app (not Manus platform)
 - [x] Debug push notifications not being received on device (FCM required for native, added fallback to Manus notifications)
 - [x] Configure Firebase Cloud Messaging for native push notifications
+- [x] Debug push token not being registered despite FCM configuration (added EAS projectId)
