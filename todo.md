@@ -161,3 +161,4 @@
 - [x] Debug push notifications not being received on device (FCM required for native, added fallback to Manus notifications)
 - [x] Configure Firebase Cloud Messaging for native push notifications
 - [x] Debug push token not being registered despite FCM configuration (added EAS projectId)
+- [x] Connect Google Play one-time products to credit packages (10_credits, 50_credits, 100_credits)

@@ -2,9 +2,9 @@ import { Platform } from "react-native";
 
 // Product IDs - these must match what you create in Google Play Console
 export const PRODUCT_IDS = {
-  CREDITS_10: "credits_10",
-  CREDITS_50: "credits_50",
-  CREDITS_100: "credits_100",
+  CREDITS_10: "10_credits",
+  CREDITS_50: "50_credits",
+  CREDITS_100: "100_credits",
 } as const;
 
 export type ProductId = (typeof PRODUCT_IDS)[keyof typeof PRODUCT_IDS];
