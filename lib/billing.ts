@@ -176,10 +176,14 @@ export async function purchaseProduct(
     const RNIap = require("react-native-iap");
     
     // v14+ API requires platform-specific request format
+    // For Android, skus must be in the request object
+    // For iOS, sku (singular) is used
+    const purchaseRequest = Platform.OS === 'android'
+      ? { skus: [productId] }
+      : { sku: productId };
+    
     await RNIap.requestPurchase({
-      request: {
-        skus: [productId],
-      },
+      request: purchaseRequest,
       type: 'inapp',
     });
     
