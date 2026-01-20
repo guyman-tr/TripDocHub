@@ -175,17 +175,23 @@ export async function purchaseProduct(
   try {
     const RNIap = require("react-native-iap");
     
-    // v14+ API requires platform-specific request format
-    // For Android, skus must be in the request object
-    // For iOS, sku (singular) is used
-    const purchaseRequest = Platform.OS === 'android'
-      ? { skus: [productId] }
-      : { sku: productId };
-    
-    await RNIap.requestPurchase({
-      request: purchaseRequest,
-      type: 'inapp',
-    });
+    // v14.5+ API requires nested platform-specific request format
+    // See: https://github.com/hyochan/react-native-iap/issues/2600
+    if (Platform.OS === 'android') {
+      await RNIap.requestPurchase({
+        request: {
+          android: {
+            skus: [productId],
+          },
+        },
+        type: 'inapp',
+      });
+    } else {
+      await RNIap.requestPurchase({
+        sku: productId,
+        andDangerouslyFinishTransactionAutomaticallyIOS: false,
+      });
+    }
     
     // The purchase result will come through the purchase listener
     // Return success here - the actual verification happens in the listener
