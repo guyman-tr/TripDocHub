@@ -162,3 +162,4 @@
 - [x] Configure Firebase Cloud Messaging for native push notifications
 - [x] Debug push token not being registered despite FCM configuration (added EAS projectId)
 - [x] Connect Google Play one-time products to credit packages (10_credits, 50_credits, 100_credits)
+- [x] Fix 'Missing purchase request configuration' error (updated to v14 API format)

@@ -174,7 +174,14 @@ export async function purchaseProduct(
 
   try {
     const RNIap = require("react-native-iap");
-    await RNIap.requestPurchase({ skus: [productId] });
+    
+    // v14+ API requires platform-specific request format
+    await RNIap.requestPurchase({
+      request: {
+        skus: [productId],
+      },
+      type: 'inapp',
+    });
     
     // The purchase result will come through the purchase listener
     // Return success here - the actual verification happens in the listener
