@@ -1,0 +1,52 @@
+{
+  "query": "SELECT * FROM users WHERE forwardingEmail LIKE '%mesjywq4%'\\G",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3cm1rAYqFTLZz8b.ead05c4c62f7 --database jxNutJmZj7bf8VEqqERusH --execute SELECT * FROM users WHERE forwardingEmail LIKE '%mesjywq4%'\\G",
+  "rows": [
+    {
+      "*************************** 1. row ***************************": "                   id: 8"
+    },
+    {
+      "*************************** 1. row ***************************": "               openId: FaZauEfSNmDmQQB78oDnw9"
+    },
+    {
+      "*************************** 1. row ***************************": "                 name: Guy Manova"
+    },
+    {
+      "*************************** 1. row ***************************": "                email: gmanova@gmail.com"
+    },
+    {
+      "*************************** 1. row ***************************": "          loginMethod: google"
+    },
+    {
+      "*************************** 1. row ***************************": "                 role: admin"
+    },
+    {
+      "*************************** 1. row ***************************": "            createdAt: 2025-12-16 11:04:31"
+    },
+    {
+      "*************************** 1. row ***************************": "            updatedAt: 2026-01-21 17:04:07"
+    },
+    {
+      "*************************** 1. row ***************************": "         lastSignedIn: 2026-01-21 17:04:07"
+    },
+    {
+      "*************************** 1. row ***************************": "      forwardingEmail: trip-inbox-mesjywq4@in.mytripdochub.com"
+    },
+    {
+      "*************************** 1. row ***************************": "              credits: 50"
+    },
+    {
+      "*************************** 1. row ***************************": "subscriptionExpiresAt: NULL"
+    },
+    {
+      "*************************** 1. row ***************************": "    paymentCustomerId: NULL"
+    },
+    {
+      "*************************** 1. row ***************************": "        expoPushToken: ExponentPushToken[KwDHsmOvAWkirWX48_Y0p_]"
+    }
+  ],
+  "messages": [],
+  "stdout": "*************************** 1. row ***************************\n                   id: 8\n               openId: FaZauEfSNmDmQQB78oDnw9\n                 name: Guy Manova\n                email: gmanova@gmail.com\n          loginMethod: google\n                 role: admin\n            createdAt: 2025-12-16 11:04:31\n            updatedAt: 2026-01-21 17:04:07\n         lastSignedIn: 2026-01-21 17:04:07\n      forwardingEmail: trip-inbox-mesjywq4@in.mytripdochub.com\n              credits: 50\nsubscriptionExpiresAt: NULL\n    paymentCustomerId: NULL\n        expoPushToken: ExponentPushToken[KwDHsmOvAWkirWX48_Y0p_]\n",
+  "stderr": "",
+  "execution_time_ms": 1543
+}

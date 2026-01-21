@@ -1,0 +1,8 @@
+{
+  "query": "SELECT id, code, credits, max_uses, current_uses, is_active FROM promo_codes;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3cm1rAYqFTLZz8b.ead05c4c62f7 --database jxNutJmZj7bf8VEqqERusH --execute SELECT id, code, credits, max_uses, current_uses, is_active FROM promo_codes;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'max_uses' in 'field list'"
+  ]
+}

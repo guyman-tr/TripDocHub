@@ -168,3 +168,10 @@
 - [ ] CRITICAL: Signing key mismatch - AAB rejected by Google Play (platform issue)
 - [ ] Expo Go connection failure - investigate environment reset
 - [ ] Fix Google Play purchase "version not configured" error
+
+## Active Bugs
+- [x] Inbox screen showing empty while Home shows "2 documents in inbox" (added useFocusEffect, gcTime: 0, pull-to-refresh on empty state)
+- [x] Production server hibernation causing email processing delays (scheduled keep-warm ping every 5 minutes)
+
+## Infrastructure
+- [x] Set up server keep-warm mechanism to prevent hibernation (scheduled task pings /api/health every 5 min)

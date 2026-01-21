@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
@@ -10,6 +11,7 @@ import {
   RefreshControl,
   Modal,
   TouchableOpacity,
+  ScrollView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
@@ -234,12 +236,24 @@ export default function InboxScreen() {
   const { 
     data: documents, 
     isLoading, 
-    refetch 
+    refetch,
+    isFetching,
   } = trpc.documents.inbox.useQuery(undefined, { 
     enabled: isAuthenticated,
     refetchOnMount: "always",
     staleTime: 0,
+    gcTime: 0, // Don't cache at all - always fetch fresh
   });
+
+  // Refetch when tab gains focus to ensure fresh data
+  useFocusEffect(
+    useCallback(() => {
+      if (isAuthenticated) {
+        console.log("[Inbox] Tab focused, refetching...");
+        refetch();
+      }
+    }, [isAuthenticated, refetch])
+  );
 
   const assignMutation = trpc.documents.assign.useMutation({
     onSuccess: () => {
@@ -371,12 +385,19 @@ export default function InboxScreen() {
             { paddingBottom: insets.bottom + 20 },
           ]}
           refreshControl={
-            <RefreshControl refreshing={isLoading} onRefresh={refetch} />
+            <RefreshControl refreshing={isFetching} onRefresh={refetch} />
           }
           showsVerticalScrollIndicator={false}
         />
       ) : (
-        <EmptyState />
+        <ScrollView
+          contentContainerStyle={styles.emptyScrollContent}
+          refreshControl={
+            <RefreshControl refreshing={isFetching} onRefresh={refetch} />
+          }
+        >
+          <EmptyState />
+        </ScrollView>
       )}
 
       <AssignModal
@@ -486,6 +507,11 @@ const styles = StyleSheet.create({
   deleteButton: {
     padding: 8,
     marginLeft: 4,
+  },
+  emptyScrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   emptyContainer: {
     flex: 1,

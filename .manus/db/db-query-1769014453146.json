@@ -1,0 +1,34 @@
+{
+  "query": "SELECT id, code, credits, maxUses, currentUses, isActive FROM promo_codes;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3cm1rAYqFTLZz8b.ead05c4c62f7 --database jxNutJmZj7bf8VEqqERusH --execute SELECT id, code, credits, maxUses, currentUses, isActive FROM promo_codes;",
+  "rows": [
+    {
+      "id": "1",
+      "code": "TESTFREE100",
+      "credits": "100",
+      "maxUses": "999",
+      "currentUses": "0",
+      "isActive": "1"
+    },
+    {
+      "id": "2",
+      "code": "BETATESTER",
+      "credits": "50",
+      "maxUses": "100",
+      "currentUses": "0",
+      "isActive": "1"
+    },
+    {
+      "id": "3",
+      "code": "WELCOME20",
+      "credits": "20",
+      "maxUses": "1000",
+      "currentUses": "1",
+      "isActive": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tcredits\tmaxUses\tcurrentUses\tisActive\n1\tTESTFREE100\t100\t999\t0\t1\n2\tBETATESTER\t50\t100\t0\t1\n3\tWELCOME20\t20\t1000\t1\t1\n",
+  "stderr": "",
+  "execution_time_ms": 1519
+}

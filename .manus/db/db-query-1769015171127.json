@@ -1,0 +1,15 @@
+{
+  "query": "SELECT u.id, u.credits, (SELECT COUNT(*) FROM documents WHERE userId = u.id AND source = 'email') as email_docs FROM users u WHERE u.forwardingEmail LIKE '%mesjywq4%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3cm1rAYqFTLZz8b.ead05c4c62f7 --database jxNutJmZj7bf8VEqqERusH --execute SELECT u.id, u.credits, (SELECT COUNT(*) FROM documents WHERE userId = u.id AND source = 'email') as email_docs FROM users u WHERE u.forwardingEmail LIKE '%mesjywq4%';",
+  "rows": [
+    {
+      "id": "8",
+      "credits": "48",
+      "email_docs": "6"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcredits\temail_docs\n8\t48\t6\n",
+  "stderr": "",
+  "execution_time_ms": 1538
+}

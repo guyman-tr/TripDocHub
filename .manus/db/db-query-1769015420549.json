@@ -1,0 +1,26 @@
+{
+  "query": "SELECT id, userId, tripId, title, source, createdAt FROM documents WHERE userId = 8 AND tripId IS NULL ORDER BY createdAt DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3cm1rAYqFTLZz8b.ead05c4c62f7 --database jxNutJmZj7bf8VEqqERusH --execute SELECT id, userId, tripId, title, source, createdAt FROM documents WHERE userId = 8 AND tripId IS NULL ORDER BY createdAt DESC;",
+  "rows": [
+    {
+      "id": "450002",
+      "userId": "8",
+      "tripId": "NULL",
+      "title": "TLV → LHR",
+      "source": "email",
+      "createdAt": "2026-01-21 17:06:00"
+    },
+    {
+      "id": "450001",
+      "userId": "8",
+      "tripId": "NULL",
+      "title": "TLV → JFK",
+      "source": "email",
+      "createdAt": "2026-01-21 17:05:31"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\ttripId\ttitle\tsource\tcreatedAt\n450002\t8\tNULL\tTLV → LHR\temail\t2026-01-21 17:06:00\n450001\t8\tNULL\tTLV → JFK\temail\t2026-01-21 17:05:31\n",
+  "stderr": "",
+  "execution_time_ms": 1542
+}

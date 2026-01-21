@@ -1,0 +1,45 @@
+{
+  "query": "SELECT id, title, subtitle, source, createdAt FROM documents WHERE userId = 8 ORDER BY createdAt DESC LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3cm1rAYqFTLZz8b.ead05c4c62f7 --database jxNutJmZj7bf8VEqqERusH --execute SELECT id, title, subtitle, source, createdAt FROM documents WHERE userId = 8 ORDER BY createdAt DESC LIMIT 5;",
+  "rows": [
+    {
+      "id": "450001",
+      "title": "TLV → JFK",
+      "subtitle": "EL AL",
+      "source": "email",
+      "createdAt": "2026-01-21 17:05:31"
+    },
+    {
+      "id": "390003",
+      "title": "Flight Booking",
+      "subtitle": "El Al, bookaflight.co.il",
+      "source": "email",
+      "createdAt": "2026-01-17 20:31:16"
+    },
+    {
+      "id": "390001",
+      "title": "TLV → MUC",
+      "subtitle": "El Al",
+      "source": "email",
+      "createdAt": "2026-01-17 20:31:06"
+    },
+    {
+      "id": "330003",
+      "title": "Brown Eilat",
+      "subtitle": "Brown Hotels",
+      "source": "upload",
+      "createdAt": "2026-01-16 14:45:42"
+    },
+    {
+      "id": "330002",
+      "title": "Brown Eilat",
+      "subtitle": "Brown Hotels",
+      "source": "upload",
+      "createdAt": "2026-01-16 13:38:05"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitle\tsubtitle\tsource\tcreatedAt\n450001\tTLV → JFK\tEL AL\temail\t2026-01-21 17:05:31\n390003\tFlight Booking\tEl Al, bookaflight.co.il\temail\t2026-01-17 20:31:16\n390001\tTLV → MUC\tEl Al\temail\t2026-01-17 20:31:06\n330003\tBrown Eilat\tBrown Hotels\tupload\t2026-01-16 14:45:42\n330002\tBrown Eilat\tBrown Hotels\tupload\t2026-01-16 13:38:05\n",
+  "stderr": "",
+  "execution_time_ms": 1517
+}
