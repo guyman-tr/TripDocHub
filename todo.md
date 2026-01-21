@@ -163,3 +163,8 @@
 - [x] Debug push token not being registered despite FCM configuration (added EAS projectId)
 - [x] Connect Google Play one-time products to credit packages (10_credits, 50_credits, 100_credits)
 - [x] Fix 'Missing purchase request configuration' error (updated to v14 API format)
+
+## Critical Platform Issues
+- [ ] CRITICAL: Signing key mismatch - AAB rejected by Google Play (platform issue)
+- [ ] Expo Go connection failure - investigate environment reset
+- [ ] Fix Google Play purchase "version not configured" error

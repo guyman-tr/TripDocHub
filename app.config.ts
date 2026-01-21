@@ -1,4 +1,5 @@
 // Load environment variables with proper priority (system > .env)
+// Build v1.0.22 - Signing key restored by Manus support (Jan 21, 2026)
 import "./scripts/load-env.js";
 import type { ExpoConfig } from "expo/config";
 
