@@ -255,9 +255,13 @@ export default function InboxScreen() {
     }, [isAuthenticated, refetch])
   );
 
+  const utils = trpc.useUtils();
+
   const assignMutation = trpc.documents.assign.useMutation({
     onSuccess: () => {
       refetch();
+      utils.documents.inboxCount.invalidate();
+      utils.trips.list.invalidate();
       setAssignModalVisible(false);
       setSelectedDocument(null);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -267,6 +271,7 @@ export default function InboxScreen() {
   const deleteMutation = trpc.documents.delete.useMutation({
     onSuccess: () => {
       refetch();
+      utils.documents.inboxCount.invalidate();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
   });
@@ -289,6 +294,7 @@ export default function InboxScreen() {
   const clearInboxMutation = trpc.documents.clearInbox.useMutation({
     onSuccess: () => {
       refetch();
+      utils.documents.inboxCount.invalidate();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
   });

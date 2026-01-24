@@ -84,6 +84,7 @@ export default function DocumentDetailScreen() {
     onSuccess: () => {
       utils.documents.get.invalidate({ id: documentId });
       utils.documents.inbox.invalidate();
+      utils.documents.inboxCount.invalidate();
       utils.trips.list.invalidate();
       setReassignModalVisible(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -92,6 +93,8 @@ export default function DocumentDetailScreen() {
 
   const deleteMutation = trpc.documents.delete.useMutation({
     onSuccess: () => {
+      utils.documents.inbox.invalidate();
+      utils.documents.inboxCount.invalidate();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
     },
