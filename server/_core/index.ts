@@ -80,6 +80,43 @@ async function startServer() {
     res.json({ ok: true, timestamp: Date.now() });
   });
 
+  // Test notification endpoint (for debugging)
+  app.post("/api/test-notification", async (_req, res) => {
+    try {
+      const { notifyOwner } = await import("./notification");
+      const { ENV } = await import("./env");
+      
+      // Check if env vars are configured
+      const envStatus = {
+        hasForgeApiUrl: !!ENV.forgeApiUrl,
+        hasForgeApiKey: !!ENV.forgeApiKey,
+        forgeApiUrlLength: ENV.forgeApiUrl?.length || 0,
+      };
+      
+      if (!ENV.forgeApiUrl || !ENV.forgeApiKey) {
+        res.json({ 
+          success: false, 
+          error: "Forge API credentials not configured",
+          envStatus 
+        });
+        return;
+      }
+      
+      const result = await notifyOwner({
+        title: "🧪 TripDocHub Test",
+        content: "This is a test notification from the TripDocHub server."
+      });
+      
+      res.json({ success: result, envStatus });
+    } catch (error: any) {
+      res.json({ 
+        success: false, 
+        error: error.message || String(error),
+        stack: error.stack 
+      });
+    }
+  });
+
   // Public Privacy Policy page for Google Play Store
   app.get("/privacy", (_req, res) => {
     res.send(`
