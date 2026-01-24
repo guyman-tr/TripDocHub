@@ -80,6 +80,46 @@ async function startServer() {
     res.json({ ok: true, timestamp: Date.now() });
   });
 
+  // Diagnostic endpoint to check push token status
+  app.get("/api/debug/push-token/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        res.status(400).json({ error: "Invalid userId" });
+        return;
+      }
+      
+      const db = await getDb();
+      if (!db) {
+        res.status(500).json({ error: "Database not available" });
+        return;
+      }
+      
+      const [user] = await db.select({
+        id: users.id,
+        name: users.name,
+        expoPushToken: users.expoPushToken,
+        updatedAt: users.updatedAt,
+      }).from(users).where(eq(users.id, userId)).limit(1);
+      
+      if (!user) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+      
+      res.json({
+        userId: user.id,
+        name: user.name,
+        hasToken: !!user.expoPushToken,
+        tokenPreview: user.expoPushToken ? `${user.expoPushToken.substring(0, 30)}...` : null,
+        tokenLength: user.expoPushToken?.length || 0,
+        updatedAt: user.updatedAt,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || String(error) });
+    }
+  });
+
   // Test notification endpoint (for debugging)
   app.post("/api/test-notification", async (_req, res) => {
     try {
