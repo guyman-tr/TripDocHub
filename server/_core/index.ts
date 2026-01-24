@@ -120,6 +120,29 @@ async function startServer() {
     }
   });
 
+  // Test sending push notification to a specific user
+  app.post("/api/debug/send-push/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        res.status(400).json({ error: "Invalid userId" });
+        return;
+      }
+      
+      const { sendPushNotification } = await import("../pushNotification");
+      
+      const result = await sendPushNotification(userId, {
+        title: "🧪 Direct Push Test",
+        body: "This notification was sent directly to your Expo Push Token.",
+        data: { type: "test" },
+      });
+      
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || String(error) });
+    }
+  });
+
   // Test notification endpoint (for debugging)
   app.post("/api/test-notification", async (_req, res) => {
     try {
