@@ -175,3 +175,7 @@
 
 ## Infrastructure
 - [x] Set up server keep-warm mechanism to prevent hibernation (scheduled task pings /api/health every 5 min)
+
+## Critical Issues (Jan 24, 2026)
+- [ ] In-app purchase billing not configured - "This version of the application is not configured for billing through Google Play"
+- [x] Native push notifications not working (fixed projectId retrieval for production builds)
