@@ -178,5 +178,5 @@
 
 ## Critical Issues (Jan 24, 2026)
 - [ ] In-app purchase billing not configured - "This version of the application is not configured for billing through Google Play"
-- [x] Native push notifications not working (fixed projectId retrieval for production builds)
+- [x] Native push notifications not working (uploaded FCM credentials to Expo, push works from sandbox - needs production deploy)
 - [x] Inbox count not syncing between home screen, tab badge, and inbox screen after clearing inbox (added inboxCount.invalidate to all mutations)

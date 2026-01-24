@@ -120,7 +120,7 @@ async function startServer() {
     }
   });
 
-  // Test sending push notification to a specific user
+  // Test sending push notification to a specific user (with full debug info)
   app.post("/api/debug/send-push/:userId", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
@@ -129,17 +129,65 @@ async function startServer() {
         return;
       }
       
-      const { sendPushNotification } = await import("../pushNotification");
+      // Get the push token directly
+      const db = await getDb();
+      if (!db) {
+        res.status(500).json({ error: "Database not available" });
+        return;
+      }
       
-      const result = await sendPushNotification(userId, {
+      const [user] = await db.select({
+        id: users.id,
+        expoPushToken: users.expoPushToken,
+      }).from(users).where(eq(users.id, userId)).limit(1);
+      
+      if (!user || !user.expoPushToken) {
+        res.status(404).json({ error: "User or push token not found", user });
+        return;
+      }
+      
+      // Send directly to Expo API and capture full response
+      const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
+      const payload = {
+        to: user.expoPushToken,
         title: "🧪 Direct Push Test",
         body: "This notification was sent directly to your Expo Push Token.",
-        data: { type: "test" },
+        data: { type: "test", timestamp: Date.now() },
+        sound: "default",
+        priority: "high",
+        channelId: "email_processing",
+      };
+      
+      console.log("[Debug] Sending to Expo:", JSON.stringify(payload));
+      
+      const response = await fetch(EXPO_PUSH_URL, {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
       
-      res.json(result);
+      const responseText = await response.text();
+      let responseJson;
+      try {
+        responseJson = JSON.parse(responseText);
+      } catch {
+        responseJson = null;
+      }
+      
+      res.json({
+        pushToken: user.expoPushToken,
+        payloadSent: payload,
+        expoResponse: {
+          status: response.status,
+          statusText: response.statusText,
+          body: responseJson || responseText,
+        },
+      });
     } catch (error: any) {
-      res.status(500).json({ error: error.message || String(error) });
+      res.status(500).json({ error: error.message || String(error), stack: error.stack });
     }
   });
 
