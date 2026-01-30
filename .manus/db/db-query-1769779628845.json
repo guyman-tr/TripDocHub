@@ -1,0 +1,28 @@
+{
+  "query": "SELECT id, name, email, forwardingEmail, expoPushToken, credits, createdAt FROM users WHERE email LIKE '%gmanova%' OR email LIKE '%guy%' ORDER BY createdAt DESC LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3cm1rAYqFTLZz8b.ead05c4c62f7 --database jxNutJmZj7bf8VEqqERusH --execute SELECT id, name, email, forwardingEmail, expoPushToken, credits, createdAt FROM users WHERE email LIKE '%gmanova%' OR email LIKE '%guy%' ORDER BY createdAt DESC LIMIT 5;",
+  "rows": [
+    {
+      "id": "1260001",
+      "name": "Guy Manova",
+      "email": "guyman@etoro.com",
+      "forwardingEmail": "trip-iqeoakrr@in.mytripdochub.com",
+      "expoPushToken": "NULL",
+      "credits": "14",
+      "createdAt": "2026-01-14 17:25:31"
+    },
+    {
+      "id": "8",
+      "name": "Guy Manova",
+      "email": "gmanova@gmail.com",
+      "forwardingEmail": "trip-inbox-mesjywq4@in.mytripdochub.com",
+      "expoPushToken": "ExponentPushToken[Cva-FbIcwoGjXloaVHf2sv]",
+      "credits": "39",
+      "createdAt": "2025-12-16 11:04:31"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\tforwardingEmail\texpoPushToken\tcredits\tcreatedAt\n1260001\tGuy Manova\tguyman@etoro.com\ttrip-iqeoakrr@in.mytripdochub.com\tNULL\t14\t2026-01-14 17:25:31\n8\tGuy Manova\tgmanova@gmail.com\ttrip-inbox-mesjywq4@in.mytripdochub.com\tExponentPushToken[Cva-FbIcwoGjXloaVHf2sv]\t39\t2025-12-16 11:04:31\n",
+  "stderr": "",
+  "execution_time_ms": 1552
+}

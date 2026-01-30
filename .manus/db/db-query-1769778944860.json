@@ -1,0 +1,18 @@
+{
+  "query": "SELECT id, openId, forwardingEmail, credits, expoPushToken, updatedAt FROM users WHERE forwardingEmail = 'trip-inbox-mesjywq4@in.mytripdochub.com';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3cm1rAYqFTLZz8b.ead05c4c62f7 --database jxNutJmZj7bf8VEqqERusH --execute SELECT id, openId, forwardingEmail, credits, expoPushToken, updatedAt FROM users WHERE forwardingEmail = 'trip-inbox-mesjywq4@in.mytripdochub.com';",
+  "rows": [
+    {
+      "id": "8",
+      "openId": "FaZauEfSNmDmQQB78oDnw9",
+      "forwardingEmail": "trip-inbox-mesjywq4@in.mytripdochub.com",
+      "credits": "39",
+      "expoPushToken": "ExponentPushToken[Cva-FbIcwoGjXloaVHf2sv]",
+      "updatedAt": "2026-01-30 13:12:52"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\topenId\tforwardingEmail\tcredits\texpoPushToken\tupdatedAt\n8\tFaZauEfSNmDmQQB78oDnw9\ttrip-inbox-mesjywq4@in.mytripdochub.com\t39\tExponentPushToken[Cva-FbIcwoGjXloaVHf2sv]\t2026-01-30 13:12:52\n",
+  "stderr": "",
+  "execution_time_ms": 1544
+}

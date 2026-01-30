@@ -80,6 +80,53 @@ async function startServer() {
     res.json({ ok: true, timestamp: Date.now() });
   });
 
+  // Resolve forwarding email to user info
+  app.get("/api/debug/resolve-forwarding-email", async (req, res) => {
+    try {
+      const email = req.query.email as string;
+      if (!email) {
+        res.status(400).json({ error: "Missing email query parameter" });
+        return;
+      }
+      
+      const db = await getDb();
+      if (!db) {
+        res.status(500).json({ error: "Database not available" });
+        return;
+      }
+      
+      const [user] = await db.select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        forwardingEmail: users.forwardingEmail,
+        expoPushToken: users.expoPushToken,
+        credits: users.credits,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+      }).from(users).where(eq(users.forwardingEmail, email)).limit(1);
+      
+      if (!user) {
+        res.status(404).json({ error: "User not found for this forwarding email" });
+        return;
+      }
+      
+      res.json({
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+        forwardingEmail: user.forwardingEmail,
+        hasToken: !!user.expoPushToken,
+        tokenPreview: user.expoPushToken ? `${user.expoPushToken.substring(0, 40)}...` : null,
+        credits: user.credits,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || String(error) });
+    }
+  });
+
   // Diagnostic endpoint to check push token status
   app.get("/api/debug/push-token/:userId", async (req, res) => {
     try {

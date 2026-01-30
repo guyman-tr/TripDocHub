@@ -1,0 +1,55 @@
+{
+  "query": "SELECT id, name, email, forwardingEmail, expoPushToken IS NOT NULL as hasToken, credits, createdAt FROM users ORDER BY createdAt DESC LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3cm1rAYqFTLZz8b.ead05c4c62f7 --database jxNutJmZj7bf8VEqqERusH --execute SELECT id, name, email, forwardingEmail, expoPushToken IS NOT NULL as hasToken, credits, createdAt FROM users ORDER BY createdAt DESC LIMIT 5;",
+  "rows": [
+    {
+      "id": "2130001",
+      "name": "ashraf alvi",
+      "email": "ashrafalvi076@gmail.com",
+      "forwardingEmail": "trip-tznzgoek@in.mytripdochub.com",
+      "hasToken": "0",
+      "credits": "20",
+      "createdAt": "2026-01-19 13:39:58"
+    },
+    {
+      "id": "1830001",
+      "name": "Shalom Manova",
+      "email": "shalomma@gmail.com",
+      "forwardingEmail": "trip-tujzt7um@in.mytripdochub.com",
+      "hasToken": "0",
+      "credits": "20",
+      "createdAt": "2026-01-17 16:33:05"
+    },
+    {
+      "id": "1470001",
+      "name": "Naama Manova",
+      "email": "naama.manova@gmail.com",
+      "forwardingEmail": "trip-e2yhodyy@in.mytripdochub.com",
+      "hasToken": "1",
+      "credits": "16",
+      "createdAt": "2026-01-16 09:25:08"
+    },
+    {
+      "id": "1260001",
+      "name": "Guy Manova",
+      "email": "guyman@etoro.com",
+      "forwardingEmail": "trip-iqeoakrr@in.mytripdochub.com",
+      "hasToken": "0",
+      "credits": "14",
+      "createdAt": "2026-01-14 17:25:31"
+    },
+    {
+      "id": "1230082",
+      "name": "Faizan Ashraf",
+      "email": "faizanashraf0492@gmail.com",
+      "forwardingEmail": "trip-msypfywu@in.mytripdochub.com",
+      "hasToken": "1",
+      "credits": "20",
+      "createdAt": "2026-01-14 16:28:38"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\tforwardingEmail\thasToken\tcredits\tcreatedAt\n2130001\tashraf alvi\tashrafalvi076@gmail.com\ttrip-tznzgoek@in.mytripdochub.com\t0\t20\t2026-01-19 13:39:58\n1830001\tShalom Manova\tshalomma@gmail.com\ttrip-tujzt7um@in.mytripdochub.com\t0\t20\t2026-01-17 16:33:05\n1470001\tNaama Manova\tnaama.manova@gmail.com\ttrip-e2yhodyy@in.mytripdochub.com\t1\t16\t2026-01-16 09:25:08\n1260001\tGuy Manova\tguyman@etoro.com\ttrip-iqeoakrr@in.mytripdochub.com\t0\t14\t2026-01-14 17:25:31\n1230082\tFaizan Ashraf\tfaizanashraf0492@gmail.com\ttrip-msypfywu@in.mytripdochub.com\t1\t20\t2026-01-14 16:28:38\n",
+  "stderr": "",
+  "execution_time_ms": 1513
+}

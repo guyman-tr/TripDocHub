@@ -1,0 +1,28 @@
+{
+  "query": "SELECT id, name, email, expoPushToken FROM users WHERE forwardingEmail IS NOT NULL AND expoPushToken IS NOT NULL LIMIT 3;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3cm1rAYqFTLZz8b.ead05c4c62f7 --database jxNutJmZj7bf8VEqqERusH --execute SELECT id, name, email, expoPushToken FROM users WHERE forwardingEmail IS NOT NULL AND expoPushToken IS NOT NULL LIMIT 3;",
+  "rows": [
+    {
+      "id": "8",
+      "name": "Guy Manova",
+      "email": "gmanova@gmail.com",
+      "expoPushToken": "ExponentPushToken[Cva-FbIcwoGjXloaVHf2sv]"
+    },
+    {
+      "id": "1230001",
+      "name": "Adnan Ashraf",
+      "email": "adnanalvi0498@gmail.com",
+      "expoPushToken": "ExponentPushToken[qCFvrOJnyDhl7owAgnsycG]"
+    },
+    {
+      "id": "1230010",
+      "name": "Faizan Ashraf",
+      "email": "faizanashraf0487@gmail.com",
+      "expoPushToken": "ExponentPushToken[hszNbmOyCH7VdR92YWZDsI]"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\texpoPushToken\n8\tGuy Manova\tgmanova@gmail.com\tExponentPushToken[Cva-FbIcwoGjXloaVHf2sv]\n1230001\tAdnan Ashraf\tadnanalvi0498@gmail.com\tExponentPushToken[qCFvrOJnyDhl7owAgnsycG]\n1230010\tFaizan Ashraf\tfaizanashraf0487@gmail.com\tExponentPushToken[hszNbmOyCH7VdR92YWZDsI]\n",
+  "stderr": "",
+  "execution_time_ms": 1562
+}
