@@ -182,7 +182,7 @@
 - [x] Inbox count not syncing between home screen, tab badge, and inbox screen after clearing inbox (added inboxCount.invalidate to all mutations)
 
 ## Production Polish (Jan 30, 2026)
-- [ ] Create GitHub repository for TripDocHub
+- [x] Create GitHub repository for TripDocHub (https://github.com/guyman-tr/TripDocHub)
 - [x] Comprehensive QA audit of codebase (see QA_AUDIT_REPORT.md)
 - [x] Document QA findings (error handling, edge cases, security, accessibility, performance)
 - [ ] Polish graphic assets for Google Play listing
