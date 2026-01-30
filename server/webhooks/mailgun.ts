@@ -126,12 +126,8 @@ async function processAttachmentsAsync(
       const parseResult = await parseDocument(fileUrl, mimeType);
       console.log(`[Mailgun Async] Parsed ${parseResult.documents.length} documents from ${fileName}`);
 
-      // Check for duplicate before processing (prevents reprocessing on webhook retries)
-      const existingDoc = await db.findDuplicateDocument(userId, parseResult.contentHash);
-      if (existingDoc) {
-        console.log(`[Mailgun Async] Skipping duplicate document (hash: ${parseResult.contentHash.substring(0, 8)}...)`);
-        continue;
-      }
+      // Always process - user explicitly forwarded this email
+      // (Removed duplicate detection per user request)
 
       // Create documents in database
       for (const doc of parseResult.documents) {
@@ -221,13 +217,8 @@ async function processEmailBodyAsync(
       return;
     }
 
-    // Check for duplicate
-    const existingDoc = await db.findDuplicateDocument(userId, parseResult.contentHash);
-    if (existingDoc) {
-      console.log(`[Mailgun Async] Skipping duplicate email (hash: ${parseResult.contentHash.substring(0, 8)}...)`);
-      await sendProcessingNotification(userId, "no_bookings", { subject: emailSubject });
-      return;
-    }
+    // Always process - user explicitly forwarded this email
+    // (Removed duplicate detection per user request)
 
     let processedCount = 0;
 
@@ -378,45 +369,48 @@ router.post("/", upload.any(), async (req: Request, res: Response) => {
 
     console.log(`[Mailgun] Has ${files?.length || 0} attachments, hasEmailBody: ${hasEmailBody}`);
 
-    // RESPOND IMMEDIATELY to Mailgun (within their timeout window)
-    // This prevents Bad Gateway errors
-    res.status(200).json({ 
-      message: "Email received, processing in background",
-      attachmentCount: files?.length || 0,
-      willParseBody: !hasAttachments && hasEmailBody
-    });
+    // Send "received" notification immediately (before heavy processing)
+    // This runs synchronously to ensure it executes in serverless environments
+    try {
+      await sendProcessingNotification(user.id, "received", { subject });
+      console.log(`[Mailgun] Sent received notification for user ${user.id}`);
+    } catch (notifError) {
+      console.error("[Mailgun] Failed to send received notification:", notifError);
+    }
+
+    // Process the email synchronously but with a timeout safety net
+    // Mailgun has 10s timeout, so we process what we can and respond
+    const processingPromise = (async () => {
+      try {
+        if (hasAttachments) {
+          await processAttachmentsAsync(user.id, files!, subject);
+        } else if (hasEmailBody) {
+          await processEmailBodyAsync(user.id, bodyHtml, bodyPlain, subject, sender || from);
+        }
+      } catch (error) {
+        console.error("[Mailgun] Processing failed:", error);
+        await sendProcessingNotification(user.id, "error", { 
+          errorMessage: "Failed to process your email. Please try uploading directly in the app." 
+        }).catch(console.error);
+      }
+    })();
+
+    // Wait for processing with a timeout (leave 2s buffer for response)
+    const timeoutMs = 8000;
+    const timeoutPromise = new Promise<void>((resolve) => setTimeout(resolve, timeoutMs));
+    
+    await Promise.race([processingPromise, timeoutPromise]);
 
     // Log response time
-    console.log(`[Mailgun] Responded in ${Date.now() - startTime}ms, starting async processing`);
+    console.log(`[Mailgun] Processed in ${Date.now() - startTime}ms`);
 
-    // Send "received" notification
-    setImmediate(() => {
-      sendProcessingNotification(user.id, "received", { subject }).catch(console.error);
+    // RESPOND to Mailgun
+    res.status(200).json({ 
+      message: "Email processed",
+      attachmentCount: files?.length || 0,
+      willParseBody: !hasAttachments && hasEmailBody,
+      processingTimeMs: Date.now() - startTime
     });
-
-    // Process the email asynchronously AFTER responding
-    // Use setImmediate to ensure the response is sent first
-    if (hasAttachments) {
-      // Process attachments if present
-      setImmediate(() => {
-        processAttachmentsAsync(user.id, files!, subject).catch((error) => {
-          console.error("[Mailgun Async] Attachment processing failed:", error);
-          sendProcessingNotification(user.id, "error", { 
-            errorMessage: "Failed to process email attachments." 
-          }).catch(console.error);
-        });
-      });
-    } else if (hasEmailBody) {
-      // Parse email body if no attachments
-      setImmediate(() => {
-        processEmailBodyAsync(user.id, bodyHtml, bodyPlain, subject, sender || from).catch((error) => {
-          console.error("[Mailgun Async] Email body processing failed:", error);
-          sendProcessingNotification(user.id, "error", { 
-            errorMessage: "Failed to extract booking information from email." 
-          }).catch(console.error);
-        });
-      });
-    }
 
   } catch (error) {
     console.error("[Mailgun] Webhook error:", error);
