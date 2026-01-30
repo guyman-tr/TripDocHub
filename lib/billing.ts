@@ -38,28 +38,28 @@ let isInitialized = false;
 let purchaseUpdateSubscription: any = null;
 let purchaseErrorSubscription: any = null;
 
-// Mock products for web preview
+// Mock products for web preview (prices should match Google Play Console)
 const MOCK_PRODUCTS: Product[] = [
   {
     productId: PRODUCT_IDS.CREDITS_10,
     title: "10 Credits",
     description: "Process 10 documents",
     credits: 10,
-    price: "$0.99",
+    price: "$1.99",
   },
   {
     productId: PRODUCT_IDS.CREDITS_50,
     title: "50 Credits",
     description: "Process 50 documents",
     credits: 50,
-    price: "$3.99",
+    price: "$7.99",
   },
   {
     productId: PRODUCT_IDS.CREDITS_100,
     title: "100 Credits",
     description: "Process 100 documents",
     credits: 100,
-    price: "$6.99",
+    price: "$12.99",
   },
 ];
 
