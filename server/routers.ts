@@ -8,9 +8,9 @@ import { parseDocument } from "./documentParser";
 
 // Credit amounts for each product (must match lib/billing.ts)
 const CREDIT_AMOUNTS: Record<string, number> = {
-  credits_10: 10,
-  credits_50: 50,
-  credits_100: 100,
+  "10_credits": 10,
+  "50_credits": 50,
+  "100_credits": 100,
 };
 
 export const appRouter = router({
