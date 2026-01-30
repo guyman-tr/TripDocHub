@@ -1,6 +1,5 @@
 import { Router, Request, Response } from "express";
 import { createHmac, timingSafeEqual } from "crypto";
-import { createHash } from "crypto";
 import multer from "multer";
 import { parseDocument, parseEmailBody } from "../documentParser";
 import * as db from "../db";
@@ -33,7 +32,7 @@ function verifyMailgunSignature(
 ): boolean {
   if (!MAILGUN_WEBHOOK_SIGNING_KEY) {
     console.warn("[Mailgun] No webhook signing key configured, skipping verification");
-    return process.env.NODE_ENV !== "production";
+    return true; // Allow in development
   }
 
   const encodedToken = createHmac("sha256", MAILGUN_WEBHOOK_SIGNING_KEY)
@@ -45,14 +44,6 @@ function verifyMailgunSignature(
   } catch {
     return false;
   }
-}
-
-function sanitizeFileName(value: string) {
-  // Strip any path components and replace problematic characters.
-  const base = value.split(/[\\/]/).pop() ?? "file";
-  const cleaned = base.replace(/[^\w.\-() ]+/g, "_").trim();
-  // Keep keys reasonably sized.
-  return cleaned.length > 120 ? cleaned.slice(0, 120) : cleaned || "file";
 }
 
 /**
@@ -115,7 +106,7 @@ async function processAttachmentsAsync(
 
   for (const file of files) {
     const mimeType = file.mimetype;
-    const fileName = sanitizeFileName(file.originalname || file.fieldname);
+    const fileName = file.originalname || file.fieldname;
 
     console.log(`[Mailgun Async] Processing file: ${fileName} (${mimeType}, ${file.size} bytes)`);
 
@@ -126,9 +117,6 @@ async function processAttachmentsAsync(
     }
 
     try {
-      // Compute content hash from bytes (stable across re-uploads/URLs)
-      const contentHash = createHash("sha256").update(file.buffer).digest("hex").substring(0, 64);
-
       // Upload to our storage
       const fileKey = `documents/${userId}/${nanoid(12)}-${fileName}`;
       const { url: fileUrl } = await storagePut(fileKey, file.buffer, mimeType);
@@ -139,11 +127,9 @@ async function processAttachmentsAsync(
       console.log(`[Mailgun Async] Parsed ${parseResult.documents.length} documents from ${fileName}`);
 
       // Check for duplicate before processing (prevents reprocessing on webhook retries)
-      const existingDoc = await db.findDuplicateDocument(userId, contentHash);
+      const existingDoc = await db.findDuplicateDocument(userId, parseResult.contentHash);
       if (existingDoc) {
-        console.log(
-          `[Mailgun Async] Skipping duplicate document (hash: ${contentHash.substring(0, 8)}...)`,
-        );
+        console.log(`[Mailgun Async] Skipping duplicate document (hash: ${parseResult.contentHash.substring(0, 8)}...)`);
         continue;
       }
 
@@ -178,7 +164,7 @@ async function processAttachmentsAsync(
           originalFileUrl: fileUrl,
           source: "email",
           documentDate: doc.documentDate,
-          contentHash,
+          contentHash: parseResult.contentHash,
         });
 
         // Deduct credit for each document processed

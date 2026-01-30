@@ -182,14 +182,7 @@
 - [x] Inbox count not syncing between home screen, tab badge, and inbox screen after clearing inbox (added inboxCount.invalidate to all mutations)
 
 ## Production Polish (Jan 30, 2026)
-- [x] Create GitHub repository for TripDocHub (https://github.com/guyman-tr/TripDocHub)
+- [ ] Create GitHub repository for TripDocHub
 - [x] Comprehensive QA audit of codebase (see QA_AUDIT_REPORT.md)
 - [x] Document QA findings (error handling, edge cases, security, accessibility, performance)
 - [ ] Polish graphic assets for Google Play listing
-
-## Cursor Audit Findings (Jan 30, 2026)
-- [ ] CRITICAL: Rotate Firebase Admin SDK key (was committed to repo)
-- [ ] CRITICAL: Purge git history to remove leaked Firebase key
-- [x] Sync hardening patches from GitHub (CORS lockdown, debug endpoint gating, Mailgun verification, billing fixes)
-- [ ] Implement proper Google Play purchase verification (Android Publisher API)
-- [x] Create secure production checklist for env vars (see PRODUCTION_LAUNCH_CHECKLIST.md)
