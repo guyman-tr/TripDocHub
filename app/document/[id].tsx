@@ -149,16 +149,19 @@ export default function DocumentDetailScreen() {
     const details = (document.details as DocumentDetails) || {};
     const category = document.category;
     
-    // Get address based on category
+    // Get address based on category - check both *Address and *Location fields
     let address: string | null = null;
-    if (category === "accommodation" && details.address) {
-      address = details.address;
+    if (category === "accommodation") {
+      address = details.address || null;
     } else if (category === "carRental") {
-      address = details.pickupAddress || details.dropoffAddress || null;
-    } else if (category === "event" && details.venueAddress) {
-      address = details.venueAddress;
+      // Check both pickupAddress/dropoffAddress AND pickupLocation/dropoffLocation
+      address = details.pickupAddress || details.dropoffAddress || 
+                details.pickupLocation || details.dropoffLocation || null;
+    } else if (category === "event") {
+      address = details.venueAddress || details.venue || null;
     } else if (category === "flight") {
-      address = details.arrivalAddress || details.departureAddress || null;
+      address = details.arrivalAddress || details.departureAddress || 
+                details.arrivalAirport || details.departureAirport || null;
     }
     
     // Get phone and email from details
@@ -333,9 +336,6 @@ export default function DocumentDetailScreen() {
   const config = categoryConfig[document.category] || categoryConfig.other;
   const details = (document.details as DocumentDetails) || {};
 
-  // Check if any action icon is enabled
-  const hasAnyAction = contactInfo.address || contactInfo.phone || contactInfo.email;
-
   return (
     <ThemedView style={styles.container}>
       {/* Header */}
@@ -394,32 +394,30 @@ export default function DocumentDetailScreen() {
           </View>
         </View>
 
-        {/* 3 Action Icons Row - only show if at least one is available */}
-        {hasAnyAction && (
-          <View style={[styles.actionIconsRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <ActionIcon
-              icon="location.fill"
-              label="Navigate"
-              color={ACTION_COLORS.navigate}
-              disabled={!contactInfo.address}
-              onPress={handleOpenMaps}
-            />
-            <ActionIcon
-              icon="phone.fill"
-              label="Call"
-              color={ACTION_COLORS.call}
-              disabled={!contactInfo.phone}
-              onPress={handleCall}
-            />
-            <ActionIcon
-              icon="envelope.fill"
-              label="Email"
-              color={ACTION_COLORS.email}
-              disabled={!contactInfo.email}
-              onPress={handleEmail}
-            />
-          </View>
-        )}
+        {/* 3 Action Icons Row - always visible, greyed out when no data */}
+        <View style={[styles.actionIconsRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <ActionIcon
+            icon="location.fill"
+            label="Navigate"
+            color={ACTION_COLORS.navigate}
+            disabled={!contactInfo.address}
+            onPress={handleOpenMaps}
+          />
+          <ActionIcon
+            icon="phone.fill"
+            label="Call"
+            color={ACTION_COLORS.call}
+            disabled={!contactInfo.phone}
+            onPress={handleCall}
+          />
+          <ActionIcon
+            icon="envelope.fill"
+            label="Email"
+            color={ACTION_COLORS.email}
+            disabled={!contactInfo.email}
+            onPress={handleEmail}
+          />
+        </View>
 
         {/* Details Card */}
         {Object.keys(details).length > 0 && (
@@ -494,20 +492,19 @@ export default function DocumentDetailScreen() {
         </View>
       </ScrollView>
 
-      {/* View Original Document Button - Fixed at bottom */}
-      {originalContent.type !== 'none' && (
-        <View style={[styles.bottomButtonContainer, { paddingBottom: Math.max(insets.bottom, 16), backgroundColor: colors.background }]}>
-          <Pressable
-            style={[styles.viewOriginalButton, { backgroundColor: colors.tint }]}
-            onPress={handleViewOriginal}
-          >
-            <IconSymbol name="doc.fill" size={20} color="#FFFFFF" />
-            <ThemedText style={styles.viewOriginalButtonText} maxFontSizeMultiplier={FontScaling.button}>
-              View Original Document
-            </ThemedText>
-          </Pressable>
-        </View>
-      )}
+      {/* View Original Document Button - Always visible at bottom */}
+      <View style={[styles.bottomButtonContainer, { paddingBottom: Math.max(insets.bottom, 16), backgroundColor: colors.background }]}>
+        <Pressable
+          style={[styles.viewOriginalButton, { backgroundColor: originalContent.type !== 'none' ? colors.tint : ACTION_COLORS.disabled }]}
+          onPress={originalContent.type !== 'none' ? handleViewOriginal : undefined}
+          disabled={originalContent.type === 'none'}
+        >
+          <IconSymbol name="doc.fill" size={20} color="#FFFFFF" />
+          <ThemedText style={styles.viewOriginalButtonText} maxFontSizeMultiplier={FontScaling.button}>
+            {originalContent.type === 'none' ? 'No Original Available' : 'View Original Document'}
+          </ThemedText>
+        </Pressable>
+      </View>
 
       {/* Reassign Modal */}
       <Modal

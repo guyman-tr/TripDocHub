@@ -211,3 +211,8 @@
 - [x] Keep only 3 icons: Navigate, Call, Email
 - [x] Store original email body in database for display
 - [ ] Add re-process option for existing documents to extract phone/email
+
+## Bug Fix: Action Icons Not Showing (Jan 31)
+- [x] Fix address extraction to check pickupLocation/dropoffLocation fields (not just pickupAddress/dropoffAddress)
+- [x] Always show icons row (don't hide when no data - just grey out all icons)
+- [x] Always show View Original button (greyed out with "No Original Available" text when no file/email)
