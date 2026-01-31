@@ -188,3 +188,11 @@
 - [ ] Polish graphic assets for Google Play listing
 - [x] BUG: Dark theme prices nearly invisible (white on white) in store screen
 - [x] Center app icon graphic on canvas (icon appears off-center on home and splash screens)
+
+## Onboarding Redesign (Jan 31, 2026)
+- [ ] Redesign onboarding illustrations: bigger size (93%), no explanatory text, no overflow
+- [ ] Screen 1: "Create A Trip" - same visual, no subtitle
+- [ ] Screen 2: "Forward All Confirmation Emails" - shorter email (123ad@triphub.com), add subject line
+- [ ] Screen 3: "Take Photo / Upload File" - remove small descriptive text
+- [ ] Screen 4: "All Details At A Glance" - keep parsed document visual
+- [ ] Screen 5: "One Click to Call, Email, Navigate" - add 3 action icons
