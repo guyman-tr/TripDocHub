@@ -41,14 +41,13 @@ function getContactInfo(document: MockDocument) {
   return { address, phone, email, hasOriginal };
 }
 
-// Determine which icons should be enabled
+// Determine which icons should be enabled (3 icons: Navigate, Call, Email)
 function getIconStates(document: MockDocument) {
   const info = getContactInfo(document);
   return {
     navigateEnabled: !!info.address,
     callEnabled: !!info.phone,
     emailEnabled: !!info.email,
-    originalEnabled: info.hasOriginal,
   };
 }
 
@@ -72,12 +71,11 @@ describe("Document Action Icons", () => {
       originalFileUrl: "https://storage.example.com/docs/hotel-confirmation.pdf",
     };
 
-    it("should enable all 4 action icons when all data is present", () => {
+    it("should enable all 3 action icons when all contact data is present", () => {
       const states = getIconStates(hotelDoc);
       expect(states.navigateEnabled).toBe(true);
       expect(states.callEnabled).toBe(true);
       expect(states.emailEnabled).toBe(true);
-      expect(states.originalEnabled).toBe(true);
     });
 
     it("should extract correct address from accommodation details", () => {
@@ -118,12 +116,11 @@ describe("Document Action Icons", () => {
       originalFileUrl: "https://storage.example.com/docs/eticket.pdf",
     };
 
-    it("should enable navigate, call, original but disable email", () => {
+    it("should enable navigate and call but disable email", () => {
       const states = getIconStates(flightDoc);
       expect(states.navigateEnabled).toBe(true);
       expect(states.callEnabled).toBe(true);
       expect(states.emailEnabled).toBe(false);
-      expect(states.originalEnabled).toBe(true);
     });
 
     it("should use arrival address for flights", () => {
@@ -152,12 +149,11 @@ describe("Document Action Icons", () => {
       originalFileUrl: null, // No original file
     };
 
-    it("should enable navigate, call, email but disable original", () => {
+    it("should enable all 3 action icons for car rental", () => {
       const states = getIconStates(carDoc);
       expect(states.navigateEnabled).toBe(true);
       expect(states.callEnabled).toBe(true);
       expect(states.emailEnabled).toBe(true);
-      expect(states.originalEnabled).toBe(false);
     });
 
     it("should prefer pickup address for car rentals", () => {
@@ -184,12 +180,11 @@ describe("Document Action Icons", () => {
       originalFileUrl: "https://storage.example.com/docs/ticket.pdf",
     };
 
-    it("should enable navigate and original but disable call and email", () => {
+    it("should enable navigate but disable call and email", () => {
       const states = getIconStates(eventDoc);
       expect(states.navigateEnabled).toBe(true);
       expect(states.callEnabled).toBe(false);
       expect(states.emailEnabled).toBe(false);
-      expect(states.originalEnabled).toBe(true);
     });
 
     it("should use venue address for events", () => {
@@ -209,12 +204,11 @@ describe("Document Action Icons", () => {
       originalFileUrl: null,
     };
 
-    it("should disable all 4 action icons", () => {
+    it("should disable all 3 action icons", () => {
       const states = getIconStates(minimalDoc);
       expect(states.navigateEnabled).toBe(false);
       expect(states.callEnabled).toBe(false);
       expect(states.emailEnabled).toBe(false);
-      expect(states.originalEnabled).toBe(false);
     });
   });
 
@@ -236,12 +230,11 @@ describe("Document Action Icons", () => {
       originalFileUrl: "https://storage.example.com/docs/insurance.pdf",
     };
 
-    it("should enable call, email, original but disable navigate", () => {
+    it("should enable call and email but disable navigate", () => {
       const states = getIconStates(medicalDoc);
       expect(states.navigateEnabled).toBe(false);
       expect(states.callEnabled).toBe(true);
       expect(states.emailEnabled).toBe(true);
-      expect(states.originalEnabled).toBe(true);
     });
   });
 });

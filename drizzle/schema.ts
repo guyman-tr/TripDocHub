@@ -97,6 +97,7 @@ export const documents = mysqlTable("documents", {
   // Source tracking
   source: mysqlEnum("source", ["upload", "email", "camera"]).default("upload").notNull(),
   emailSubject: varchar("emailSubject", { length: 500 }), // If from email forwarding
+  originalEmailBody: text("originalEmailBody"), // Original email HTML/text for display when no attachment
   
   // Content hash for duplicate detection
   contentHash: varchar("contentHash", { length: 64 }),

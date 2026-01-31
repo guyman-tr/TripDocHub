@@ -254,6 +254,7 @@ async function processEmailBodyAsync(
         subtitle: doc.subtitle,
         details: doc.details,
         originalFileUrl: null, // No file URL for email body parsing
+        originalEmailBody: emailHtml || emailPlain || null, // Store original email for display
         source: "email",
         documentDate: doc.documentDate,
         contentHash: parseResult.contentHash,

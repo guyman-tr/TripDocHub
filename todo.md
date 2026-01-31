@@ -204,3 +204,10 @@
 - [x] Grey out icons when no data found, color when data exists
 - [x] Make colored icons clickable (open maps, dial phone, compose email, view original)
 - [x] Write unit tests with mock data to verify extraction and icon states
+
+## Action Icons Improvements (Jan 31)
+- [x] Move "View Original" back to prominent button at bottom (not icon)
+- [x] Show original email text when no PDF/image exists (formatted nicely via WebView)
+- [x] Keep only 3 icons: Navigate, Call, Email
+- [x] Store original email body in database for display
+- [ ] Add re-process option for existing documents to extract phone/email

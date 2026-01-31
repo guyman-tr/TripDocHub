@@ -9,9 +9,11 @@ import {
   View,
   Modal,
   Linking,
+  useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
+import { WebView } from "react-native-webview";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -37,7 +39,6 @@ const ACTION_COLORS = {
   navigate: "#34C759", // Green
   call: "#007AFF", // Blue
   email: "#AF52DE", // Purple
-  original: "#FF3B30", // Red
   disabled: "#C7C7CC", // Grey
 };
 
@@ -103,8 +104,10 @@ export default function DocumentDetailScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
   const { isAuthenticated } = useAuth();
+  const { width: screenWidth } = useWindowDimensions();
 
   const [reassignModalVisible, setReassignModalVisible] = useState(false);
+  const [originalModalVisible, setOriginalModalVisible] = useState(false);
 
   const documentId = parseInt(id || "0", 10);
 
@@ -141,7 +144,7 @@ export default function DocumentDetailScreen() {
 
   // Extract contact info from document details
   const contactInfo = useMemo(() => {
-    if (!document) return { address: null, phone: null, email: null, hasOriginal: false };
+    if (!document) return { address: null, phone: null, email: null };
     
     const details = (document.details as DocumentDetails) || {};
     const category = document.category;
@@ -161,17 +164,33 @@ export default function DocumentDetailScreen() {
     // Get phone and email from details
     const phone = details.phoneNumber || null;
     const email = details.emailAddress || null;
-    const hasOriginal = !!document.originalFileUrl;
     
-    return { address, phone, email, hasOriginal };
+    return { address, phone, email };
+  }, [document]);
+
+  // Check what original content is available
+  const originalContent = useMemo(() => {
+    if (!document) return { hasFile: false, hasEmailBody: false, type: 'none' as const };
+    
+    const hasFile = !!document.originalFileUrl;
+    const hasEmailBody = !!(document as any).originalEmailBody;
+    
+    if (hasFile) return { hasFile: true, hasEmailBody, type: 'file' as const };
+    if (hasEmailBody) return { hasFile: false, hasEmailBody: true, type: 'email' as const };
+    return { hasFile: false, hasEmailBody: false, type: 'none' as const };
   }, [document]);
 
   const handleViewOriginal = useCallback(() => {
-    if (document?.originalFileUrl) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    if (originalContent.type === 'file' && document?.originalFileUrl) {
+      // Open file URL directly
       Linking.openURL(document.originalFileUrl);
+    } else if (originalContent.type === 'email') {
+      // Show email body in modal
+      setOriginalModalVisible(true);
     }
-  }, [document?.originalFileUrl]);
+  }, [document, originalContent]);
 
   const handleReassign = useCallback((tripId: number | null) => {
     assignMutation.mutate({ documentId, tripId });
@@ -217,6 +236,78 @@ export default function DocumentDetailScreen() {
     }
   }, [contactInfo.email]);
 
+  // Generate HTML for email body display
+  const emailBodyHtml = useMemo(() => {
+    if (!document || !(document as any).originalEmailBody) return '';
+    
+    const body = (document as any).originalEmailBody as string;
+    const isDark = colorScheme === 'dark';
+    
+    // Check if it's already HTML
+    const isHtml = body.trim().startsWith('<') || body.includes('<html') || body.includes('<body') || body.includes('<div');
+    
+    if (isHtml) {
+      // Wrap existing HTML with responsive styling
+      return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              font-size: 14px;
+              line-height: 1.5;
+              padding: 16px;
+              margin: 0;
+              background-color: ${isDark ? '#151718' : '#ffffff'};
+              color: ${isDark ? '#ECEDEE' : '#11181C'};
+            }
+            img { max-width: 100%; height: auto; }
+            table { max-width: 100%; }
+            a { color: ${isDark ? '#0a7ea4' : '#007AFF'}; }
+          </style>
+        </head>
+        <body>
+          ${body}
+        </body>
+        </html>
+      `;
+    } else {
+      // Convert plain text to formatted HTML
+      const escapedBody = body
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\n/g, '<br>');
+      
+      return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              font-size: 14px;
+              line-height: 1.6;
+              padding: 16px;
+              margin: 0;
+              background-color: ${isDark ? '#151718' : '#ffffff'};
+              color: ${isDark ? '#ECEDEE' : '#11181C'};
+              white-space: pre-wrap;
+              word-wrap: break-word;
+            }
+          </style>
+        </head>
+        <body>
+          ${escapedBody}
+        </body>
+        </html>
+      `;
+    }
+  }, [document, colorScheme]);
+
   if (isLoading) {
     return (
       <ThemedView style={[styles.container, styles.centered]}>
@@ -242,6 +333,9 @@ export default function DocumentDetailScreen() {
   const config = categoryConfig[document.category] || categoryConfig.other;
   const details = (document.details as DocumentDetails) || {};
 
+  // Check if any action icon is enabled
+  const hasAnyAction = contactInfo.address || contactInfo.phone || contactInfo.email;
+
   return (
     <ThemedView style={styles.container}>
       {/* Header */}
@@ -259,7 +353,7 @@ export default function DocumentDetailScreen() {
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: insets.bottom + 20 },
+          { paddingBottom: insets.bottom + 100 },
         ]}
       >
         {/* Category Badge */}
@@ -300,37 +394,32 @@ export default function DocumentDetailScreen() {
           </View>
         </View>
 
-        {/* 4 Action Icons Row */}
-        <View style={[styles.actionIconsRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <ActionIcon
-            icon="location.fill"
-            label="Navigate"
-            color={ACTION_COLORS.navigate}
-            disabled={!contactInfo.address}
-            onPress={handleOpenMaps}
-          />
-          <ActionIcon
-            icon="phone.fill"
-            label="Call"
-            color={ACTION_COLORS.call}
-            disabled={!contactInfo.phone}
-            onPress={handleCall}
-          />
-          <ActionIcon
-            icon="envelope.fill"
-            label="Email"
-            color={ACTION_COLORS.email}
-            disabled={!contactInfo.email}
-            onPress={handleEmail}
-          />
-          <ActionIcon
-            icon="doc.fill"
-            label="Original"
-            color={ACTION_COLORS.original}
-            disabled={!contactInfo.hasOriginal}
-            onPress={handleViewOriginal}
-          />
-        </View>
+        {/* 3 Action Icons Row - only show if at least one is available */}
+        {hasAnyAction && (
+          <View style={[styles.actionIconsRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <ActionIcon
+              icon="location.fill"
+              label="Navigate"
+              color={ACTION_COLORS.navigate}
+              disabled={!contactInfo.address}
+              onPress={handleOpenMaps}
+            />
+            <ActionIcon
+              icon="phone.fill"
+              label="Call"
+              color={ACTION_COLORS.call}
+              disabled={!contactInfo.phone}
+              onPress={handleCall}
+            />
+            <ActionIcon
+              icon="envelope.fill"
+              label="Email"
+              color={ACTION_COLORS.email}
+              disabled={!contactInfo.email}
+              onPress={handleEmail}
+            />
+          </View>
+        )}
 
         {/* Details Card */}
         {Object.keys(details).length > 0 && (
@@ -405,6 +494,21 @@ export default function DocumentDetailScreen() {
         </View>
       </ScrollView>
 
+      {/* View Original Document Button - Fixed at bottom */}
+      {originalContent.type !== 'none' && (
+        <View style={[styles.bottomButtonContainer, { paddingBottom: Math.max(insets.bottom, 16), backgroundColor: colors.background }]}>
+          <Pressable
+            style={[styles.viewOriginalButton, { backgroundColor: colors.tint }]}
+            onPress={handleViewOriginal}
+          >
+            <IconSymbol name="doc.fill" size={20} color="#FFFFFF" />
+            <ThemedText style={styles.viewOriginalButtonText} maxFontSizeMultiplier={FontScaling.button}>
+              View Original Document
+            </ThemedText>
+          </Pressable>
+        </View>
+      )}
+
       {/* Reassign Modal */}
       <Modal
         visible={reassignModalVisible}
@@ -451,6 +555,31 @@ export default function DocumentDetailScreen() {
               </Pressable>
             ))}
           </ScrollView>
+        </ThemedView>
+      </Modal>
+
+      {/* Original Email Body Modal */}
+      <Modal
+        visible={originalModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setOriginalModalVisible(false)}
+      >
+        <ThemedView style={[styles.modalContainer, { paddingTop: Math.max(insets.top, 20) }]}>
+          <View style={styles.modalHeader}>
+            <ThemedText type="subtitle">Original Email</ThemedText>
+            <Pressable onPress={() => setOriginalModalVisible(false)} style={styles.closeButton}>
+              <IconSymbol name="xmark" size={24} color={colors.text} />
+            </Pressable>
+          </View>
+
+          <WebView
+            source={{ html: emailBodyHtml }}
+            style={styles.webView}
+            scrollEnabled={true}
+            showsVerticalScrollIndicator={true}
+            originWhitelist={['*']}
+          />
         </ThemedView>
       </Modal>
     </ThemedView>
@@ -541,7 +670,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: Spacing.md,
   },
-  // 4 Action Icons Row
+  // 3 Action Icons Row
   actionIconsRow: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -554,6 +683,7 @@ const styles = StyleSheet.create({
   actionIconContainer: {
     alignItems: "center",
     gap: 6,
+    flex: 1,
   },
   actionIconCircle: {
     width: 48,
@@ -583,7 +713,6 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#FFFFFF",
     lineHeight: 22,
   },
   metadata: {
@@ -612,6 +741,31 @@ const styles = StyleSheet.create({
   backButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
+    fontWeight: "600",
+    lineHeight: 22,
+  },
+  // Bottom fixed button
+  bottomButtonContainer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0,0,0,0.1)",
+  },
+  viewOriginalButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.sm,
+    paddingVertical: 16,
+    borderRadius: BorderRadius.md,
+  },
+  viewOriginalButtonText: {
+    color: "#FFFFFF",
+    fontSize: 17,
     fontWeight: "600",
     lineHeight: 22,
   },
@@ -654,5 +808,8 @@ const styles = StyleSheet.create({
   tripOptionDates: {
     fontSize: 13,
     lineHeight: 18,
+  },
+  webView: {
+    flex: 1,
   },
 });

@@ -43,6 +43,13 @@
       "when": 1768686169847,
       "tag": "0005_ancient_jazinda",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1769865300786,
+      "tag": "0006_brave_terror",
+      "breakpoints": true
     }
   ]
 }
