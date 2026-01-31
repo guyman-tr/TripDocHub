@@ -143,25 +143,106 @@ export default function DocumentDetailScreen() {
   });
 
   // Extract contact info from document details
+  // Navigation only shows if: explicit street address OR valid airport code
   const contactInfo = useMemo(() => {
     if (!document) return { address: null, phone: null, email: null };
     
     const details = (document.details as DocumentDetails) || {};
     const category = document.category;
     
-    // Get address based on category - check both *Address and *Location fields
+    // Helper to check if a string looks like a real address (not just a location name)
+    const isValidAddress = (addr: string | undefined): boolean => {
+      if (!addr) return false;
+      // Must have at least a number or common address keywords
+      const hasNumber = /\d/.test(addr);
+      const hasAddressKeyword = /street|str\.|avenue|ave\.|road|rd\.|boulevard|blvd\.|highway|hwy\.|lane|ln\.|drive|dr\.|airport|terminal|plaza|center|centre/i.test(addr);
+      const hasCity = /,/.test(addr); // Usually addresses have commas separating city/country
+      return hasNumber || hasAddressKeyword || hasCity;
+    };
+    
+    // Airport code to navigable address mapping
+    const AIRPORT_ADDRESSES: Record<string, string> = {
+      JFK: "John F. Kennedy International Airport, New York",
+      LAX: "Los Angeles International Airport",
+      LHR: "London Heathrow Airport",
+      CDG: "Paris Charles de Gaulle Airport",
+      FRA: "Frankfurt Airport",
+      AMS: "Amsterdam Schiphol Airport",
+      DXB: "Dubai International Airport",
+      SIN: "Singapore Changi Airport",
+      HKG: "Hong Kong International Airport",
+      TLV: "Ben Gurion Airport, Tel Aviv, Israel",
+      FCO: "Rome Fiumicino Airport",
+      BCN: "Barcelona El Prat Airport",
+      MAD: "Madrid Barajas Airport",
+      MUC: "Munich Airport",
+      ZRH: "Zurich Airport",
+      VIE: "Vienna International Airport",
+      PRG: "Prague Vaclav Havel Airport",
+      BUD: "Budapest Ferenc Liszt Airport",
+      ATH: "Athens International Airport",
+      IST: "Istanbul Airport",
+      VRN: "Verona Villafranca Airport, Italy",
+      ORD: "Chicago O'Hare International Airport",
+      SFO: "San Francisco International Airport",
+      MIA: "Miami International Airport",
+      YYZ: "Toronto Pearson International Airport",
+      YVR: "Vancouver International Airport",
+      BKK: "Bangkok Suvarnabhumi Airport",
+      NRT: "Narita International Airport, Tokyo",
+      ICN: "Incheon International Airport, Seoul",
+    };
+    
+    // Get navigable address based on category
     let address: string | null = null;
+    
     if (category === "accommodation") {
-      address = details.address || null;
+      // Hotels: only if we have a real street address
+      if (isValidAddress(details.address)) {
+        address = details.address!;
+      }
     } else if (category === "carRental") {
-      // Check both pickupAddress/dropoffAddress AND pickupLocation/dropoffLocation
-      address = details.pickupAddress || details.dropoffAddress || 
-                details.pickupLocation || details.dropoffLocation || null;
+      // Car rentals: check for real addresses first, then fall back to airport inference
+      if (isValidAddress(details.pickupAddress)) {
+        address = details.pickupAddress!;
+      } else if (isValidAddress(details.dropoffAddress)) {
+        address = details.dropoffAddress!;
+      } else if (isValidAddress(details.pickupLocation)) {
+        address = details.pickupLocation!;
+      } else if (isValidAddress(details.dropoffLocation)) {
+        address = details.dropoffLocation!;
+      }
     } else if (category === "event") {
-      address = details.venueAddress || details.venue || null;
+      // Events: only if we have a real venue address
+      if (isValidAddress(details.venueAddress)) {
+        address = details.venueAddress!;
+      } else if (isValidAddress(details.venue)) {
+        address = details.venue!;
+      }
     } else if (category === "flight") {
-      address = details.arrivalAddress || details.departureAddress || 
-                details.arrivalAirport || details.departureAirport || null;
+      // Flights: use explicit address if available, otherwise infer from airport code
+      if (isValidAddress(details.arrivalAddress)) {
+        address = details.arrivalAddress!;
+      } else if (isValidAddress(details.departureAddress)) {
+        address = details.departureAddress!;
+      } else {
+        // Try to infer from airport codes
+        const arrCode = details.arrivalAirport?.toUpperCase();
+        const depCode = details.departureAirport?.toUpperCase();
+        
+        if (arrCode && AIRPORT_ADDRESSES[arrCode]) {
+          address = AIRPORT_ADDRESSES[arrCode];
+          // Add terminal if available
+          if (details.terminal) {
+            address += `, Terminal ${details.terminal}`;
+          }
+        } else if (depCode && AIRPORT_ADDRESSES[depCode]) {
+          address = AIRPORT_ADDRESSES[depCode];
+          if (details.terminal) {
+            address += `, Terminal ${details.terminal}`;
+          }
+        }
+      }
     }
     
     // Get phone and email from details

@@ -221,3 +221,12 @@
 - [x] Never grey out View Original button
 - [x] Show email text when no PDF/image file exists
 - [x] Generate markdown summary from details as fallback if no email body
+
+## Document Parsing Prompt Improvements (Jan 31)
+- [x] Update prompts with schema-first, details-second approach
+- [x] Add mandatory vs optional field categorization
+- [x] Improve date parsing for Hebrew/multilingual emails
+- [x] Navigation: only show if explicit address OR airport code (infer airport name from code)
+- [x] Phone numbers: add + prefix for international numbers (in prompt + post-processing)
+- [x] Add speed instruction - don't invent/guess, use null for missing fields
+- [x] Add airport code to address mapping for flights
