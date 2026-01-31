@@ -216,3 +216,8 @@
 - [x] Fix address extraction to check pickupLocation/dropoffLocation fields (not just pickupAddress/dropoffAddress)
 - [x] Always show icons row (don't hide when no data - just grey out all icons)
 - [x] Always show View Original button (greyed out with "No Original Available" text when no file/email)
+
+## View Original Always Enabled (Jan 31)
+- [x] Never grey out View Original button
+- [x] Show email text when no PDF/image file exists
+- [x] Generate markdown summary from details as fallback if no email body

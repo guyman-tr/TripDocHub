@@ -171,16 +171,17 @@ export default function DocumentDetailScreen() {
     return { address, phone, email };
   }, [document]);
 
-  // Check what original content is available
+  // Check what original content is available - always have something to show
   const originalContent = useMemo(() => {
-    if (!document) return { hasFile: false, hasEmailBody: false, type: 'none' as const };
+    if (!document) return { type: 'none' as const };
     
     const hasFile = !!document.originalFileUrl;
     const hasEmailBody = !!(document as any).originalEmailBody;
     
-    if (hasFile) return { hasFile: true, hasEmailBody, type: 'file' as const };
-    if (hasEmailBody) return { hasFile: false, hasEmailBody: true, type: 'email' as const };
-    return { hasFile: false, hasEmailBody: false, type: 'none' as const };
+    if (hasFile) return { type: 'file' as const };
+    if (hasEmailBody) return { type: 'email' as const };
+    // Fallback: generate summary from parsed details
+    return { type: 'details' as const };
   }, [document]);
 
   const handleViewOriginal = useCallback(() => {
@@ -189,8 +190,8 @@ export default function DocumentDetailScreen() {
     if (originalContent.type === 'file' && document?.originalFileUrl) {
       // Open file URL directly
       Linking.openURL(document.originalFileUrl);
-    } else if (originalContent.type === 'email') {
-      // Show email body in modal
+    } else {
+      // Show email body or details summary in modal
       setOriginalModalVisible(true);
     }
   }, [document, originalContent]);
@@ -239,76 +240,129 @@ export default function DocumentDetailScreen() {
     }
   }, [contactInfo.email]);
 
-  // Generate HTML for email body display
-  const emailBodyHtml = useMemo(() => {
-    if (!document || !(document as any).originalEmailBody) return '';
+  // Generate HTML for original content display (email body or details summary)
+  const originalContentHtml = useMemo(() => {
+    if (!document) return '';
     
-    const body = (document as any).originalEmailBody as string;
     const isDark = colorScheme === 'dark';
+    const emailBody = (document as any).originalEmailBody as string | undefined;
+    const details = (document.details as DocumentDetails) || {};
     
-    // Check if it's already HTML
-    const isHtml = body.trim().startsWith('<') || body.includes('<html') || body.includes('<body') || body.includes('<div');
+    const baseStyles = `
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      padding: 16px;
+      margin: 0;
+      background-color: ${isDark ? '#151718' : '#ffffff'};
+      color: ${isDark ? '#ECEDEE' : '#11181C'};
+    `;
     
-    if (isHtml) {
-      // Wrap existing HTML with responsive styling
-      return `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-          <style>
-            body {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-              font-size: 14px;
-              line-height: 1.5;
-              padding: 16px;
-              margin: 0;
-              background-color: ${isDark ? '#151718' : '#ffffff'};
-              color: ${isDark ? '#ECEDEE' : '#11181C'};
-            }
-            img { max-width: 100%; height: auto; }
-            table { max-width: 100%; }
-            a { color: ${isDark ? '#0a7ea4' : '#007AFF'}; }
-          </style>
-        </head>
-        <body>
-          ${body}
-        </body>
-        </html>
-      `;
-    } else {
-      // Convert plain text to formatted HTML
-      const escapedBody = body
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/\n/g, '<br>');
+    // If we have email body, use it
+    if (emailBody) {
+      const body = emailBody;
+      const isHtml = body.trim().startsWith('<') || body.includes('<html') || body.includes('<body') || body.includes('<div');
       
-      return `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-          <style>
-            body {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-              font-size: 14px;
-              line-height: 1.6;
-              padding: 16px;
-              margin: 0;
-              background-color: ${isDark ? '#151718' : '#ffffff'};
-              color: ${isDark ? '#ECEDEE' : '#11181C'};
-              white-space: pre-wrap;
-              word-wrap: break-word;
-            }
-          </style>
-        </head>
-        <body>
-          ${escapedBody}
-        </body>
-        </html>
-      `;
+      if (isHtml) {
+        return `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+            <style>
+              body { ${baseStyles} }
+              img { max-width: 100%; height: auto; }
+              table { max-width: 100%; }
+              a { color: ${isDark ? '#0a7ea4' : '#007AFF'}; }
+            </style>
+          </head>
+          <body>${body}</body>
+          </html>
+        `;
+      } else {
+        const escapedBody = body
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/\n/g, '<br>');
+        
+        return `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+            <style>
+              body { ${baseStyles} white-space: pre-wrap; word-wrap: break-word; }
+            </style>
+          </head>
+          <body>${escapedBody}</body>
+          </html>
+        `;
+      }
     }
+    
+    // Fallback: Generate summary from parsed details
+    const detailRows: string[] = [];
+    const addRow = (label: string, value: string | undefined) => {
+      if (value) detailRows.push(`<tr><td style="padding: 8px 16px 8px 0; color: ${isDark ? '#9BA1A6' : '#687076'}; vertical-align: top;">${label}</td><td style="padding: 8px 0; font-weight: 500;">${value}</td></tr>`);
+    };
+    
+    addRow('Title', document.title);
+    addRow('Subtitle', document.subtitle || undefined);
+    addRow('Type', document.documentType);
+    addRow('Category', document.category);
+    addRow('Confirmation #', details.confirmationNumber);
+    addRow('Airline', details.airline);
+    addRow('Flight Number', details.flightNumber);
+    addRow('Departure', details.departureAirport);
+    addRow('Arrival', details.arrivalAirport);
+    addRow('Departure Time', details.departureTime);
+    addRow('Arrival Time', details.arrivalTime);
+    addRow('Seat', details.seatNumber);
+    addRow('Terminal', details.terminal);
+    addRow('Gate', details.gate);
+    addRow('Hotel', details.hotelName);
+    addRow('Check-in', details.checkInDate);
+    addRow('Check-out', details.checkOutDate);
+    addRow('Room Type', details.roomType);
+    addRow('Address', details.address);
+    addRow('Car Company', details.carCompany);
+    addRow('Pickup Location', details.pickupLocation);
+    addRow('Dropoff Location', details.dropoffLocation);
+    addRow('Pickup Time', details.pickupTime);
+    addRow('Dropoff Time', details.dropoffTime);
+    addRow('Vehicle Type', details.vehicleType);
+    addRow('Insurance Provider', details.insuranceProvider);
+    addRow('Policy Number', details.policyNumber);
+    addRow('Coverage Period', details.coveragePeriod);
+    addRow('Event', details.eventName);
+    addRow('Event Date', details.eventDate);
+    addRow('Event Time', details.eventTime);
+    addRow('Venue', details.venue);
+    addRow('Phone', details.phoneNumber);
+    addRow('Email', details.emailAddress);
+    addRow('Source', document.source === 'email' ? 'Email Forwarding' : document.source === 'camera' ? 'Camera' : 'Upload');
+    addRow('Added', new Date(document.createdAt).toLocaleDateString());
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+        <style>
+          body { ${baseStyles} }
+          h2 { margin: 0 0 16px 0; font-size: 18px; color: ${isDark ? '#ECEDEE' : '#11181C'}; }
+          table { width: 100%; border-collapse: collapse; }
+          .note { margin-top: 24px; padding: 12px; background: ${isDark ? '#1a1a1a' : '#f5f5f5'}; border-radius: 8px; font-size: 13px; color: ${isDark ? '#9BA1A6' : '#687076'}; }
+        </style>
+      </head>
+      <body>
+        <h2>Document Details</h2>
+        <table>${detailRows.join('')}</table>
+        <div class="note">This is a summary of the parsed document details. The original email content was not stored for this document.</div>
+      </body>
+      </html>
+    `;
   }, [document, colorScheme]);
 
   if (isLoading) {
@@ -492,16 +546,15 @@ export default function DocumentDetailScreen() {
         </View>
       </ScrollView>
 
-      {/* View Original Document Button - Always visible at bottom */}
+      {/* View Original Document Button - Always enabled */}
       <View style={[styles.bottomButtonContainer, { paddingBottom: Math.max(insets.bottom, 16), backgroundColor: colors.background }]}>
         <Pressable
-          style={[styles.viewOriginalButton, { backgroundColor: originalContent.type !== 'none' ? colors.tint : ACTION_COLORS.disabled }]}
-          onPress={originalContent.type !== 'none' ? handleViewOriginal : undefined}
-          disabled={originalContent.type === 'none'}
+          style={[styles.viewOriginalButton, { backgroundColor: colors.tint }]}
+          onPress={handleViewOriginal}
         >
           <IconSymbol name="doc.fill" size={20} color="#FFFFFF" />
           <ThemedText style={styles.viewOriginalButtonText} maxFontSizeMultiplier={FontScaling.button}>
-            {originalContent.type === 'none' ? 'No Original Available' : 'View Original Document'}
+            View Original Document
           </ThemedText>
         </Pressable>
       </View>
@@ -564,14 +617,14 @@ export default function DocumentDetailScreen() {
       >
         <ThemedView style={[styles.modalContainer, { paddingTop: Math.max(insets.top, 20) }]}>
           <View style={styles.modalHeader}>
-            <ThemedText type="subtitle">Original Email</ThemedText>
+            <ThemedText type="subtitle">Original Document</ThemedText>
             <Pressable onPress={() => setOriginalModalVisible(false)} style={styles.closeButton}>
               <IconSymbol name="xmark" size={24} color={colors.text} />
             </Pressable>
           </View>
 
           <WebView
-            source={{ html: emailBodyHtml }}
+            source={{ html: originalContentHtml }}
             style={styles.webView}
             scrollEnabled={true}
             showsVerticalScrollIndicator={true}
