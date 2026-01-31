@@ -488,9 +488,19 @@ export default function DocumentDetailScreen() {
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: insets.bottom + 100 },
-        ]}
-      >
+          { paddingBottom: insets.bottom + 20 },
+               ]}>
+        {/* View Original Button at top for quick access */}
+        <Pressable
+          style={[styles.viewOriginalButtonTop, { borderColor: colors.tint }]}
+          onPress={handleViewOriginal}
+        >
+          <IconSymbol name="doc.fill" size={16} color={colors.tint} />
+          <ThemedText style={[styles.viewOriginalButtonTopText, { color: colors.tint }]} maxFontSizeMultiplier={FontScaling.button}>
+            View Original
+          </ThemedText>
+        </Pressable>
+
         {/* Category Badge */}
         <View style={[styles.categoryBadge, { backgroundColor: config.color + "20" }]}>
           <IconSymbol name={config.icon} size={24} color={config.color} />
@@ -626,19 +636,6 @@ export default function DocumentDetailScreen() {
           </View>
         </View>
       </ScrollView>
-
-      {/* View Original Document Button - Always enabled */}
-      <View style={[styles.bottomButtonContainer, { paddingBottom: Math.max(insets.bottom, 16), backgroundColor: colors.background }]}>
-        <Pressable
-          style={[styles.viewOriginalButton, { backgroundColor: colors.tint }]}
-          onPress={handleViewOriginal}
-        >
-          <IconSymbol name="doc.fill" size={20} color="#FFFFFF" />
-          <ThemedText style={styles.viewOriginalButtonText} maxFontSizeMultiplier={FontScaling.button}>
-            View Original Document
-          </ThemedText>
-        </Pressable>
-      </View>
 
       {/* Reassign Modal */}
       <Modal
@@ -875,17 +872,25 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     lineHeight: 22,
   },
-  // Bottom fixed button
-  bottomButtonContainer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(0,0,0,0.1)",
+  // View Original button - top outline style
+  viewOriginalButtonTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "flex-start",
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1.5,
+    marginBottom: Spacing.md,
   },
+  viewOriginalButtonTopText: {
+    fontSize: 14,
+    fontWeight: "600",
+    lineHeight: 18,
+  },
+  // View Original button - bottom filled style
   viewOriginalButton: {
     flexDirection: "row",
     alignItems: "center",

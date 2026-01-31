@@ -230,3 +230,7 @@
 - [x] Phone numbers: add + prefix for international numbers (in prompt + post-processing)
 - [x] Add speed instruction - don't invent/guess, use null for missing fields
 - [x] Add airport code to address mapping for flights
+
+## View Original Button Sizing Fix (Jan 31)
+- [x] Make View Original button smaller and not floating
+- [x] Position within scroll content (at top, outline style)
