@@ -196,3 +196,11 @@
 - [ ] Screen 3: "Take Photo / Upload File" - remove small descriptive text
 - [ ] Screen 4: "All Details At A Glance" - keep parsed document visual
 - [ ] Screen 5: "One Click to Call, Email, Navigate" - add 3 action icons
+
+## Document Details Action Icons (Jan 31)
+- [x] Extract phone number from document processing
+- [x] Extract email address from document processing
+- [x] Add 4 action icons to document details: Navigate, Call, Email, Original
+- [x] Grey out icons when no data found, color when data exists
+- [x] Make colored icons clickable (open maps, dial phone, compose email, view original)
+- [x] Write unit tests with mock data to verify extraction and icon states

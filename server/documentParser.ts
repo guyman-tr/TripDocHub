@@ -29,19 +29,21 @@ For each booking found, extract:
 6. details: An object with relevant fields based on the category
 
 For flights, include in details:
-- confirmationNumber, airline, flightNumber, departureAirport, arrivalAirport, departureTime, arrivalTime, seatNumber, terminal, gate, departureAddress (full airport address if available), arrivalAddress (full airport address if available)
+- confirmationNumber, airline, flightNumber, departureAirport, arrivalAirport, departureTime, arrivalTime, seatNumber, terminal, gate, departureAddress (full airport address if available), arrivalAddress (full airport address if available), phoneNumber (airline customer service), emailAddress (airline contact email if shown)
 
 For accommodations, include in details:
-- confirmationNumber, hotelName, checkInDate, checkOutDate, roomType, address (full street address including city, country)
+- confirmationNumber, hotelName, checkInDate, checkOutDate, roomType, address (full street address including city, country), phoneNumber (hotel phone number), emailAddress (hotel email if shown)
 
 For car rentals, include in details:
-- confirmationNumber, carCompany, pickupLocation, dropoffLocation, pickupTime, dropoffTime, vehicleType, pickupAddress (full street address), dropoffAddress (full street address)
+- confirmationNumber, carCompany, pickupLocation, dropoffLocation, pickupTime, dropoffTime, vehicleType, pickupAddress (full street address), dropoffAddress (full street address), phoneNumber (rental company phone), emailAddress (rental company email if shown)
 
 For medical insurance, include in details:
-- insuranceProvider, policyNumber, coveragePeriod
+- insuranceProvider, policyNumber, coveragePeriod, phoneNumber (insurance helpline), emailAddress (insurance contact email)
 
 For events, include in details:
-- eventName, eventDate, eventTime, venue, confirmationNumber, venueAddress (full street address including city, country)
+- eventName, eventDate, eventTime, venue, confirmationNumber, venueAddress (full street address including city, country), phoneNumber (venue or organizer phone), emailAddress (venue or organizer email if shown)
+
+ALWAYS extract phoneNumber and emailAddress if they appear anywhere in the document. These are critical for user convenience.
 
 Return a JSON object with a "documents" array containing all found bookings. If no bookings are found, return an empty array.`;
 
@@ -58,16 +60,18 @@ For each booking found, extract:
 6. details: An object with relevant fields based on the category
 
 For flights, include in details:
-- confirmationNumber, airline, flightNumber, departureAirport, arrivalAirport, departureTime, arrivalTime, passengerName
+- confirmationNumber, airline, flightNumber, departureAirport, arrivalAirport, departureTime, arrivalTime, passengerName, phoneNumber (airline customer service), emailAddress (airline contact)
 
 For accommodations, include in details:
-- confirmationNumber, hotelName, checkInDate, checkOutDate, roomType, address, guestName
+- confirmationNumber, hotelName, checkInDate, checkOutDate, roomType, address, guestName, phoneNumber (hotel phone), emailAddress (hotel email)
 
 For car rentals, include in details:
-- confirmationNumber, carCompany, pickupLocation, dropoffLocation, pickupTime, dropoffTime, vehicleType
+- confirmationNumber, carCompany, pickupLocation, dropoffLocation, pickupTime, dropoffTime, vehicleType, phoneNumber (rental company phone), emailAddress (rental company email)
 
 For events, include in details:
-- eventName, eventDate, eventTime, venue, confirmationNumber
+- eventName, eventDate, eventTime, venue, confirmationNumber, phoneNumber (venue/organizer phone), emailAddress (venue/organizer email)
+
+ALWAYS extract phoneNumber and emailAddress if they appear anywhere in the email. These are critical for user convenience.
 
 Return a JSON object with a "documents" array containing all found bookings. If no travel bookings are found in the email, return an empty array.
 

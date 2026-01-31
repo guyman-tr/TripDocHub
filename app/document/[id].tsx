@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useMemo } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -32,6 +32,15 @@ const categoryConfig: Record<string, { icon: any; color: string; label: string }
   other: { icon: "doc.fill", color: CategoryColors.other, label: "Document" },
 };
 
+// Action icon colors
+const ACTION_COLORS = {
+  navigate: "#34C759", // Green
+  call: "#007AFF", // Blue
+  email: "#AF52DE", // Purple
+  original: "#FF3B30", // Red
+  disabled: "#C7C7CC", // Grey
+};
+
 function DetailRow({ label, value }: { label: string; value: string | undefined }) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
@@ -54,6 +63,36 @@ function DetailRow({ label, value }: { label: string; value: string | undefined 
         {value}
       </ThemedText>
     </View>
+  );
+}
+
+interface ActionIconProps {
+  icon: any;
+  label: string;
+  color: string;
+  disabled: boolean;
+  onPress: () => void;
+}
+
+function ActionIcon({ icon, label, color, disabled, onPress }: ActionIconProps) {
+  const actualColor = disabled ? ACTION_COLORS.disabled : color;
+  
+  return (
+    <Pressable 
+      style={styles.actionIconContainer}
+      onPress={disabled ? undefined : onPress}
+      disabled={disabled}
+    >
+      <View style={[styles.actionIconCircle, { borderColor: actualColor }]}>
+        <IconSymbol name={icon} size={24} color={actualColor} />
+      </View>
+      <ThemedText 
+        style={[styles.actionIconLabel, { color: actualColor }]}
+        maxFontSizeMultiplier={FontScaling.label}
+      >
+        {label}
+      </ThemedText>
+    </Pressable>
   );
 }
 
@@ -100,8 +139,36 @@ export default function DocumentDetailScreen() {
     },
   });
 
+  // Extract contact info from document details
+  const contactInfo = useMemo(() => {
+    if (!document) return { address: null, phone: null, email: null, hasOriginal: false };
+    
+    const details = (document.details as DocumentDetails) || {};
+    const category = document.category;
+    
+    // Get address based on category
+    let address: string | null = null;
+    if (category === "accommodation" && details.address) {
+      address = details.address;
+    } else if (category === "carRental") {
+      address = details.pickupAddress || details.dropoffAddress || null;
+    } else if (category === "event" && details.venueAddress) {
+      address = details.venueAddress;
+    } else if (category === "flight") {
+      address = details.arrivalAddress || details.departureAddress || null;
+    }
+    
+    // Get phone and email from details
+    const phone = details.phoneNumber || null;
+    const email = details.emailAddress || null;
+    const hasOriginal = !!document.originalFileUrl;
+    
+    return { address, phone, email, hasOriginal };
+  }, [document]);
+
   const handleViewOriginal = useCallback(() => {
     if (document?.originalFileUrl) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       Linking.openURL(document.originalFileUrl);
     }
   }, [document?.originalFileUrl]);
@@ -125,30 +192,30 @@ export default function DocumentDetailScreen() {
     );
   }, [documentId, deleteMutation]);
 
-  // Get address from document details based on category
-  const getAddressFromDetails = useCallback((details: DocumentDetails, category: string): string | null => {
-    if (category === "accommodation" && details.address) {
-      return details.address;
+  const handleOpenMaps = useCallback(() => {
+    if (contactInfo.address) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      const encodedAddress = encodeURIComponent(contactInfo.address);
+      const url = `https://maps.google.com/?q=${encodedAddress}`;
+      Linking.openURL(url);
     }
-    if (category === "carRental") {
-      return details.pickupAddress || details.dropoffAddress || null;
-    }
-    if (category === "event" && details.venueAddress) {
-      return details.venueAddress;
-    }
-    if (category === "flight") {
-      return details.arrivalAddress || details.departureAddress || null;
-    }
-    return null;
-  }, []);
+  }, [contactInfo.address]);
 
-  const handleOpenMaps = useCallback((address: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const encodedAddress = encodeURIComponent(address);
-    // This will open the default maps app on the device
-    const url = `https://maps.google.com/?q=${encodedAddress}`;
-    Linking.openURL(url);
-  }, []);
+  const handleCall = useCallback(() => {
+    if (contactInfo.phone) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      // Clean phone number - remove spaces, dashes, etc.
+      const cleanPhone = contactInfo.phone.replace(/[^\d+]/g, '');
+      Linking.openURL(`tel:${cleanPhone}`);
+    }
+  }, [contactInfo.phone]);
+
+  const handleEmail = useCallback(() => {
+    if (contactInfo.email) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      Linking.openURL(`mailto:${contactInfo.email}`);
+    }
+  }, [contactInfo.email]);
 
   if (isLoading) {
     return (
@@ -233,6 +300,38 @@ export default function DocumentDetailScreen() {
           </View>
         </View>
 
+        {/* 4 Action Icons Row */}
+        <View style={[styles.actionIconsRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <ActionIcon
+            icon="location.fill"
+            label="Navigate"
+            color={ACTION_COLORS.navigate}
+            disabled={!contactInfo.address}
+            onPress={handleOpenMaps}
+          />
+          <ActionIcon
+            icon="phone.fill"
+            label="Call"
+            color={ACTION_COLORS.call}
+            disabled={!contactInfo.phone}
+            onPress={handleCall}
+          />
+          <ActionIcon
+            icon="envelope.fill"
+            label="Email"
+            color={ACTION_COLORS.email}
+            disabled={!contactInfo.email}
+            onPress={handleEmail}
+          />
+          <ActionIcon
+            icon="doc.fill"
+            label="Original"
+            color={ACTION_COLORS.original}
+            disabled={!contactInfo.hasOriginal}
+            onPress={handleViewOriginal}
+          />
+        </View>
+
         {/* Details Card */}
         {Object.keys(details).length > 0 && (
           <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -267,32 +366,13 @@ export default function DocumentDetailScreen() {
             <DetailRow label="Event Date" value={details.eventDate} />
             <DetailRow label="Event Time" value={details.eventTime} />
             <DetailRow label="Venue" value={details.venue} />
+            <DetailRow label="Phone" value={details.phoneNumber} />
+            <DetailRow label="Email" value={details.emailAddress} />
           </View>
         )}
 
-        {/* Actions */}
+        {/* Reassign Button */}
         <View style={styles.actionsContainer}>
-          {/* Navigate Button - shows when address is available */}
-          {getAddressFromDetails(details, document.category) && (
-            <Pressable
-              style={[styles.actionButton, { backgroundColor: CategoryColors.accommodation }]}
-              onPress={() => handleOpenMaps(getAddressFromDetails(details, document.category)!)}
-            >
-              <IconSymbol name="location.fill" size={20} color="#FFFFFF" />
-              <ThemedText style={styles.actionButtonText} maxFontSizeMultiplier={FontScaling.button}>Navigate</ThemedText>
-            </Pressable>
-          )}
-
-          {document.originalFileUrl && (
-            <Pressable
-              style={[styles.actionButton, { backgroundColor: colors.tint }]}
-              onPress={handleViewOriginal}
-            >
-              <IconSymbol name="doc.fill" size={20} color="#FFFFFF" />
-              <ThemedText style={styles.actionButtonText} maxFontSizeMultiplier={FontScaling.button}>View Original</ThemedText>
-            </Pressable>
-          )}
-
           <Pressable
             style={[styles.actionButton, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}
             onPress={() => setReassignModalVisible(true)}
@@ -460,6 +540,33 @@ const styles = StyleSheet.create({
     textAlign: "right",
     flex: 1,
     marginLeft: Spacing.md,
+  },
+  // 4 Action Icons Row
+  actionIconsRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    paddingVertical: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  actionIconContainer: {
+    alignItems: "center",
+    gap: 6,
+  },
+  actionIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  actionIconLabel: {
+    fontSize: 12,
+    fontWeight: "500",
+    lineHeight: 16,
   },
   actionsContainer: {
     gap: Spacing.sm,

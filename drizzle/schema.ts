@@ -146,6 +146,9 @@ export interface DocumentDetails {
   eventTime?: string;
   venue?: string;
   venueAddress?: string; // Full address for event venue
+  // Contact information extracted from documents
+  phoneNumber?: string; // Phone number for calling (hotel, airline, rental company)
+  emailAddress?: string; // Email address for contacting
   [key: string]: string | undefined;
 }
 
