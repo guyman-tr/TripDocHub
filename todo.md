@@ -187,3 +187,4 @@
 - [x] Document QA findings (error handling, edge cases, security, accessibility, performance)
 - [ ] Polish graphic assets for Google Play listing
 - [x] BUG: Dark theme prices nearly invisible (white on white) in store screen
+- [x] Center app icon graphic on canvas (icon appears off-center on home and splash screens)
