@@ -1,5 +1,5 @@
 // Load environment variables with proper priority (system > .env)
-// Build v1.0.42 - Reverted to rectangular adaptive icon (Feb 1, 2026)
+// Build v1.0.22 - Signing key restored by Manus support (Jan 21, 2026)
 import "./scripts/load-env.js";
 import type { ExpoConfig } from "expo/config";
 
@@ -26,13 +26,14 @@ const env = {
 const config: ExpoConfig = {
   name: env.appName,
   slug: env.appSlug,
-  version: "1.0.42",
+  version: "1.0.43",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: env.scheme,
   userInterfaceStyle: "automatic",
   newArchEnabled: true,
   ios: {
+    icon: "./assets/images/icon-ios.png",
     supportsTablet: true,
     bundleIdentifier: env.iosBundleId,
     infoPlist: {
@@ -41,7 +42,7 @@ const config: ExpoConfig = {
   },
   android: {
     adaptiveIcon: {
-      backgroundColor: "#FFFFFF",
+      backgroundColor: "#E6F4FE",
       foregroundImage: "./assets/images/android-adaptive-foreground.png",
     },
     edgeToEdgeEnabled: true,
