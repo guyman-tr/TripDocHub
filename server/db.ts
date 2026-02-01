@@ -631,6 +631,13 @@ export async function processPurchase(
   const db = await getDb();
   if (!db) return { success: false, error: "Database not available" };
 
+  // IMPORTANT SECURITY NOTE:
+  // This codebase currently does NOT verify Google Play purchase tokens server-side.
+  // To prevent credit fraud, we block crediting in production unless explicitly overridden.
+  if (ENV.isProduction && process.env.ALLOW_UNVERIFIED_PURCHASES !== "true") {
+    return { success: false, error: "Purchase verification not configured" };
+  }
+
   // Check if this purchase was already processed
   const existingPurchase = await getPurchaseByToken(purchaseToken);
   if (existingPurchase) {

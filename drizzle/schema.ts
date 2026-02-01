@@ -97,7 +97,6 @@ export const documents = mysqlTable("documents", {
   // Source tracking
   source: mysqlEnum("source", ["upload", "email", "camera"]).default("upload").notNull(),
   emailSubject: varchar("emailSubject", { length: 500 }), // If from email forwarding
-  originalEmailBody: text("originalEmailBody"), // Original email HTML/text for display when no attachment
   
   // Content hash for duplicate detection
   contentHash: varchar("contentHash", { length: 64 }),
@@ -147,9 +146,6 @@ export interface DocumentDetails {
   eventTime?: string;
   venue?: string;
   venueAddress?: string; // Full address for event venue
-  // Contact information extracted from documents
-  phoneNumber?: string; // Phone number for calling (hotel, airline, rental company)
-  emailAddress?: string; // Email address for contacting
   [key: string]: string | undefined;
 }
 

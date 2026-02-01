@@ -54,7 +54,6 @@ const MAPPING = {
   "calendar": "event",
   "clock.fill": "schedule",
   "location.fill": "location-on",
-  "phone.fill": "phone",
   "info.circle.fill": "info",
   "exclamationmark.triangle.fill": "warning",
   

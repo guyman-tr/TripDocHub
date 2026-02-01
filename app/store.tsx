@@ -14,9 +14,6 @@ import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { useThemeColor } from "@/hooks/use-theme-color";
-import { Colors } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { trpc } from "@/lib/trpc";
 import {
   getProducts,
@@ -32,8 +29,6 @@ import { FontScaling } from "@/constants/accessibility";
 
 export default function StoreScreen() {
   const insets = useSafeAreaInsets();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
@@ -177,7 +172,6 @@ export default function StoreScreen() {
                 key={product.productId}
                 style={[
                   styles.productCard,
-                  isDark ? styles.productCardDark : styles.productCardLight,
                   purchasingId === product.productId && styles.productCardActive,
                 ]}
                 onPress={() => handlePurchase(product)}
@@ -191,7 +185,7 @@ export default function StoreScreen() {
                       {product.credits}
                     </ThemedText>
                     <ThemedText style={styles.productLabel} maxFontSizeMultiplier={FontScaling.label}>credits</ThemedText>
-                    <ThemedText style={[styles.productPrice, isDark ? styles.productPriceDark : styles.productPriceLight]} maxFontSizeMultiplier={FontScaling.button}>
+                    <ThemedText style={styles.productPrice} maxFontSizeMultiplier={FontScaling.button}>
                       {product.price}
                     </ThemedText>
                   </>
@@ -207,7 +201,7 @@ export default function StoreScreen() {
             Have a Promo Code?
           </ThemedText>
           <Pressable
-            style={[styles.promoButton, isDark ? styles.promoButtonDark : styles.promoButtonLight]}
+            style={styles.promoButton}
             onPress={() => router.push("/redeem" as any)}
           >
             <ThemedText style={styles.promoButtonText} maxFontSizeMultiplier={FontScaling.button}>
@@ -302,6 +296,7 @@ const styles = StyleSheet.create({
   productCard: {
     flex: 1,
     minWidth: 100,
+    backgroundColor: "#f5f5f5",
     borderRadius: 16,
     padding: 20,
     alignItems: "center",
@@ -325,31 +320,14 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
   },
-  productPriceLight: {
-    color: "#333333",
-  },
-  productPriceDark: {
-    color: "#FFFFFF",
-  },
-  productCardLight: {
-    backgroundColor: "#f5f5f5",
-  },
-  productCardDark: {
-    backgroundColor: "#2C2C2E",
-  },
   promoSection: {
     marginBottom: 32,
   },
   promoButton: {
+    backgroundColor: "#f5f5f5",
     borderRadius: 12,
     padding: 16,
     alignItems: "center",
-  },
-  promoButtonLight: {
-    backgroundColor: "#f5f5f5",
-  },
-  promoButtonDark: {
-    backgroundColor: "#2C2C2E",
   },
   promoButtonText: {
     color: "#007AFF",

@@ -42,32 +42,32 @@ interface OnboardingStep {
 const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     id: "1",
-    title: "Create A Trip",
-    description: "",
+    title: "Create Your First Trip",
+    description: "Start by creating a trip for your upcoming travel. Give it a name and set the dates.",
     Illustration: CreateTripIllustration,
   },
   {
     id: "2",
-    title: "Forward Confirmation Emails",
-    description: "",
+    title: "Forward to Your TripDocHub Email",
+    description: "Simply forward booking confirmation emails to your unique TripDocHub address. We'll handle the rest!",
     Illustration: ForwardEmailIllustration,
   },
   {
     id: "3",
-    title: "Or Upload Documents",
-    description: "",
+    title: "Or Upload Your Documents",
+    description: "No email? No problem! Take a photo or upload PDFs directly from your device.",
     Illustration: UploadDocumentIllustration,
   },
   {
     id: "4",
-    title: "All Details At A Glance",
-    description: "",
+    title: "Essential Details at a Glance",
+    description: "AI extracts key details and organizes documents into your trips. Tap icons to navigate, call, or email vendors.",
     Illustration: DocumentParsedIllustration,
   },
   {
     id: "5",
-    title: "One Click to Call, Email, Navigate",
-    description: "",
+    title: "Click to View Original",
+    description: "Need the original? Tap any document to view the full PDF or image, just as you received it.",
     Illustration: ViewOriginalIllustration,
   },
 ];
@@ -118,8 +118,8 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       <View style={[styles.slide, { width: SCREEN_WIDTH }]}>
         <View style={styles.illustrationContainer}>
           <item.Illustration 
-            width={SCREEN_WIDTH * 0.93} 
-            height={340} 
+            width={SCREEN_WIDTH * 0.85} 
+            height={320} 
             animate={isActive}
           />
         </View>
@@ -127,11 +127,9 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
           <ThemedText type="title" style={styles.title}>
             {item.title}
           </ThemedText>
-          {item.description ? (
-            <ThemedText style={[styles.description, { color: colors.textSecondary }]}>
-              {item.description}
-            </ThemedText>
-          ) : null}
+          <ThemedText style={[styles.description, { color: colors.textSecondary }]}>
+            {item.description}
+          </ThemedText>
         </View>
       </View>
     );
@@ -259,7 +257,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    maxHeight: 460,
+    maxHeight: 420,
   },
   textContainer: {
     alignItems: "center",
