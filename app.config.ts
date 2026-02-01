@@ -1,5 +1,5 @@
 // Load environment variables with proper priority (system > .env)
-// Build v1.0.40 - Fixed: use SQUARE icon for adaptive foreground (Feb 1, 2026)
+// Build v1.0.41 - More padding (45% size) for aggressive launcher masks (Feb 1, 2026)
 import "./scripts/load-env.js";
 import type { ExpoConfig } from "expo/config";
 
@@ -26,7 +26,7 @@ const env = {
 const config: ExpoConfig = {
   name: env.appName,
   slug: env.appSlug,
-  version: "1.0.40",
+  version: "1.0.41",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: env.scheme,
