@@ -238,3 +238,7 @@
 ## App Icon Centering Fix (Feb 1)
 - [x] Regenerate app icon with graphic perfectly centered on 1024x1024 canvas
 - [x] Update all icon files: icon.png, splash-icon.png, favicon.png, android-icon-foreground.png
+
+## Sign Out Bug Fix (Feb 1)
+- [x] Investigate why sign out doesn't work in web preview (Alert.alert doesn't work on web)
+- [x] Fix logout functionality for web platform (use window.confirm on web)

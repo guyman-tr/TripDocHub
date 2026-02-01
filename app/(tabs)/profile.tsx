@@ -100,6 +100,15 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = useCallback(() => {
+    // Use window.confirm on web since Alert.alert doesn't work properly
+    if (Platform.OS === "web") {
+      if (window.confirm("Are you sure you want to sign out?")) {
+        logout();
+      }
+      return;
+    }
+    
+    // Native: use Alert.alert
     Alert.alert(
       "Sign Out",
       "Are you sure you want to sign out?",
