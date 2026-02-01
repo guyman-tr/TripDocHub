@@ -242,3 +242,8 @@
 ## Sign Out Bug Fix (Feb 1)
 - [x] Investigate why sign out doesn't work in web preview (Alert.alert doesn't work on web)
 - [x] Fix logout functionality for web platform (use window.confirm on web)
+
+## App Icon Redesign (Feb 1)
+- [x] Generate a square-friendly app icon design that doesn't get truncated
+- [x] Recreated original square ticket design with notches, red PDF badge, page curl
+- [x] Update all icon files after new design is approved
