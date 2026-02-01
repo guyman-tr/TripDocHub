@@ -1,5 +1,5 @@
 // Load environment variables with proper priority (system > .env)
-// Build v1.0.39 - Android adaptive icon fix (Feb 1, 2026 22:18 UTC)
+// Build v1.0.42 - Reverted to rectangular adaptive icon (Feb 1, 2026)
 import "./scripts/load-env.js";
 import type { ExpoConfig } from "expo/config";
 
@@ -26,7 +26,7 @@ const env = {
 const config: ExpoConfig = {
   name: env.appName,
   slug: env.appSlug,
-  version: "1.0.39",
+  version: "1.0.42",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: env.scheme,
