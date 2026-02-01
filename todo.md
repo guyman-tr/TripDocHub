@@ -234,3 +234,7 @@
 ## View Original Button Sizing Fix (Jan 31)
 - [x] Make View Original button smaller and not floating
 - [x] Position within scroll content (at top, outline style)
+
+## App Icon Centering Fix (Feb 1)
+- [x] Regenerate app icon with graphic perfectly centered on 1024x1024 canvas
+- [x] Update all icon files: icon.png, splash-icon.png, favicon.png, android-icon-foreground.png
