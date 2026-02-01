@@ -1,0 +1,13 @@
+{
+  "query": "SELECT COUNT(*) AS docs FROM documents WHERE userId = 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3cm1rAYqFTLZz8b.ead05c4c62f7 --database jxNutJmZj7bf8VEqqERusH --execute SELECT COUNT(*) AS docs FROM documents WHERE userId = 1;",
+  "rows": [
+    {
+      "docs": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "docs\n0\n",
+  "stderr": "",
+  "execution_time_ms": 1562
+}

@@ -1,0 +1,70 @@
+{
+  "query": "SELECT id, name, forwardingEmail, expoPushToken IS NOT NULL as hasToken FROM users LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3cm1rAYqFTLZz8b.ead05c4c62f7 --database jxNutJmZj7bf8VEqqERusH --execute SELECT id, name, forwardingEmail, expoPushToken IS NOT NULL as hasToken FROM users LIMIT 10;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Guy Manova",
+      "forwardingEmail": "trip-inbox-rh1k8dga@in.mytripdochub.com",
+      "hasToken": "0"
+    },
+    {
+      "id": "8",
+      "name": "Guy Manova",
+      "forwardingEmail": "trip-inbox-mesjywq4@in.mytripdochub.com",
+      "hasToken": "1"
+    },
+    {
+      "id": "630001",
+      "name": "Inna Manova",
+      "forwardingEmail": "trip-arxri3c2@in.mytripdochub.com",
+      "hasToken": "0"
+    },
+    {
+      "id": "750001",
+      "name": "Ronny Manova",
+      "forwardingEmail": "trip-fjlwddrk@in.mytripdochub.com",
+      "hasToken": "0"
+    },
+    {
+      "id": "1020001",
+      "name": "tova manova",
+      "forwardingEmail": "trip-s2r8ghqb@in.mytripdochub.com",
+      "hasToken": "0"
+    },
+    {
+      "id": "1230001",
+      "name": "Adnan Ashraf",
+      "forwardingEmail": "trip-ehdspgu1@in.mytripdochub.com",
+      "hasToken": "1"
+    },
+    {
+      "id": "1230010",
+      "name": "Faizan Ashraf",
+      "forwardingEmail": "trip-fklpkean@in.mytripdochub.com",
+      "hasToken": "1"
+    },
+    {
+      "id": "1230051",
+      "name": "Faizan Ashraf",
+      "forwardingEmail": "trip-f335jjv_@in.mytripdochub.com",
+      "hasToken": "0"
+    },
+    {
+      "id": "1230054",
+      "name": "Faizan Ashraf",
+      "forwardingEmail": "trip-x3mqpqkc@in.mytripdochub.com",
+      "hasToken": "1"
+    },
+    {
+      "id": "1230057",
+      "name": "Faizan Ashraf",
+      "forwardingEmail": "trip-htj44w9u@in.mytripdochub.com",
+      "hasToken": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tforwardingEmail\thasToken\n1\tGuy Manova\ttrip-inbox-rh1k8dga@in.mytripdochub.com\t0\n8\tGuy Manova\ttrip-inbox-mesjywq4@in.mytripdochub.com\t1\n630001\tInna Manova\ttrip-arxri3c2@in.mytripdochub.com\t0\n750001\tRonny Manova\ttrip-fjlwddrk@in.mytripdochub.com\t0\n1020001\ttova manova\ttrip-s2r8ghqb@in.mytripdochub.com\t0\n1230001\tAdnan Ashraf\ttrip-ehdspgu1@in.mytripdochub.com\t1\n1230010\tFaizan Ashraf\ttrip-fklpkean@in.mytripdochub.com\t1\n1230051\tFaizan Ashraf\ttrip-f335jjv_@in.mytripdochub.com\t0\n1230054\tFaizan Ashraf\ttrip-x3mqpqkc@in.mytripdochub.com\t1\n1230057\tFaizan Ashraf\ttrip-htj44w9u@in.mytripdochub.com\t1\n",
+  "stderr": "",
+  "execution_time_ms": 1510
+}

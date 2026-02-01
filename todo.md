@@ -182,7 +182,63 @@
 - [x] Inbox count not syncing between home screen, tab badge, and inbox screen after clearing inbox (added inboxCount.invalidate to all mutations)
 
 ## Production Polish (Jan 30, 2026)
-- [x] Create GitHub repository for TripDocHub (https://github.com/guyman-tr/TripDocHub)
+- [ ] Create GitHub repository for TripDocHub
 - [x] Comprehensive QA audit of codebase (see QA_AUDIT_REPORT.md)
 - [x] Document QA findings (error handling, edge cases, security, accessibility, performance)
 - [ ] Polish graphic assets for Google Play listing
+- [x] BUG: Dark theme prices nearly invisible (white on white) in store screen
+- [x] Center app icon graphic on canvas (icon appears off-center on home and splash screens)
+
+## Onboarding Redesign (Jan 31, 2026)
+- [ ] Redesign onboarding illustrations: bigger size (93%), no explanatory text, no overflow
+- [ ] Screen 1: "Create A Trip" - same visual, no subtitle
+- [ ] Screen 2: "Forward All Confirmation Emails" - shorter email (123ad@triphub.com), add subject line
+- [ ] Screen 3: "Take Photo / Upload File" - remove small descriptive text
+- [ ] Screen 4: "All Details At A Glance" - keep parsed document visual
+- [ ] Screen 5: "One Click to Call, Email, Navigate" - add 3 action icons
+
+## Document Details Action Icons (Jan 31)
+- [x] Extract phone number from document processing
+- [x] Extract email address from document processing
+- [x] Add 4 action icons to document details: Navigate, Call, Email, Original
+- [x] Grey out icons when no data found, color when data exists
+- [x] Make colored icons clickable (open maps, dial phone, compose email, view original)
+- [x] Write unit tests with mock data to verify extraction and icon states
+
+## Action Icons Improvements (Jan 31)
+- [x] Move "View Original" back to prominent button at bottom (not icon)
+- [x] Show original email text when no PDF/image exists (formatted nicely via WebView)
+- [x] Keep only 3 icons: Navigate, Call, Email
+- [x] Store original email body in database for display
+- [ ] Add re-process option for existing documents to extract phone/email
+
+## Bug Fix: Action Icons Not Showing (Jan 31)
+- [x] Fix address extraction to check pickupLocation/dropoffLocation fields (not just pickupAddress/dropoffAddress)
+- [x] Always show icons row (don't hide when no data - just grey out all icons)
+- [x] Always show View Original button (greyed out with "No Original Available" text when no file/email)
+
+## View Original Always Enabled (Jan 31)
+- [x] Never grey out View Original button
+- [x] Show email text when no PDF/image file exists
+- [x] Generate markdown summary from details as fallback if no email body
+
+## Document Parsing Prompt Improvements (Jan 31)
+- [x] Update prompts with schema-first, details-second approach
+- [x] Add mandatory vs optional field categorization
+- [x] Improve date parsing for Hebrew/multilingual emails
+- [x] Navigation: only show if explicit address OR airport code (infer airport name from code)
+- [x] Phone numbers: add + prefix for international numbers (in prompt + post-processing)
+- [x] Add speed instruction - don't invent/guess, use null for missing fields
+- [x] Add airport code to address mapping for flights
+
+## View Original Button Sizing Fix (Jan 31)
+- [x] Make View Original button smaller and not floating
+- [x] Position within scroll content (at top, outline style)
+
+## App Icon Centering Fix (Feb 1)
+- [x] Regenerate app icon with graphic perfectly centered on 1024x1024 canvas
+- [x] Update all icon files: icon.png, splash-icon.png, favicon.png, android-icon-foreground.png
+
+## Sign Out Bug Fix (Feb 1)
+- [x] Investigate why sign out doesn't work in web preview (Alert.alert doesn't work on web)
+- [x] Fix logout functionality for web platform (use window.confirm on web)

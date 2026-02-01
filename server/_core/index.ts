@@ -17,7 +17,6 @@ import { sdk } from "./sdk";
 import { getDb } from "../db";
 import { users } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
-import { ENV } from "./env";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -46,60 +45,26 @@ const upload = multer({
   },
 });
 
-function parseAllowedOrigins(value: string | undefined): Set<string> {
-  if (!value) return new Set();
-  return new Set(
-    value
-      .split(",")
-      .map((v) => v.trim())
-      .filter(Boolean),
-  );
-}
-
-function isOriginAllowed(origin: string, allowed: Set<string>) {
-  if (allowed.size === 0) return false;
-  return allowed.has(origin);
-}
-
-function requireEnv(name: string, value: string) {
-  if (!value || value.trim().length === 0) {
-    throw new Error(`[Config] Missing required environment variable: ${name}`);
-  }
-}
-
 async function startServer() {
   const app = express();
   const server = createServer(app);
 
-  // Fail fast on critical configuration in production
-  if (ENV.isProduction) {
-    requireEnv("JWT_SECRET", ENV.cookieSecret);
-  }
-
-  const allowedOrigins = parseAllowedOrigins(process.env.CORS_ALLOWED_ORIGINS);
-
-  // CORS: allow only explicitly configured origins when using credentials
+  // Enable CORS for all routes - reflect the request origin to support credentials
   app.use((req, res, next) => {
     const origin = req.headers.origin;
-    if (typeof origin === "string" && isOriginAllowed(origin, allowedOrigins)) {
+    if (origin) {
       res.header("Access-Control-Allow-Origin", origin);
-      res.header("Vary", "Origin");
-      res.header("Access-Control-Allow-Credentials", "true");
     }
     res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
     res.header(
       "Access-Control-Allow-Headers",
       "Origin, X-Requested-With, Content-Type, Accept, Authorization",
     );
+    res.header("Access-Control-Allow-Credentials", "true");
 
     // Handle preflight requests
     if (req.method === "OPTIONS") {
-      // Only respond OK if this is an allowed origin; otherwise deny preflight.
-      if (typeof origin === "string" && isOriginAllowed(origin, allowedOrigins)) {
-        res.sendStatus(200);
-      } else {
-        res.sendStatus(403);
-      }
+      res.sendStatus(200);
       return;
     }
     next();
@@ -115,23 +80,56 @@ async function startServer() {
     res.json({ ok: true, timestamp: Date.now() });
   });
 
-  const debugEnabled =
-    process.env.ENABLE_DEBUG_ENDPOINTS === "1" || process.env.ENABLE_DEBUG_ENDPOINTS === "true";
+  // Resolve forwarding email to user info
+  app.get("/api/debug/resolve-forwarding-email", async (req, res) => {
+    try {
+      const email = req.query.email as string;
+      if (!email) {
+        res.status(400).json({ error: "Missing email query parameter" });
+        return;
+      }
+      
+      const db = await getDb();
+      if (!db) {
+        res.status(500).json({ error: "Database not available" });
+        return;
+      }
+      
+      const [user] = await db.select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        forwardingEmail: users.forwardingEmail,
+        expoPushToken: users.expoPushToken,
+        credits: users.credits,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+      }).from(users).where(eq(users.forwardingEmail, email)).limit(1);
+      
+      if (!user) {
+        res.status(404).json({ error: "User not found for this forwarding email" });
+        return;
+      }
+      
+      res.json({
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+        forwardingEmail: user.forwardingEmail,
+        hasToken: !!user.expoPushToken,
+        tokenPreview: user.expoPushToken ? `${user.expoPushToken.substring(0, 40)}...` : null,
+        credits: user.credits,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || String(error) });
+    }
+  });
 
-  // Diagnostic endpoints (disabled by default; require admin auth)
+  // Diagnostic endpoint to check push token status
   app.get("/api/debug/push-token/:userId", async (req, res) => {
     try {
-      if (!debugEnabled) {
-        res.status(404).json({ error: "Not found" });
-        return;
-      }
-
-      const authedUser = await sdk.authenticateRequest(req);
-      if (authedUser.role !== "admin") {
-        res.status(403).json({ error: "Forbidden" });
-        return;
-      }
-
       const userId = parseInt(req.params.userId);
       if (isNaN(userId)) {
         res.status(400).json({ error: "Invalid userId" });
@@ -172,17 +170,6 @@ async function startServer() {
   // Test sending push notification to a specific user (with full debug info)
   app.post("/api/debug/send-push/:userId", async (req, res) => {
     try {
-      if (!debugEnabled) {
-        res.status(404).json({ error: "Not found" });
-        return;
-      }
-
-      const authedUser = await sdk.authenticateRequest(req);
-      if (authedUser.role !== "admin") {
-        res.status(403).json({ error: "Forbidden" });
-        return;
-      }
-
       const userId = parseInt(req.params.userId);
       if (isNaN(userId)) {
         res.status(400).json({ error: "Invalid userId" });

@@ -38,28 +38,28 @@ let isInitialized = false;
 let purchaseUpdateSubscription: any = null;
 let purchaseErrorSubscription: any = null;
 
-// Mock products for web preview
+// Mock products for web preview (prices should match Google Play Console)
 const MOCK_PRODUCTS: Product[] = [
   {
     productId: PRODUCT_IDS.CREDITS_10,
     title: "10 Credits",
     description: "Process 10 documents",
     credits: 10,
-    price: "$0.99",
+    price: "$1.99",
   },
   {
     productId: PRODUCT_IDS.CREDITS_50,
     title: "50 Credits",
     description: "Process 50 documents",
     credits: 50,
-    price: "$3.99",
+    price: "$7.99",
   },
   {
     productId: PRODUCT_IDS.CREDITS_100,
     title: "100 Credits",
     description: "Process 100 documents",
     credits: 100,
-    price: "$6.99",
+    price: "$12.99",
   },
 ];
 
@@ -120,35 +120,58 @@ export async function disconnectBilling(): Promise<void> {
  */
 export async function getProducts(): Promise<Product[]> {
   if (Platform.OS === "web") {
-    // Return mock products for web preview
+    console.log("[Billing] Web platform - returning mock products");
     return MOCK_PRODUCTS;
   }
 
+  console.log("[Billing] Fetching products from Google Play...");
+  console.log("[Billing] Product IDs to fetch:", Object.values(PRODUCT_IDS));
+
   if (!isInitialized) {
+    console.log("[Billing] Not initialized, attempting connection...");
     const connected = await initializeBilling();
-    if (!connected) return MOCK_PRODUCTS; // Return mock products if connection fails
+    if (!connected) {
+      console.log("[Billing] Connection failed, returning mock products");
+      return MOCK_PRODUCTS;
+    }
   }
 
   try {
     const RNIap = require("react-native-iap");
+    console.log("[Billing] Calling RNIap.getProducts...");
     const products = await RNIap.getProducts({
       skus: Object.values(PRODUCT_IDS),
     });
+
+    console.log("[Billing] Raw products response:", JSON.stringify(products, null, 2));
 
     if (!products || products.length === 0) {
       console.log("[Billing] No products found, returning mock products");
       return MOCK_PRODUCTS;
     }
 
-    return products.map((item: any) => ({
-      productId: item.productId as ProductId,
-      title: item.title || item.name || `${CREDIT_AMOUNTS[item.productId as ProductId]} Credits`,
-      description: item.description || `Process ${CREDIT_AMOUNTS[item.productId as ProductId]} documents`,
-      credits: CREDIT_AMOUNTS[item.productId as ProductId] || 0,
-      price: item.localizedPrice || item.price || "N/A",
-      priceAmountMicros: item.priceAmountMicros,
-      currencyCode: item.currency,
-    }));
+    console.log(`[Billing] Found ${products.length} products from Google Play`);
+    
+    const mappedProducts = products.map((item: any) => {
+      console.log(`[Billing] Product ${item.productId}: price=${item.localizedPrice || item.price}, oneTimePurchaseOfferDetails=${JSON.stringify(item.oneTimePurchaseOfferDetails)}`);
+      
+      // Handle react-native-iap v12+ structure where price is in oneTimePurchaseOfferDetails
+      const offerDetails = item.oneTimePurchaseOfferDetails;
+      const price = offerDetails?.formattedPrice || item.localizedPrice || item.price || "N/A";
+      
+      return {
+        productId: item.productId as ProductId,
+        title: item.title || item.name || `${CREDIT_AMOUNTS[item.productId as ProductId]} Credits`,
+        description: item.description || `Process ${CREDIT_AMOUNTS[item.productId as ProductId]} documents`,
+        credits: CREDIT_AMOUNTS[item.productId as ProductId] || 0,
+        price: price,
+        priceAmountMicros: offerDetails?.priceAmountMicros || item.priceAmountMicros,
+        currencyCode: offerDetails?.priceCurrencyCode || item.currency,
+      };
+    });
+    
+    console.log("[Billing] Mapped products:", JSON.stringify(mappedProducts, null, 2));
+    return mappedProducts;
   } catch (error) {
     console.error("[Billing] Failed to get products:", error);
     return MOCK_PRODUCTS;

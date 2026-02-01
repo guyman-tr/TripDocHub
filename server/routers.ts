@@ -6,7 +6,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import * as db from "./db";
 import { parseDocument } from "./documentParser";
 
-// Credit amounts for each product (must match lib/billing.ts)
+// Credit amounts for each product (must match Google Play Console product IDs)
 const CREDIT_AMOUNTS: Record<string, number> = {
   "10_credits": 10,
   "50_credits": 50,
