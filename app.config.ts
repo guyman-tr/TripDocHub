@@ -1,5 +1,5 @@
 // Load environment variables with proper priority (system > .env)
-// Build v1.0.23 - Rollback to stable version (Feb 1, 2026)
+// Build v1.0.38 - Fresh build (Feb 1, 2026 21:58 UTC)
 import "./scripts/load-env.js";
 import type { ExpoConfig } from "expo/config";
 
@@ -26,7 +26,7 @@ const env = {
 const config: ExpoConfig = {
   name: env.appName,
   slug: env.appSlug,
-  version: "1.0.0",
+  version: "1.0.38",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: env.scheme,
