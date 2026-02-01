@@ -1,5 +1,5 @@
 // Load environment variables with proper priority (system > .env)
-// Build v1.0.39 - Android adaptive icon fix (Feb 1, 2026)
+// Build v1.0.39 - Android adaptive icon fix (Feb 1, 2026 22:18 UTC)
 import "./scripts/load-env.js";
 import type { ExpoConfig } from "expo/config";
 
