@@ -242,3 +242,8 @@
 ## Sign Out Bug Fix (Feb 1)
 - [x] Investigate why sign out doesn't work in web preview (Alert.alert doesn't work on web)
 - [x] Fix logout functionality for web platform (use window.confirm on web)
+
+## Android Adaptive Icon Fix (Feb 1)
+- [x] Generate Android adaptive foreground icon with proper padding (~55% size)
+- [x] Update app.config.ts with adaptive icon configuration (foregroundImage + backgroundColor)
+- [ ] Test icon appearance in custom launchers (pending APK build)
