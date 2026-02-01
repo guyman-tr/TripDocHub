@@ -1,5 +1,5 @@
 // Load environment variables with proper priority (system > .env)
-// Build v1.0.38 - Fresh build (Feb 1, 2026 21:58 UTC)
+// Build v1.0.39 - Android adaptive icon fix (Feb 1, 2026)
 import "./scripts/load-env.js";
 import type { ExpoConfig } from "expo/config";
 
@@ -26,7 +26,7 @@ const env = {
 const config: ExpoConfig = {
   name: env.appName,
   slug: env.appSlug,
-  version: "1.0.38",
+  version: "1.0.39",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: env.scheme,
@@ -41,10 +41,8 @@ const config: ExpoConfig = {
   },
   android: {
     adaptiveIcon: {
-      backgroundColor: "#E6F4FE",
-      foregroundImage: "./assets/images/android-icon-foreground.png",
-      backgroundImage: "./assets/images/android-icon-background.png",
-      monochromeImage: "./assets/images/android-icon-monochrome.png",
+      backgroundColor: "#FFFFFF",
+      foregroundImage: "./assets/images/android-adaptive-foreground.png",
     },
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
