@@ -152,6 +152,24 @@ const DOCUMENT_PARSING_PROMPT = `You are a travel document parser optimized for 
 - phoneNumber (EMERGENCY helpline - critical! with + prefix)
 - emailAddress
 
+## CATEGORY CLASSIFICATION (CRITICAL)
+**ONLY airplane/aircraft flights should be classified as "flight".**
+
+### Use "flight" category ONLY for:
+- Airplane/aircraft travel with airlines
+- Must have: airline name, flight number, departure/arrival airports (IATA codes)
+- Examples: commercial flights, charter flights, private jets
+
+### Use "other" category for ALL other travel tickets:
+- Train tickets (railway, rail, train travel)
+- Bus tickets (coach, bus travel)
+- Ferry tickets (boat, ship, ferry travel)
+- Subway/metro tickets
+- Any other transportation that is NOT an airplane flight
+- Travel documents that don't fit other specific categories
+
+**IMPORTANT**: If a document mentions trains, railways, buses, ferries, or any non-airplane transportation, it MUST be classified as "other", NOT "flight".
+
 ## OUTPUT FORMAT
 Return JSON with "documents" array. Each document has:
 - category: "flight" | "carRental" | "accommodation" | "medical" | "event" | "other"
@@ -223,6 +241,24 @@ const EMAIL_PARSING_PROMPT = `You are a travel booking email parser optimized fo
 - insuranceProvider, policyNumber, coveragePeriod
 - phoneNumber (EMERGENCY line - critical! with + prefix)
 - emailAddress
+
+## CATEGORY CLASSIFICATION (CRITICAL)
+**ONLY airplane/aircraft flights should be classified as "flight".**
+
+### Use "flight" category ONLY for:
+- Airplane/aircraft travel with airlines
+- Must have: airline name, flight number, departure/arrival airports (IATA codes)
+- Examples: commercial flights, charter flights, private jets
+
+### Use "other" category for ALL other travel tickets:
+- Train tickets (railway, rail, train travel)
+- Bus tickets (coach, bus travel)
+- Ferry tickets (boat, ship, ferry travel)
+- Subway/metro tickets
+- Any other transportation that is NOT an airplane flight
+- Travel documents that don't fit other specific categories
+
+**IMPORTANT**: If a document mentions trains, railways, buses, ferries, or any non-airplane transportation, it MUST be classified as "other", NOT "flight".
 
 ## MULTILINGUAL SUPPORT
 Parse ANY language including Hebrew, Arabic, German, etc.
