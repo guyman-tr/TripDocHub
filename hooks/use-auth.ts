@@ -66,8 +66,37 @@ export function useAuth(options?: UseAuthOptions) {
         console.log("[useAuth] Using cached user info");
         setUser(cachedUser);
       } else {
-        console.log("[useAuth] No cached user, setting user to null");
-        setUser(null);
+        // Session token exists but cached user info is missing - fetch from API
+        console.log("[useAuth] Session token exists but no cached user info, fetching from API...");
+        try {
+          const apiUser = await Api.getMe();
+          console.log("[useAuth] API user response:", apiUser);
+          
+          if (apiUser) {
+            const userInfo: Auth.User = {
+              id: apiUser.id,
+              openId: apiUser.openId,
+              name: apiUser.name,
+              email: apiUser.email,
+              loginMethod: apiUser.loginMethod,
+              lastSignedIn: new Date(apiUser.lastSignedIn),
+            };
+            setUser(userInfo);
+            // Cache user info for future loads
+            await Auth.setUserInfo(userInfo);
+            console.log("[useAuth] Native user fetched from API and cached:", userInfo);
+          } else {
+            // Session token exists but API says no user - token might be invalid
+            console.warn("[useAuth] Session token exists but API returned no user - token may be invalid");
+            setUser(null);
+            await Auth.clearUserInfo();
+          }
+        } catch (apiError) {
+          console.error("[useAuth] Failed to fetch user from API:", apiError);
+          // If API call fails, don't set user to null - might be network issue
+          // Keep user as null but log the error
+          setUser(null);
+        }
       }
     } catch (err) {
       const error = err instanceof Error ? err : new Error("Failed to fetch user");
