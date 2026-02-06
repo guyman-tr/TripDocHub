@@ -6,7 +6,6 @@
  */
 
 import { getUserPushToken } from "./db";
-import { notifyOwner } from "./_core/notification";
 
 // Expo Push API endpoint
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
@@ -34,18 +33,26 @@ export async function sendPushNotification(
     const pushToken = await getUserPushToken(userId);
     
     if (!pushToken) {
-      console.log(`[PushNotification] No push token for user ${userId}, falling back to platform notification`);
-      // Fallback to platform-level notification (Manus notification service)
-      return await sendFallbackNotification(payload);
+      const timestamp = new Date().toISOString();
+      console.warn(`[PushNotification] [${timestamp}] No push token found for user ${userId}. Possible reasons: user hasn't opened app yet, denied permissions, token registration failed, or on web platform. Notification will not be sent.`);
+      return { 
+        success: false, 
+        error: `No push token registered for user ${userId}. User needs to open the app and enable notifications.` 
+      };
     }
 
     // Validate Expo push token format
     if (!pushToken.startsWith("ExponentPushToken[") && !pushToken.startsWith("ExpoPushToken[")) {
-      console.log(`[PushNotification] Invalid push token format for user ${userId}, falling back to platform notification`);
-      return await sendFallbackNotification(payload);
+      const timestamp = new Date().toISOString();
+      console.warn(`[PushNotification] [${timestamp}] Invalid push token format for user ${userId}. Token preview: ${pushToken.substring(0, 50)}... (length: ${pushToken.length}). Notification will not be sent.`);
+      return { 
+        success: false, 
+        error: `Invalid push token format for user ${userId}` 
+      };
     }
 
-    console.log(`[PushNotification] Sending to user ${userId}: "${payload.title}"`);
+    const timestamp = new Date().toISOString();
+    console.log(`[PushNotification] [${timestamp}] Sending to user ${userId}: "${payload.title}"`);
 
     // Send to Expo Push API
     const response = await fetch(EXPO_PUSH_URL, {
@@ -86,34 +93,11 @@ export async function sendPushNotification(
     console.log(`[PushNotification] Successfully sent to user ${userId}`);
     return { success: true };
   } catch (error) {
-    console.error("[PushNotification] Error sending notification:", error);
-    // Fallback to platform notification on error
-    return await sendFallbackNotification(payload);
-  }
-}
-
-/**
- * Fallback to platform-level notification when push token is not available
- * This sends to the Manus notification service which shows in the Manus app
- */
-async function sendFallbackNotification(
-  payload: PushNotificationPayload
-): Promise<PushNotificationResult> {
-  try {
-    const success = await notifyOwner({
-      title: payload.title,
-      content: payload.body,
-    });
-    
-    if (success) {
-      console.log(`[PushNotification] Sent fallback notification via Manus`);
-      return { success: true };
-    } else {
-      return { success: false, error: "Fallback notification failed" };
-    }
-  } catch (error) {
-    console.error("[PushNotification] Fallback notification error:", error);
-    return { success: false, error: String(error) };
+    console.error(`[PushNotification] Error sending notification to user ${userId}:`, error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : String(error) 
+    };
   }
 }
 

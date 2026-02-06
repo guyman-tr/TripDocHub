@@ -79,14 +79,16 @@ async function sendProcessingNotification(
         break;
     }
 
+    const timestamp = new Date().toISOString();
     const result = await sendPushNotification(userId, payload);
     if (result.success) {
-      console.log(`[Mailgun] Sent ${type} push notification to user ${userId}`);
+      console.log(`[Mailgun] [${timestamp}] Successfully sent ${type} push notification to user ${userId}`);
     } else {
-      console.log(`[Mailgun] Failed to send ${type} notification: ${result.error}`);
+      console.warn(`[Mailgun] [${timestamp}] Failed to send ${type} notification to user ${userId}. Error: ${result.error}. This may indicate the user hasn't opened the app yet or doesn't have notifications enabled.`);
     }
   } catch (error) {
-    console.error("[Mailgun] Failed to send notification:", error);
+    const timestamp = new Date().toISOString();
+    console.error(`[Mailgun] [${timestamp}] Exception while sending ${type} notification to user ${userId}:`, error);
   }
 }
 
@@ -345,12 +347,13 @@ router.post("/", upload.any(), async (req: Request, res: Response) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    console.log(`[Mailgun] Found user ${user.id} for email ${recipient}`);
+    const timestamp = new Date().toISOString();
+    console.log(`[Mailgun] [${timestamp}] Found user ${user.id} for forwarding email ${recipient}`);
 
     // Check if user can process documents (has credits or subscription)
     const canProcess = await db.canProcessDocument(user.id);
     if (!canProcess) {
-      console.log(`[Mailgun] User ${user.id} has no credits remaining`);
+      console.log(`[Mailgun] [${timestamp}] User ${user.id} (${recipient}) has no credits remaining`);
       // Send notification about no credits
       setImmediate(() => {
         sendProcessingNotification(user.id, "no_credits", {}).catch(console.error);
@@ -374,9 +377,9 @@ router.post("/", upload.any(), async (req: Request, res: Response) => {
     // This runs synchronously to ensure it executes in serverless environments
     try {
       await sendProcessingNotification(user.id, "received", { subject });
-      console.log(`[Mailgun] Sent received notification for user ${user.id}`);
+      console.log(`[Mailgun] [${timestamp}] Sent received notification for user ${user.id} (${recipient})`);
     } catch (notifError) {
-      console.error("[Mailgun] Failed to send received notification:", notifError);
+      console.error(`[Mailgun] [${timestamp}] Failed to send received notification for user ${user.id} (${recipient}):`, notifError);
     }
 
     // Process the email synchronously but with a timeout safety net
