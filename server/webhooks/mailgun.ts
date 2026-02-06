@@ -347,13 +347,13 @@ router.post("/", upload.any(), async (req: Request, res: Response) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const timestamp = new Date().toISOString();
-    console.log(`[Mailgun] [${timestamp}] Found user ${user.id} for forwarding email ${recipient}`);
+    const logTimestamp = new Date().toISOString();
+    console.log(`[Mailgun] [${logTimestamp}] Found user ${user.id} for forwarding email ${recipient}`);
 
     // Check if user can process documents (has credits or subscription)
     const canProcess = await db.canProcessDocument(user.id);
     if (!canProcess) {
-      console.log(`[Mailgun] [${timestamp}] User ${user.id} (${recipient}) has no credits remaining`);
+      console.log(`[Mailgun] [${logTimestamp}] User ${user.id} (${recipient}) has no credits remaining`);
       // Send notification about no credits
       setImmediate(() => {
         sendProcessingNotification(user.id, "no_credits", {}).catch(console.error);
@@ -377,9 +377,9 @@ router.post("/", upload.any(), async (req: Request, res: Response) => {
     // This runs synchronously to ensure it executes in serverless environments
     try {
       await sendProcessingNotification(user.id, "received", { subject });
-      console.log(`[Mailgun] [${timestamp}] Sent received notification for user ${user.id} (${recipient})`);
+      console.log(`[Mailgun] [${logTimestamp}] Sent received notification for user ${user.id} (${recipient})`);
     } catch (notifError) {
-      console.error(`[Mailgun] [${timestamp}] Failed to send received notification for user ${user.id} (${recipient}):`, notifError);
+      console.error(`[Mailgun] [${logTimestamp}] Failed to send received notification for user ${user.id} (${recipient}):`, notifError);
     }
 
     // Process the email synchronously but with a timeout safety net

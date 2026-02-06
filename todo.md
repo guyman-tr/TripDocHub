@@ -247,3 +247,8 @@
 - [x] Generate Android adaptive foreground icon with proper padding (~55% size)
 - [x] Update app.config.ts with adaptive icon configuration (foregroundImage + backgroundColor)
 - [ ] Test icon appearance in custom launchers (pending APK build)
+
+## Bug Fixes from Testers (Feb 6)
+- [x] Fix notification routing bug - remove fallback to developer via notifyOwner()
+- [x] Fix auth state bug - fetch user from API when cached info missing after OAuth
+- [x] Fix train ticket classification - classify as "other" not "flight"
