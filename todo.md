@@ -252,3 +252,7 @@
 - [x] Fix notification routing bug - remove fallback to developer via notifyOwner()
 - [x] Fix auth state bug - fetch user from API when cached info missing after OAuth
 - [x] Fix train ticket classification - classify as "other" not "flight"
+
+## Icon & Splash Screen Fix (Feb 7)
+- [x] Fix splash screen black borders (resizeMode: "native", backgroundColor: "#E6F4FE")
+- [x] Regenerate android-adaptive-foreground.png at exact 864x864px with 528x528 safe zone centering
