@@ -52,6 +52,16 @@ const AIRPORT_CODES: Record<string, string> = {
   VRN: "Verona Villafranca Airport, Italy",
   VCE: "Venice Marco Polo Airport",
   BLQ: "Bologna Guglielmo Marconi Airport",
+  // AUDIT FIX: Added missing ski/winter destination airports
+  BGY: "Orio al Serio International Airport, Bergamo, Italy",
+  INN: "Innsbruck Airport, Austria",
+  SZG: "Salzburg Airport, Austria",
+  TRN: "Turin Caselle Airport, Italy",
+  GVA: "Geneva Airport, Switzerland",
+  LYS: "Lyon-Saint Exupery Airport, France",
+  GNB: "Grenoble Alpes Isere Airport, France",
+  TRS: "Trieste Friuli Venezia Giulia Airport, Italy",
+  LJU: "Ljubljana Joze Pucnik Airport, Slovenia",
   // North America
   ORD: "Chicago O'Hare International Airport",
   SFO: "San Francisco International Airport",
@@ -89,8 +99,11 @@ const DOCUMENT_PARSING_PROMPT = `You are a travel document parser optimized for 
 3. **Bonus Details**: Useful extras go in the appropriate field or are skipped if not clearly stated.
 4. **No Garbage**: Only extract data that is EXPLICITLY stated. Never infer, guess, or fabricate information.
 
+## COMPOSITE DOCUMENTS (CRITICAL)
+A single image or document may contain MULTIPLE separate bookings (e.g., a ski package with flight + hotel + transfers + skipass). You MUST extract EACH booking as a SEPARATE document in the "documents" array. Scan the entire document and create one entry per distinct booking item.
+
 ## DATE PARSING (CRITICAL)
-- Parse ALL date formats including DD.MM.YY, DD/MM/YYYY, YYYY-MM-DD, and written dates
+- Parse ALL date formats including DD.MM.YY, DD/MM/YYYY, YYYY-MM-DD, and written dates like "21 MAR 26"
 - For 2-digit years: 25 = 2025, 26 = 2026, etc.
 - Hebrew dates: תאריך, יום, חודש, שנה
 - Output dates in ISO format (YYYY-MM-DDTHH:mm:ss)
@@ -120,6 +133,8 @@ const DOCUMENT_PARSING_PROMPT = `You are a travel document parser optimized for 
 - address (FULL street address with city and country - critical for navigation)
 - checkInDate (ISO date)
 - checkOutDate (ISO date)
+- roomType (e.g., "Triple - Allotment Triple Full Board")
+- numberOfNights (integer)
 - phoneNumber (hotel phone with + prefix if international)
 - emailAddress (hotel email if shown)
 
@@ -152,6 +167,23 @@ const DOCUMENT_PARSING_PROMPT = `You are a travel document parser optimized for 
 - phoneNumber (EMERGENCY helpline - critical! with + prefix)
 - emailAddress
 
+### TRANSFERS (use category "other", documentType "Transfer")
+- transferCompany (company or service name)
+- pickupLocation (origin location name, e.g., airport or hotel)
+- dropoffLocation (destination location name)
+- transferDate (ISO date)
+- transferTime (ISO time if stated)
+- vehicleType (shuttle, private, shared, etc.)
+- confirmationNumber
+
+### ACTIVITIES & PASSES (use category "other", documentType "Activity Pass" or "Skipass" etc.)
+- activityName (e.g., "Adamello Skipass", "Museum Pass")
+- location (venue or resort name)
+- startDate (ISO date)
+- endDate (ISO date)
+- duration (e.g., "7 days", "3 hours")
+- confirmationNumber
+
 ## CATEGORY CLASSIFICATION (CRITICAL)
 **ONLY airplane/aircraft flights should be classified as "flight".**
 
@@ -160,34 +192,48 @@ const DOCUMENT_PARSING_PROMPT = `You are a travel document parser optimized for 
 - Must have: airline name, flight number, departure/arrival airports (IATA codes)
 - Examples: commercial flights, charter flights, private jets
 
-### Use "other" category for ALL other travel tickets:
+### Use "other" category for ALL other travel items:
 - Train tickets (railway, rail, train travel)
 - Bus tickets (coach, bus travel)
 - Ferry tickets (boat, ship, ferry travel)
-- Subway/metro tickets
-- Any other transportation that is NOT an airplane flight
+- Airport/hotel transfers and shuttles
+- Ski passes, activity passes, museum tickets
+- Any transportation that is NOT an airplane flight
 - Travel documents that don't fit other specific categories
 
-**IMPORTANT**: If a document mentions trains, railways, buses, ferries, or any non-airplane transportation, it MUST be classified as "other", NOT "flight".
+**IMPORTANT**: Transfers, ski passes, and activity tickets MUST be classified as "other" with appropriate documentType (e.g., "Transfer", "Skipass", "Activity Pass").
 
 ## OUTPUT FORMAT
 Return JSON with "documents" array. Each document has:
 - category: "flight" | "carRental" | "accommodation" | "medical" | "event" | "other"
-- documentType: e.g., "eTicket", "Boarding Pass", "Booking Confirmation"
-- title: Short clear title (e.g., "TLV → VRN" for flights, "Hilton Munich" for hotels)
-- subtitle: Additional context (airline name, company name)
+- documentType: e.g., "eTicket", "Boarding Pass", "Booking Confirmation", "Transfer", "Skipass", "Activity Pass"
+- title: Short clear title (e.g., "TLV → BGY" for flights, "Hotel Miramonti" for hotels, "Airport Transfer" for transfers, "Adamello Skipass" for passes)
+- subtitle: Additional context (airline name, company name, location)
 - documentDate: Primary date in ISO format
 - details: Object with the mandatory fields above
 
+## EXAMPLE: Composite Ski Package
+Given an itinerary image showing a flight, hotel, transfer, and skipass, return:
+{"documents": [
+  {"category": "flight", "documentType": "eTicket", "title": "TLV → BGY", "subtitle": "ISRAIR 6H301", "documentDate": "2026-03-21T07:10:00", "details": {"airline": "ISRAIR", "flightNumber": "6H301", "departureAirport": "TLV", "arrivalAirport": "BGY", "departureTime": "2026-03-21T07:10:00", "arrivalTime": "2026-03-21T10:20:00", "confirmationNumber": "232319"}},
+  {"category": "accommodation", "documentType": "Booking Confirmation", "title": "Hotel Miramonti", "subtitle": "Passo Tonale, Italy", "documentDate": "2026-03-21", "details": {"hotelName": "Hotel Miramonti", "address": "Via Nazionale 6 loc. Passo del Tonale, Italy", "checkInDate": "2026-03-21", "checkOutDate": "2026-03-28", "numberOfNights": 7, "roomType": "Triple - Allotment Triple Full Board", "phoneNumber": "+390364900501"}},
+  {"category": "other", "documentType": "Transfer", "title": "Transfer to Passo Tonale", "subtitle": "Airport shuttle", "documentDate": "2026-03-21", "details": {"pickupLocation": "BGY Airport", "dropoffLocation": "Passo Tonale", "transferDate": "2026-03-21"}},
+  {"category": "other", "documentType": "Skipass", "title": "Adamello Skipass", "subtitle": "Passo Tonale", "documentDate": "2026-03-21", "details": {"activityName": "Adamello Skipass", "location": "Passo Tonale", "startDate": "2026-03-21", "endDate": "2026-03-28"}}
+]}
+
 ## MULTILINGUAL SUPPORT
-Parse content in ANY language including Hebrew, Arabic, German, French, Spanish, etc.
+Parse content in ANY language including Hebrew, Arabic, German, French, Spanish, Italian, etc.
 Common Hebrew terms:
 - טיסה = flight, מספר טיסה = flight number
 - תאריך = date, שעה = time
 - שדה תעופה = airport
 - המראה = departure, נחיתה = arrival
 - מלון = hotel, השכרת רכב = car rental
-- טלפון = phone, כתובת = address`;
+- טלפון = phone, כתובת = address
+Common Italian terms:
+- volo = flight, albergo/hotel = hotel
+- trasferimento = transfer, skipass = ski pass
+- arrivo = arrival, partenza = departure`;
 
 const EMAIL_PARSING_PROMPT = `You are a travel booking email parser optimized for SPEED and ACCURACY.
 
@@ -355,18 +401,12 @@ export async function parseDocument(
 
     return { documents, contentHash };
   } catch (error) {
+    // AUDIT FIX: Return empty documents array on failure instead of creating a
+    // phantom "Uploaded Document" card that masks the error from the user.
+    // The caller (mailgun webhook) will send an appropriate error notification.
     console.error("[DocumentParser] Failed to parse document:", error);
     return {
-      documents: [
-        {
-          category: "other",
-          documentType: "Document",
-          title: "Uploaded Document",
-          subtitle: null,
-          details: {},
-          documentDate: null,
-        },
-      ],
+      documents: [],
       contentHash,
     };
   }

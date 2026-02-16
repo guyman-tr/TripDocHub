@@ -31,8 +31,15 @@ function verifyMailgunSignature(
   signature: string
 ): boolean {
   if (!MAILGUN_WEBHOOK_SIGNING_KEY) {
-    console.warn("[Mailgun] No webhook signing key configured, skipping verification");
-    return true; // Allow in development
+    // AUDIT FIX: In production, reject requests when no signing key is configured
+    // instead of silently allowing all requests (security risk).
+    const isProduction = process.env.NODE_ENV === "production";
+    if (isProduction) {
+      console.error("[Mailgun] CRITICAL: No webhook signing key configured in production! Rejecting request.");
+      return false;
+    }
+    console.warn("[Mailgun] No webhook signing key configured, skipping verification (dev only)");
+    return true;
   }
 
   const encodedToken = createHmac("sha256", MAILGUN_WEBHOOK_SIGNING_KEY)
@@ -128,8 +135,13 @@ async function processAttachmentsAsync(
       const parseResult = await parseDocument(fileUrl, mimeType);
       console.log(`[Mailgun Async] Parsed ${parseResult.documents.length} documents from ${fileName}`);
 
-      // Always process - user explicitly forwarded this email
-      // (Removed duplicate detection per user request)
+      // AUDIT FIX: If parser returned 0 documents (e.g., LLM error or unparseable image),
+      // log it clearly so we can diagnose failures instead of silently succeeding.
+      if (parseResult.documents.length === 0) {
+        console.warn(`[Mailgun Async] Parser returned 0 documents for ${fileName} – LLM may have failed to parse this file`);
+        hasError = true;
+        continue;
+      }
 
       // Create documents in database
       for (const doc of parseResult.documents) {
@@ -382,38 +394,37 @@ router.post("/", upload.any(), async (req: Request, res: Response) => {
       console.error(`[Mailgun] [${logTimestamp}] Failed to send received notification for user ${user.id} (${recipient}):`, notifError);
     }
 
-    // Process the email synchronously but with a timeout safety net
-    // Mailgun has 10s timeout, so we process what we can and respond
-    const processingPromise = (async () => {
-      try {
-        if (hasAttachments) {
-          await processAttachmentsAsync(user.id, files!, subject);
-        } else if (hasEmailBody) {
-          await processEmailBodyAsync(user.id, bodyHtml, bodyPlain, subject, sender || from);
-        }
-      } catch (error) {
-        console.error("[Mailgun] Processing failed:", error);
-        await sendProcessingNotification(user.id, "error", { 
-          errorMessage: "Failed to process your email. Please try uploading directly in the app." 
-        }).catch(console.error);
-      }
-    })();
+    // AUDIT FIX: Respond 200 to Mailgun IMMEDIATELY, then process in background.
+    // Previously we used Promise.race with an 8s timeout, but complex documents
+    // (large images, multi-section itineraries) could exceed this and the
+    // processing promise might be killed in serverless environments after the
+    // response was sent. Now we respond first and process fully in background.
+    console.log(`[Mailgun] Responding to Mailgun after ${Date.now() - startTime}ms (pre-processing)`);
 
-    // Wait for processing with a timeout (leave 2s buffer for response)
-    const timeoutMs = 8000;
-    const timeoutPromise = new Promise<void>((resolve) => setTimeout(resolve, timeoutMs));
-    
-    await Promise.race([processingPromise, timeoutPromise]);
-
-    // Log response time
-    console.log(`[Mailgun] Processed in ${Date.now() - startTime}ms`);
-
-    // RESPOND to Mailgun
-    res.status(200).json({ 
-      message: "Email processed",
+    res.status(200).json({
+      message: "Email received, processing started",
       attachmentCount: files?.length || 0,
       willParseBody: !hasAttachments && hasEmailBody,
-      processingTimeMs: Date.now() - startTime
+    });
+
+    // Fire-and-forget: process the email in the background
+    // (setImmediate ensures this runs after the response is flushed)
+    setImmediate(() => {
+      (async () => {
+        try {
+          if (hasAttachments) {
+            await processAttachmentsAsync(user.id, files!, subject);
+          } else if (hasEmailBody) {
+            await processEmailBodyAsync(user.id, bodyHtml, bodyPlain, subject, sender || from);
+          }
+          console.log(`[Mailgun] Background processing completed in ${Date.now() - startTime}ms`);
+        } catch (error) {
+          console.error("[Mailgun] Background processing failed:", error);
+          await sendProcessingNotification(user.id, "error", {
+            errorMessage: "Failed to process your email. Please try uploading directly in the app.",
+          }).catch(console.error);
+        }
+      })();
     });
 
   } catch (error) {

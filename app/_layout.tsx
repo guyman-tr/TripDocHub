@@ -16,6 +16,7 @@ import type { EdgeInsets, Metrics, Rect } from "react-native-safe-area-context";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { ThemeProvider } from "@/contexts/theme-context";
+import { AuthProvider } from "@/contexts/auth-context";
 import { trpc, createTRPCClient } from "@/lib/trpc";
 import { initManusRuntime, subscribeSafeAreaInsets } from "@/lib/manus-runtime";
 import { persistQueryCache, restoreQueryCache } from "@/lib/query-persistence";
@@ -136,22 +137,24 @@ function ThemeAwareContent({ trpcClient, queryClient }: { trpcClient: any; query
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
-        <NavigationThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-            <Stack>
-              <Stack.Screen name="onboarding" options={{ headerShown: false, animation: "fade" }} />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="modal" options={{ presentation: "modal", title: "Modal" }} />
-              <Stack.Screen name="oauth/callback" options={{ headerShown: false }} />
-              <Stack.Screen name="add-trip" options={{ presentation: "modal", headerShown: false }} />
-              <Stack.Screen name="upload" options={{ presentation: "modal", headerShown: false }} />
-              <Stack.Screen name="trip/[id]" options={{ headerShown: false }} />
-              <Stack.Screen name="document/[id]" options={{ headerShown: false }} />
-              <Stack.Screen name="settings" options={{ headerShown: false }} />
-              <Stack.Screen name="edit-trip" options={{ presentation: "modal", headerShown: false }} />
-            </Stack>
-            <StatusBar style="auto" />
-            <PushTokenRegistration />
-        </NavigationThemeProvider>
+        <AuthProvider>
+          <NavigationThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+              <Stack>
+                <Stack.Screen name="onboarding" options={{ headerShown: false, animation: "fade" }} />
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="modal" options={{ presentation: "modal", title: "Modal" }} />
+                <Stack.Screen name="oauth/callback" options={{ headerShown: false }} />
+                <Stack.Screen name="add-trip" options={{ presentation: "modal", headerShown: false }} />
+                <Stack.Screen name="upload" options={{ presentation: "modal", headerShown: false }} />
+                <Stack.Screen name="trip/[id]" options={{ headerShown: false }} />
+                <Stack.Screen name="document/[id]" options={{ headerShown: false }} />
+                <Stack.Screen name="settings" options={{ headerShown: false }} />
+                <Stack.Screen name="edit-trip" options={{ presentation: "modal", headerShown: false }} />
+              </Stack>
+              <StatusBar style="auto" />
+              <PushTokenRegistration />
+          </NavigationThemeProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </trpc.Provider>
   );
