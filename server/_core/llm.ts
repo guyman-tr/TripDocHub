@@ -281,8 +281,13 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   }
 
   payload.max_tokens = 32768;
+  // AUDIT FIX: Increased thinking budget from 128 to 2048 tokens.
+  // 128 tokens was far too low for complex multi-section travel documents
+  // (e.g., composite ski package itineraries with flight + hotel + transfers + skipass).
+  // The model needs room to reason about layout, multilingual text, and how to split
+  // composite documents into separate entries.
   payload.thinking = {
-    budget_tokens: 128,
+    budget_tokens: 2048,
   };
 
   const normalizedResponseFormat = normalizeResponseFormat({
