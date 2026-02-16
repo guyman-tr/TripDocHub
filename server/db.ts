@@ -1,4 +1,4 @@
-import { and, eq, isNull, desc, gte, lte } from "drizzle-orm";
+import { and, eq, isNull, desc, gte, lte, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser,
@@ -343,15 +343,31 @@ export async function findMatchingTrip(
   const db = await getDb();
   if (!db) return undefined;
 
-  // Find a trip where the document date falls within the trip's date range
+  // Validate that documentDate is a real Date (guards against Invalid Date from
+  // unparseable LLM output like "21 MAR 26" instead of ISO format).
+  if (!(documentDate instanceof Date) || isNaN(documentDate.getTime())) {
+    console.warn("[DB] findMatchingTrip called with invalid date:", documentDate);
+    return undefined;
+  }
+
+  // AUDIT FIX: Compare DATE portions only (strip time component).
+  //
+  // Trip dates are created from a calendar picker on the client which produces
+  // midnight in the user's local timezone, then .toISOString() converts to UTC.
+  // For a user in Israel (UTC+2/+3), picking "March 28" becomes "2026-03-27T21:00Z"
+  // in the DB. Meanwhile the LLM returns document dates in UTC (e.g. "2026-03-28").
+  // Comparing full timestamps causes off-by-hours mismatches at the boundaries.
+  //
+  // Using DATE() strips the time component on both sides so "March 28" always
+  // matches "March 28" regardless of timezone offset in the stored value.
   const result = await db
     .select()
     .from(trips)
     .where(
       and(
         eq(trips.userId, userId),
-        lte(trips.startDate, documentDate),
-        gte(trips.endDate, documentDate)
+        sql`DATE(${trips.startDate}) <= DATE(${documentDate})`,
+        sql`DATE(${trips.endDate}) >= DATE(${documentDate})`
       )
     )
     .limit(1);
